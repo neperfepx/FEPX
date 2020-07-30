@@ -1,0 +1,7 @@
+*.o
+*.a
+*~
+
+# Ignore AppleDouble files and Mac .DS_Store files
+._*
+.DS_Store

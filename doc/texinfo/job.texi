@@ -1,0 +1,106 @@
+@c This file is part of the FEPX software package.
+@c Copyright (C) 1996-2020 ACME Lab
+@c See the COPYING file in the top-level directory.
+
+@node Running a Simulation
+@chapter Running a Simulation
+
+@c To run a simulation without the aid of a job scheduling program (i.e., a serial simulation, or a simulation on a single computational workstation), the @samp{fepx} binary must be executed from within a prepared simulation directory. This simulation directory must contain at minimum the configuration file (@file{simulation.config}) and the mesh file (@file{simulation.msh}), however, additional external files may also be present as detailed elsewhere (@pxref{Simulation Input}).
+
+First, a simulation may be run serially -- that is, on a single core -- by executing the binary from the terminal,
+
+@inputfilehead
+@com{fepx}
+@inputfilefoot
+
+However, simulations will generally require more computational resources to run in reasonable time, which can be done using a parallel computer architecture.
+@c
+A simulation may be run in parallel utilizing MPI,
+
+@inputfilehead
+@com{mpirun -np @var{N} fepx}
+@inputfilefoot
+
+where @var{N} refers to the number of MPI processes desired. Note that your local installation of MPI may not utilize @samp{mpirun} and instead an alternative MPI command may be required. 
+
+@node Submitting FEPX to a Job Scheduling Program
+@section Submitting FEPX to a Job Scheduling Program
+
+Performing simulations on high performance computing clusters typically requires interfacing with a job scheduling program. These programs have a number of directives that are too numerous to define here. For sake of illustration, however, generic submission scripts for the Slurm and Torque job scheduling programs are provided. The generation of these scripts is highly dependent on the local configuration, and you are encouraged to work with the system administrator of your cluster if you are unsure on how to properly build a submission script. Both example scripts below are designed to submit a parallel job of FEPX to 4 nodes with 16 cores per node (i.e., 64 total tasks) to the @samp{main} queue.
+
+A generic submission script, @file{runslurm.sh}, for submitting to a Slurm scheduler:
+
+@inputfilehead
+@example
+#!/bin/bash
+#SBATCH -J fepxjob
+#SBATCH -q main
+#SBATCH --ntasks 64
+#SBATCH --ntasks-per-node 16
+#SBATCH -o output.%A
+#SBATCH -e errors.%A
+
+srun --mpi=pmi2 fepx
+@end example
+@inputfilefoot
+
+would be run by entering @command{sbatch runslurm.sh} into the terminal from within the simulation directory.
+
+A generic submission script, @file{runtorque.sh}, for submitting to a Torque scheduler:
+
+@inputfilehead
+@example
+#!/bin/bash
+#PBS -N fepxjob
+#PBS -q main
+#PBS -l nodes=4:ppn=16
+#PBS -k oe
+#PBS -j oe
+
+# Change to the current working directory
+cd $PBS_O_WORKDIR
+
+# Calculate the total number of cores requested
+NP=`cat $PBS_NODEFILE | wc -l`
+
+mpirun -np ${NP} fepx
+@end example
+@inputfilefoot
+
+would be run by entering @command{qsub runtorque.sh} into the terminal from within the simulation directory.
+
+@node Restarting a Simulation
+@section Restarting a Simulation
+
+A simulation may be restarted only if the restart files are written as simulation output (@pxref{Restart Output}). Printing restart files will output, by default, a single @samp{post.restart.control} file and a @samp{post.restartfield.core*} file for each individual core where @samp{*} denotes the ID of the core on which the data is being printed. These restart files must be included in the simulation directory along with the configuration file, the mesh file, and any external files included with the simulation. 
+
+A simulation may be restarted by adding the following lines to the @file{simulation.config} file:
+
+@inputfilehead
+@example
+restart 
+@end example
+@inputfilefoot
+
+Additionally, the names of these restart files may be adjusted upon writing or before reading by adding optional commands to the @file{simulation.config} file.
+
+To modify the file names of the input restart files:
+@example
+@inputfilehead
+rsctrl_in @var{control_file_name}
+rsfield_base_in @var{field_file_name}
+@inputfilefoot
+@end example
+
+To modify the file names of the output restart files:
+@example
+@inputfilehead
+rsctrl_out @var{control_file_name}
+rsfield_base_out @var{field_file_name}
+@inputfilefoot
+@end example
+
+where @code{@var{control_file_name}} is the desired file name of the restart control file and @code{@var{field_file_name}} is the desired @dfn{base} string for the file name(s) of the restart field data files (@code{@var{field_file_name}} will always have the @samp{.core*} string appended on the defined string). @c For example, if the @code{@var{field_file_name}} is set to @samp{rsfield_example} the output restart field data file(s) will be named @samp{rsfield_example.core*}.
+
+Any restarted simulation must be rerun with the same number of cores that were used to run the original simulation. FEPX will automatically begin the simulation at the beginning of the step after the restart files were written. Restart files are always written at the end of a successful step and not at individual increments. Note that when a simulation is restarted, the new output files will overwrite any present output data in the local directory as defined in the @file{simulation.config} file. If this behavior is undesirable, it is recommended that the restart files, configuration file, mesh file, and any external files be copied to a new directory before restarting the simulation proper.
+

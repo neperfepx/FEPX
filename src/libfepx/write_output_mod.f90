@@ -1,0 +1,1385 @@
+! This file is part of the FEPX software package.
+! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! See the COPYING file in the top-level directory.
+!
+MODULE WRITE_OUTPUT_MOD
+!
+! Module for printing variables to file at the end of a step.
+!
+! Contains subroutines:
+!
+! General printing and handling of field variable data:
+! PRINT_STEP: Print variables on a given load step
+! CALC_EQSTRESS: Calculate elemental von Mises stress
+! STRAIN_TO_SAMPLE: Converts crystal-frame strains to sample-frame
+!
+! Handling the post.report, post.forceX, and post.conv files
+! WRITE_REPORT_FILE_HEADER: Writes preamble information about the simulation
+! WRITE_REPORT_FILE_OUTPUT_FILES: Writes the files requested to be printed
+! WRITE_REPORT_FILE_COMPLETE_STEPS: Writes the LAST completed step number
+! WRITE_FORCE_FILE_HEADERS: Writes the file headers for table formatting
+! WRITE_FORCE_FILE_DATA: Writes the surface forces [X Y Z] for all surfaces
+! WRITE_CONV_FILE_HEADERS: Writes the file headers for the table formatting
+! WRITE_CONV_FILE_DATA: Writes the various convergence statistics
+!
+! Writing restart files from the various drivers:
+! WRITE_UNIAXIAL_RESTART: Writes required information for the uniaxial restart
+! WRITE_TRIAXCSR_RESTART: Writes required information for the triaxcsr restart
+! WRITE_TRIAXCLR_RESTART: Writes required information for the triaxclr restart
+!
+! To do:
+! - is PROB_TYPE necessary for PRINT_STEP?
+!
+USE DIMSMODULE
+USE CONSTANTSMODULE, ONLY: RK_PI_OVER_180, RK_ROOT_2
+USE READ_INPUT_MOD
+USE MICROSTRUCTURE_MOD
+USE ORIENTATION_CONVERSION_MOD
+USE SIMULATION_CONFIGURATION_MOD
+USE SURF_INFO_MOD, ONLY: NSURFACES
+USE UNITS_MOD
+USE UTILSCRYSTALMODULE
+!
+IMPLICIT NONE
+!
+! Public
+!
+PUBLIC
+!
+CONTAINS
+    !
+    SUBROUTINE PRINT_STEP(STEP, PROB_TYPE, CRD, VEL, ORIENT, WTS, HARD, ELAS, &
+        & S3X3, DEFF, EQSTRAIN, DPEFF, EQPLSTRAIN, VGRAD, DP_HAT, WP_HAT, &
+        & GAMMA, GAMMADOT, WORK, WORKP, D_TOT)
+    !
+    ! Print variables on a given load step
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! STEP: Step number
+    ! PROB_TYPE: Type of problem (iso(0), aniso-vp(1), aniso-evps(2)) Necessary?
+    ! CRD: Nodal coordinates
+    ! VEL: Nodal velocities
+    ! ORIENT: Elemental orientation tensors (to be converted)
+    ! WTS: Grain weights
+    ! HARD: Elemental CRSS values
+    ! ELAS: Elemental elastic strain tensors (upper triangle, i.e. 6-vector)
+    ! S3X3: Elemental stress tensors (3x3 matrix)
+    ! DEFF: Elemental effective deformation rate (scalar)
+    ! EQSTRAIN: Elemental equivalent strain (scalar)
+    ! DPEFF: Elemental effective plastic deformation rate (scalar)
+    ! EQPLSTRAIN: Elemental equivalent plastic strain (scalar)
+    ! VGRAD: Elemental velocity gradient (3x3 matrix)
+    ! DP_HAT: Elemental plastic deformation rate (5-vector)
+    ! WP_HAT: Elemental plastic spin rate (3-vector)
+    ! GAMMA: Elemental accumulated shears
+    ! WORK: Elemental total work (scalar)
+    ! WORKP: Elemental plastic work (scalar)
+    ! D_TOT: Elemental total deformation rate tensor (3x3 matrix)
+    !
+    INTEGER, INTENT(IN) :: STEP
+    INTEGER, INTENT(IN) :: PROB_TYPE
+    REAL(RK), INTENT(IN) :: CRD(DOF_SUB1:DOF_SUP1)
+    REAL(RK), INTENT(IN) :: VEL(DOF_SUB1:DOF_SUP1)
+    REAL(RK), INTENT(IN) :: ORIENT(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: WTS(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: HARD(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN), OPTIONAL :: ELAS(0:5, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN), OPTIONAL :: S3X3(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN), OPTIONAL :: EQSTRAIN(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN), OPTIONAL :: DEFF(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN), OPTIONAL :: DPEFF(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN), OPTIONAL :: EQPLSTRAIN(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN), OPTIONAL :: VGRAD (0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN), OPTIONAL :: DP_HAT(0:TVEC1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN), OPTIONAL :: WP_HAT(0:DIMS1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN), OPTIONAL :: GAMMA(0:MAXSLIP1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN), OPTIONAL :: GAMMADOT(0:MAXSLIP1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN), OPTIONAL :: WORK(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN), OPTIONAL :: WORKP(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN), OPTIONAL :: D_TOT(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1)
+    !
+    ! Locals:
+    ! IO: File control integer
+    ! I, J, IGRAIN: Looping indices
+    ! M_EL: Number of elements
+    ! P: Passive (1) or active (-1) orientation convention
+    ! ANGLE, AXIS: Angle-axis arrays
+    ! PSI1, PHI PSI2: Euler-Bunge arrays
+    ! PSI, THE, (PHI): Euler-Kocks arrays
+    ! RODS: Rodrigues' vectors
+    ! QUAT: Quaternions
+    ! ELAS_SAM: Elastic strain in the sample basis
+    ! EQSTRESS: Equivalent (von Mises) stress
+    !
+    INTEGER :: IO
+    INTEGER :: I, J, IGRAIN
+    INTEGER :: M_EL
+    REAL(RK) :: ORIENT_INT(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: ANGLE(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: AXIS(0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: PSI1(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: PHI(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: PSI2(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: PSI(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: THE(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: RODS(0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: QUAT(0:DIMS, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: ELAS_SAM(0:5)
+    REAL(RK) :: EQSTRESS(EL_SUB1:EL_SUP1)
+    REAL(RK) :: DP_HAT_MAT(0:5)
+    REAL(RK) :: DP_HAT_SAM(0:5)
+    REAL(RK) :: WP_HAT_SAM(0:DIMS1)
+    REAL(RK) :: QR5X5(0:TVEC1, 0:TVEC1)
+    REAL(RK) :: QR3X3(0:DIMS1, 0:DIMS1)
+    ! CHARACTER(LEN=16), ALLOCATABLE :: MESH_RESULTS(:)
+    CHARACTER(LEN=16), ALLOCATABLE :: NODE_RESULTS(:)
+    CHARACTER(LEN=16), ALLOCATABLE :: ELEM_RESULTS(:)
+    !
+    !----------------------------------------------------------------------
+    !
+    M_EL = EL_SUP1 - EL_SUB1 + 1
+    !
+    ! Allocate results string arrays with "headers"
+    !
+    ! ALLOCATE(MESH_RESULTS(1))
+    ALLOCATE(NODE_RESULTS(1))
+    ALLOCATE(ELEM_RESULTS(1))
+    !
+    ! MESH_RESULTS(1) = 'results_mesh'
+    NODE_RESULTS(1) = 'results_nodes'
+    ELEM_RESULTS(1) = 'results_elements'
+    !
+    ! Nodal coordinates
+    !
+    IF (PRINT_OPTIONS%PRINT_COORDINATES) THEN
+        !
+        IO = OUNITS(COORDS_U)
+        WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, DOF_SUB1, DOF_SUP1
+        WRITE(IO, '(3(e13.7,1x))') (CRD(J), J = DOF_SUB1, DOF_SUP1)
+        !
+        CALL ADD_TO_OUTPUT_FILES(STEP, 'coo', NODE_RESULTS)
+        !
+    ENDIF
+    !
+    ! Nodal velocities
+    !
+    IF (PRINT_OPTIONS%PRINT_VELOCITIES) THEN
+        !
+        IO = OUNITS(VEL_U)
+        WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, DOF_SUB1, DOF_SUP1
+        WRITE(IO, '(3(e13.7,1x))') (VEL(J), J = DOF_SUB1, DOF_SUP1)
+        !
+        CALL ADD_TO_OUTPUT_FILES(STEP, 'vel', NODE_RESULTS)
+        !
+    ENDIF
+    !
+    ! Orientations
+    !
+    IF (PRINT_OPTIONS%PRINT_ORIENTATIONS) THEN
+        !
+        IO = OUNITS(ANGLES_U)
+        !
+        CALL ADD_TO_OUTPUT_FILES(STEP, 'ori', ELEM_RESULTS)
+        !
+        ! Write header
+        !
+        WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+        !
+        ! Determine passive (C2S) or active (S2C) from orientation options
+        !
+        ORIENT_INT = 0.0_RK
+        IF (ORIENTATION_OPTIONS%ORIENTATION_CONVENTION .EQ. &
+            & 'passive') THEN
+            !
+            ! Don't do anything - FEPX assumes passive convention!!!
+            !
+            ORIENT_INT = ORIENT
+            !
+        ELSEIF (ORIENTATION_OPTIONS%ORIENTATION_CONVENTION .EQ. &
+            & 'active') THEN
+            !
+            DO J = EL_SUB1, EL_SUP1
+                !
+                DO IGRAIN = 0, NGRAIN1
+                    !
+                    ORIENT_INT(:, :, IGRAIN, J) = TRANSPOSE(ORIENT(:, :, &
+                        & IGRAIN, J))
+                    !
+                ENDDO
+                !
+            ENDDO
+            !
+        ENDIF
+        !
+        ! Determine parameterization from orientation options
+        !
+        IF (ORIENTATION_OPTIONS%ORIENTATION_PARAMETERIZATION .EQ. &
+            & 'axis-angle') THEN
+            !
+            CALL ROT_MATS_TO_AXIS_ANGLE(NGRAIN, M_EL, ORIENT_INT, AXIS, ANGLE)
+            !
+            DO J = EL_SUB1, EL_SUP1
+                !
+                DO IGRAIN = 0, NGRAIN1
+                    !
+                    WRITE(IO, '(4f13.7)') AXIS(0, IGRAIN, J), &
+                        & AXIS(1, IGRAIN, J), AXIS(2, IGRAIN, J), &
+                        & ANGLE(IGRAIN, J)
+                    !
+                ENDDO
+                !
+            ENDDO
+            !
+        ELSEIF (ORIENTATION_OPTIONS%ORIENTATION_PARAMETERIZATION .EQ. &
+            & 'euler-bunge') THEN
+            !
+            CALL ROT_MATS_TO_EULER_BUNGE(NGRAIN, M_EL, ORIENT_INT, PSI1, PHI, &
+                & PSI2)
+            !
+            DO J = EL_SUB1, EL_SUP1
+                !
+                DO IGRAIN = 0, NGRAIN1
+                    !
+                    WRITE(IO, '(4(e13.7,1x))') PSI1(IGRAIN, J), &
+                        & PHI(IGRAIN, J), PSI2(IGRAIN, J)
+                    !
+                ENDDO
+                !
+            ENDDO
+            !
+        ELSEIF (ORIENTATION_OPTIONS%ORIENTATION_PARAMETERIZATION .EQ. &
+            & 'euler-kocks') THEN
+            !
+            CALL ROT_MATS_TO_EULER_KOCKS(NGRAIN, M_EL, ORIENT_INT, PSI, THE, &
+                & PHI)
+            !
+            DO J = EL_SUB1, EL_SUP1
+                !
+                DO IGRAIN = 0, NGRAIN1
+                    !
+                    WRITE(IO, '(4(e13.7,1x))') PSI(IGRAIN, J), THE(IGRAIN, J), &
+                        & PHI(IGRAIN, J)
+                    !
+                ENDDO
+                !
+            ENDDO
+            !
+        ELSEIF (ORIENTATION_OPTIONS%ORIENTATION_PARAMETERIZATION .EQ. &
+            & 'rodrigues') THEN
+            !
+            CALL ROT_MATS_TO_RODRIGUES(NGRAIN, M_EL, ORIENT_INT, RODS)
+            !
+            DO J = EL_SUB1, EL_SUP1
+                !
+                DO IGRAIN = 0, NGRAIN1
+                    !
+                    WRITE(IO, '(4(e13.7,1x))') (RODS(I, IGRAIN, J), I = 0, &
+                        & DIMS1)
+                    !
+                ENDDO
+                !
+            ENDDO
+            !
+        ELSEIF (ORIENTATION_OPTIONS%ORIENTATION_PARAMETERIZATION .EQ. &
+            & 'quaternion') THEN
+            !
+            CALL ROT_MATS_TO_QUATERNIONS(NGRAIN, M_EL, ORIENT_INT, QUAT)
+            !
+            DO J = EL_SUB1, EL_SUP1
+                !
+                DO IGRAIN = 0, NGRAIN1
+                    !
+                    WRITE(IO, '(4(e13.7,1x))') (QUAT(I, IGRAIN, J), I = 0, DIMS)
+                    !
+                ENDDO
+                !
+            ENDDO
+            !
+        ENDIF
+        !
+    ENDIF
+    !
+    ! CRSS Values
+    !
+    IF (PRINT_OPTIONS%PRINT_CRSS) THEN
+        !
+        IO=OUNITS(CRSS_U)
+        !
+        CALL ADD_TO_OUTPUT_FILES(STEP, 'crss', ELEM_RESULTS)
+        !
+        WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+        !
+        DO J = EL_SUB1, EL_SUP1
+            !
+            DO IGRAIN = 0, NGRAIN1
+                !
+                IF(OPTIONS%HARD_TYPE.EQ.'isotropic') THEN
+                    !
+                    WRITE(IO, '(18(e13.7,1x))') (HARD(0, IGRAIN, J))
+                    !
+                ELSE
+                    !
+                    WRITE(IO, '(18(e13.7,1x))') (HARD(I, IGRAIN, J), &
+                        & I = 0, MAXSLIP1)
+                    !
+                ENDIF
+                !
+            ENDDO
+            !
+        ENDDO
+        !
+    ENDIF
+    !
+    !
+    IF (PROB_TYPE == ANISOTROPIC_EVPS) THEN
+        !
+        ! Elemental elastic strain tensors (6-vector)
+        !
+        IF (PRINT_OPTIONS%PRINT_STRAIN) THEN
+            !
+            IO = OUNITS(STRAIN_U)
+            !
+            CALL ADD_TO_OUTPUT_FILES(STEP, 'strain-el', ELEM_RESULTS)
+            !
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            !
+            DO I = EL_SUB1, EL_SUP1
+                !
+                DO IGRAIN = 0, NGRAIN1
+                    !
+                    ELAS_SAM = 0.0_RK
+                    CALL STRAIN_TO_SAMPLE(ELAS(:, IGRAIN, I), &
+                        & ORIENT(:, :, IGRAIN, I), ELAS_SAM)
+                    !
+                    ! Written as 11, 22, 33, 23, 13, 12 in sample basis
+                    !
+                    WRITE(IO, '(6(e13.7,1x))') ELAS_SAM(0), ELAS_SAM(3), &
+                        & ELAS_SAM(5), ELAS_SAM(4), &
+                        & ELAS_SAM(2), ELAS_SAM(1)
+                    !
+                ENDDO
+                !
+            ENDDO
+            !
+        ENDIF
+        !
+        ! Elemental stress tensors (3x3 matrix)
+        !
+        IF (PRINT_OPTIONS%PRINT_STRESS) THEN
+            !
+            IO = OUNITS(STRESS_U)
+            !
+            CALL ADD_TO_OUTPUT_FILES(STEP, 'stress', ELEM_RESULTS)
+            !
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            !
+            DO I = EL_SUB1, EL_SUP1
+                !
+                ! Written as 11, 22, 33, 23, 13, 12 in sample basis
+                !
+                WRITE(IO, '(6(e13.7,1x))') S3X3(0,0,I), S3X3(1,1,I), S3X3(2,2,I), &
+                    & S3X3(1,2,I), S3X3(0,2,I), S3X3(0,1,I)
+                !
+            ENDDO
+            !
+        ENDIF
+        !
+        ! Elemental shear rates (gammadot)
+        !
+        IF (PRINT_OPTIONS%PRINT_GAMMADOT) THEN
+            !
+            IO = OUNITS(GAMMADOT_U)
+            !
+            CALL ADD_TO_OUTPUT_FILES(STEP, 'sliprate', ELEM_RESULTS)
+            !
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            !
+            DO I = EL_SUB1, EL_SUP1
+                !
+                DO IGRAIN = 0, NGRAIN1
+                    !
+                    WRITE(IO, '(18(e13.7,1x))') (GAMMADOT(J, IGRAIN, I), &
+                        & J = 0, MAXSLIP1)
+                    !
+                ENDDO
+                !
+            ENDDO
+            !
+        ENDIF
+        !
+        ! Elemental equivalent stress (scalar)
+        !
+        IF (PRINT_OPTIONS%PRINT_EQSTRESS) THEN
+            !
+            CALL CALC_EQSTRESS(M_EL, S3X3, EQSTRESS)
+            !
+            IO = OUNITS(EQSTRESS_U)
+            !
+            CALL ADD_TO_OUTPUT_FILES(STEP, 'stress-eq', ELEM_RESULTS)
+            !
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            !
+            DO I = EL_SUB1, EL_SUP1
+                !
+                WRITE(IO, '(e13.7)') EQSTRESS(I)
+                !
+            ENDDO
+            !
+        ENDIF
+        !
+        !
+        ! Elemental effective deformation rate (scalar)
+        !
+        IF (PRINT_OPTIONS%PRINT_DEFF) THEN
+            !
+            IO = OUNITS(DEFF_U)
+            !
+            CALL ADD_TO_OUTPUT_FILES(STEP, 'defrate-eq', ELEM_RESULTS)
+            !
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            !
+            DO I = EL_SUB1, EL_SUP1
+                !
+                WRITE(IO, '(e13.7)') DEFF(I)
+                !
+            ENDDO
+            !
+        ENDIF
+        !
+        ! Elemental equivalent strain (scalar)
+        !
+        IF (PRINT_OPTIONS%PRINT_EQSTRAIN) THEN
+            !
+            IO = OUNITS(EQSTRAIN_U)
+            !
+            CALL ADD_TO_OUTPUT_FILES(STEP, 'strain-eq', ELEM_RESULTS)
+            !
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            !
+            DO I = EL_SUB1, EL_SUP1
+                !
+                WRITE(IO, '(e13.7)') EQSTRAIN(I)
+                !
+            ENDDO
+            !
+        ENDIF
+        !
+        ! Elemental effective plastic deformation rate (scalar)
+        !
+        IF (PRINT_OPTIONS%PRINT_DPEFF) THEN
+            !
+            IO = OUNITS(DPEFF_U)
+            !
+            CALL ADD_TO_OUTPUT_FILES(STEP, 'defrate-pl-eq', ELEM_RESULTS)
+            !
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            !
+            DO I = EL_SUB1, EL_SUP1
+                !
+                WRITE(IO, '(e13.7)') DPEFF(I)
+                !
+            ENDDO
+            !
+        ENDIF
+        !
+        ! Elemental equivalent plastic strain (scalar)
+        !
+        IF (PRINT_OPTIONS%PRINT_EQPLSTRAIN) THEN
+            !
+            IO = OUNITS(EQPLSTRAIN_U)
+            !
+            CALL ADD_TO_OUTPUT_FILES(STEP, 'strain-pl-eq', ELEM_RESULTS)
+            !
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            !
+            DO I = EL_SUB1, EL_SUP1
+                !
+                WRITE(IO, '(e13.7)') EQPLSTRAIN(I)
+                !
+            ENDDO
+            !
+        ENDIF
+        !
+        ! Elemental velocity gradient (3x3 matrix)
+        !
+        IF (PRINT_OPTIONS%PRINT_VGRAD) THEN
+            !
+            IO = OUNITS(VGRAD_U)
+            !
+            CALL ADD_TO_OUTPUT_FILES(STEP, 'velgrad', ELEM_RESULTS)
+            !
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            !
+            DO I = EL_SUB1, EL_SUP1
+                !
+                WRITE(IO, '(9(e13.7,1x))') VGRAD(0,0,I), VGRAD(0,1,I), &
+                    & VGRAD(0,2,I), VGRAD(1,0,I), VGRAD(1,1,I), VGRAD(1,2,I), &
+                    & VGRAD(2,0,I), VGRAD(2,1,I), VGRAD(2,2,I)
+                !
+            ENDDO
+            !
+        ENDIF
+        !
+        ! Elemental plastic deformation rate (6-vector)
+        !
+        IF (PRINT_OPTIONS%PRINT_DPHAT) THEN
+            !
+            IO = OUNITS(DPHAT_U)
+            !
+            CALL ADD_TO_OUTPUT_FILES(STEP, 'defrate-pl', ELEM_RESULTS)
+            !
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            !
+            DO I = EL_SUB1, EL_SUP1
+                !
+                DP_HAT_MAT = 0.0_RK
+                DP_HAT_SAM = 0.0_RK
+                !
+                ! Convert the transpose of the elemental rotation matrix into 
+                ! an operator on 5-vectors. The transpose outputs QR5X5 in 
+                ! a crystal-to-sample form.
+                ! 
+                CALL ROT_MAT_SYMM_SER(TRANSPOSE(ORIENT(:, :, 0, I)), QR5X5)
+                !
+                ! LATTICE_DEFORM transforms DP_HAT from crystal to sample frame.
+                ! This is because ORIENT was transposed (above).
+                ! 5-vector order is maintained here as (11-22), 33, 12, 13, 23
+                ! with the proper scalings.
+                !
+                CALL LATTICE_DEFORM_SER(QR5X5, DP_HAT(:, I), DP_HAT_SAM)
+                !
+                ! Convert 5-vector with scaling into proper 6-vector form.
+                !
+                CALL VEC5_VEC6(DP_HAT_SAM, DP_HAT_MAT)
+                !
+                ! Written as 11, 22, 33, 23, 13, 12 in sample basis.
+                !
+                WRITE(IO, '(6(e13.7,1x))') DP_HAT_MAT(0), DP_HAT_MAT(1), &
+                    & DP_HAT_MAT(2), DP_HAT_MAT(3), &
+                    & DP_HAT_MAT(4), DP_HAT_MAT(5)
+                !
+            ENDDO
+            !
+        ENDIF
+        !
+        ! Elemental plastic spin rate (3-vector)
+        !
+        IF (PRINT_OPTIONS%PRINT_WPHAT) THEN
+            !
+            IO = OUNITS(WPHAT_U)
+            !
+            CALL ADD_TO_OUTPUT_FILES(STEP, 'spinrate', ELEM_RESULTS)
+            !
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            !
+            DO I = EL_SUB1, EL_SUP1
+                !
+                ! Convert the transpose of the elemental rotation matrix into 
+                ! an operator on skew 3-vectors. The transpose outputs QR3X3 in 
+                ! a crystal-to-sample form.
+                ! 
+                CALL ROT_MAT_SKEW_SER(TRANSPOSE(ORIENT(:, :, 0, I)), QR3X3)
+                !
+                ! LATTICE_SPIN transforms WP_HAT from crystal to sample frame.
+                ! This is because ORIENT was transposed (above).
+                ! Skew 3-vector order is maintained here as 21 31 32.
+                !
+                CALL LATTICE_SPIN_SER(QR3X3, WP_HAT(:, I), WP_HAT_SAM)
+                ! 
+                ! Negative values are output here in order to obtain desired
+                ! order while maintaining skew-symmetry constraints.
+                !
+                ! Written as 12, 13, 23 in sample basis.
+                !
+                WRITE(IO, '(3(e13.7,1x))') - WP_HAT_SAM(0), - WP_HAT_SAM(1), &
+                    & - WP_HAT_SAM(2)
+                !
+            ENDDO
+            !
+        ENDIF
+        !
+        ! Elemental accumulated shears
+        !
+        IF (PRINT_OPTIONS%PRINT_GAMMA) THEN
+            !
+            IO = OUNITS(GAMMA_U)
+            !
+            CALL ADD_TO_OUTPUT_FILES(STEP, 'slip', ELEM_RESULTS)
+            !
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            !
+            DO I = EL_SUB1, EL_SUP1
+                !
+                DO IGRAIN = 0, NGRAIN1
+                    !
+                    WRITE(IO, '(18(e13.7,1x))') (GAMMA(J, IGRAIN, I), &
+                        & J = 0, MAXSLIP1)
+                    !
+                ENDDO
+                !
+            ENDDO
+            !
+        ENDIF
+        !
+        ! Elemental total work (scalar)
+        !
+        IF (PRINT_OPTIONS%PRINT_WORK) THEN
+            !
+            IO = OUNITS(WORK_U)
+            !
+            CALL ADD_TO_OUTPUT_FILES(STEP, 'work', ELEM_RESULTS)
+            !
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            !
+            DO I = EL_SUB1, EL_SUP1
+                !
+                WRITE(IO, '(e13.7)') WORK(I)
+                !
+            ENDDO
+            !
+        ENDIF
+        !
+        ! Elemental plastic work (scalar)
+        !
+        IF (PRINT_OPTIONS%PRINT_WORKP) THEN
+            !
+            IO = OUNITS(WORKP_U)
+            !
+            CALL ADD_TO_OUTPUT_FILES(STEP, 'work-pl', ELEM_RESULTS)
+            !
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            !
+            DO I = EL_SUB1, EL_SUP1
+                !
+                WRITE(IO, '(e13.7)') WORKP(I)
+                !
+            ENDDO
+            !
+        ENDIF
+        !
+        ! Elemental total deformation rate tensor (3x3 matrix)
+        !
+        IF (PRINT_OPTIONS%PRINT_DEFRATE) THEN
+            !
+            IO = OUNITS(DEFRATE_U)
+            !
+            CALL ADD_TO_OUTPUT_FILES(STEP, 'defrate', ELEM_RESULTS)
+            !
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            !
+            DO I = EL_SUB1, EL_SUP1
+                !
+                ! Written as 11, 22, 33, 23, 13, 12 in (DEBUG) basis
+                !
+                WRITE(IO, '(9(e13.7,1x))') D_TOT(0,0,I), D_TOT(1,1,I), &
+                    & D_TOT(2,2,I), D_TOT(1,2,I), D_TOT(0,2,I), D_TOT(0,1,I)
+                !
+            ENDDO
+            !
+        ENDIF
+        !
+    ENDIF
+    !
+    ! Write output files to the post.result files
+    !
+    CALL WRITE_REPORT_FILE_OUTPUT_FILES(STEP, NODE_RESULTS)
+    CALL WRITE_REPORT_FILE_OUTPUT_FILES(STEP, ELEM_RESULTS)
+    !
+    RETURN
+    !
+    END SUBROUTINE PRINT_STEP
+    !
+    !===========================================================================
+    !
+    SUBROUTINE CALC_EQSTRESS(M, S, EQSTRESS)
+    !
+    ! Calculate the equivalent (von Mises) stress for each element
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arugments:
+    ! M: Number of elements
+    ! S3X3: Stress tensor in 3x3 matrix form
+    ! EQSTRESS: Equivalent (von Mises) stress (scalar)
+    !
+    INTEGER, INTENT(IN) :: M
+    REAL(RK), INTENT(IN) :: S(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT) :: EQSTRESS(EL_SUB1:EL_SUP1)
+    !
+    ! Locals:
+    ! I: Looping index
+    !
+    INTEGER :: I
+    !
+    !---------------------------------------------------------------------------
+    !
+    EQSTRESS = 0.0_RK
+    !
+    DO I = EL_SUB1, EL_SUP1
+        !
+        EQSTRESS(I) = SQRT(((S(0, 0, I) - S(1, 1, I)) ** 2) + &
+            & ((S(1, 1, I) - S(2, 2, I)) ** 2) + &
+            & ((S(2, 2, I) - S(0, 0, I)) ** 2) + &
+            & (6 * ((S(0, 1, I) ** 2) + (S(1, 2, I) ** 2) + (S(2, 0, I) ** 2))))
+        !
+        EQSTRESS(I) = EQSTRESS(I) * (1.0_RK / RK_ROOT_2)
+        !
+    ENDDO
+    !
+    END SUBROUTINE CALC_EQSTRESS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE STRAIN_TO_SAMPLE(ELAS, ORIENT, ELAS_SAM)
+    !
+    ! Convert the 6 vector of elastic strains in the crystal basis to the sample
+    ! basis.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arugments:
+    ! ELAS: 6-vector of elastic strains in the crystal basis
+    ! ORIENT: 3x3 orientation matrix in the crystal to sample convention
+    ! ELAS_SAM: 6-vector of elastic strains in the sample basis
+    !
+    REAL(RK), INTENT(IN) :: ELAS(0:5)
+    REAL(RK), INTENT(IN) :: ORIENT(0:DIMS1, 0:DIMS1)
+    REAL(RK), INTENT(OUT) :: ELAS_SAM(0:5)
+    !
+    ! Locals:
+    ! I, J, K: Looping indices
+    ! ELAS_33: 3x3 matrix of elastic strains in crystal frame
+    ! TEMP: Matrix of strain*R'
+    ! ELAS_SAM_33: 3x3 matrix of elastic strains in sample frame
+    !
+    INTEGER :: I, J, K
+    REAL(RK) :: ELAS_33(0:DIMS1, 0:DIMS1)
+    REAL(RK) :: TEMP(0:DIMS1, 0:DIMS1)
+    REAL(RK) :: ELAS_SAM_33(0:DIMS1, 0:DIMS1)
+    !
+    !---------------------------------------------------------------------------
+    !
+    ELAS_SAM = 0.0_RK
+    ELAS_33 = 0.0_RK
+    ELAS_SAM_33 = 0.0_RK
+    TEMP = 0.0_RK
+    !
+    ! Put 6-vector into 3x3 matrix
+    !
+    ELAS_33(0, 0) = ELAS(0)
+    ELAS_33(0, 1) = ELAS(1)
+    ELAS_33(0, 2) = ELAS(2)
+    ELAS_33(1, 0) = ELAS(1)
+    ELAS_33(1, 1) = ELAS(3)
+    ELAS_33(1, 2) = ELAS(4)
+    ELAS_33(2, 0) = ELAS(2)
+    ELAS_33(2, 1) = ELAS(4)
+    ELAS_33(2, 2) = ELAS(5)
+    !
+    ! Perform strain*R'
+    !
+    DO J = 0, DIMS1
+        !
+        DO K = 0, DIMS1
+            !
+            DO I = 0, DIMS1
+                !
+                TEMP(I, J) = TEMP(I, J) + ELAS_33(I, K) * ORIENT(J, K)
+                !
+            ENDDO
+            !
+        ENDDO
+        !
+    ENDDO
+    !
+    ! Perform R*(strain*R')
+    !
+    DO J = 0, DIMS1
+        !
+        DO K = 0, DIMS1
+            !
+            DO I = 0, DIMS1
+                !
+                ELAS_SAM_33(I, J) = ELAS_SAM_33(I, J) + ORIENT(I, K) * &
+                    & TEMP(K, J)
+                !
+            ENDDO
+            !
+        ENDDO
+        !
+    ENDDO
+    !
+    ! Put into 6-vector of order 11 12 13 22 23 33 to conform with legacy code
+    ! Note: this is reordered before printing, above
+    !
+    ELAS_SAM(0) = ELAS_SAM_33(0,0)
+    ELAS_SAM(1) = ELAS_SAM_33(0,1)
+    ELAS_SAM(2) = ELAS_SAM_33(0,2)
+    ELAS_SAM(3) = ELAS_SAM_33(1,1)
+    ELAS_SAM(4) = ELAS_SAM_33(1,2)
+    ELAS_SAM(5) = ELAS_SAM_33(2,2)
+    !
+    END SUBROUTINE STRAIN_TO_SAMPLE
+    !
+    !===========================================================================
+    !
+    SUBROUTINE WRITE_REPORT_FILE_HEADER(PART_ARRAY)
+    !
+    ! Write a post.report file containing required information to facilitate
+    ! automated post-processing via Neper.
+    !
+    ! This prints the number of nodes, elements, partitions, elements by part,
+    ! nodes by part, number of slip systems, and orientation definition.
+    !
+    ! Arugments:
+    ! PART_ARRAY: Gathered array from fepx.f90 that contains partition info.
+    !
+    INTEGER, DIMENSION(0:1,0:NUMPROCS-1), INTENT(IN) :: PART_ARRAY
+    !
+    ! Locals:
+    ! I: Looping index
+    !
+    INTEGER :: I
+    !---------------------------------------------------------------------------
+    !
+    ! The file is opened in fepx.f90 so just begin printing from master proc.
+    ! All printed data should be public from the top-level so no arguments.
+    IF (MYID .EQ. 0) THEN
+        !
+        WRITE(OUNITS(REPORT_U), '(A,I0)') 'number_of_nodes ', NUMNP
+        WRITE(OUNITS(REPORT_U), '(A,I0)') 'number_of_elements ', NUMELM
+        WRITE(OUNITS(REPORT_U), '(A,I0)') 'number_of_partitions ', NUMPROCS
+        !
+        WRITE(OUNITS(REPORT_U), '(A)', ADVANCE='NO') 'number_of_elements_bypartition '
+        !
+        DO I = 0, NUMPROCS-1
+            !
+            WRITE(OUNITS(REPORT_U), '(I0, A)', ADVANCE='NO') PART_ARRAY(0,I), ' '
+            !
+        END DO
+        !
+        WRITE(OUNITS(REPORT_U), '(/,A)', ADVANCE='NO') 'number_of_nodes_bypartition '
+        !
+        DO I = 0, NUMPROCS-1
+            !
+            WRITE(OUNITS(REPORT_U), '(I0, A)', ADVANCE='NO') PART_ARRAY(1,I), ' '
+            !
+        END DO
+        !
+        WRITE(OUNITS(REPORT_U), '(/,A,I0)') 'number_of_slip_systems ', MAXSLIP 
+        WRITE(OUNITS(REPORT_U), '(A,A,A,A)') 'orientation_definition ', &
+            & TRIM(ORIENTATION_OPTIONS%ORIENTATION_PARAMETERIZATION), ':', &
+            & TRIM(ORIENTATION_OPTIONS%ORIENTATION_CONVENTION)
+        !
+    END IF
+    !
+    END SUBROUTINE WRITE_REPORT_FILE_HEADER
+    !
+    !===========================================================================
+    !
+    SUBROUTINE WRITE_REPORT_FILE_OUTPUT_FILES(CURRENT_STEP, INPUT_STRING)
+    !
+    ! This writes the file names of the user-defined output files from the 
+    ! simulation.config.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! INPUT_STRING: Character array denoting file name to print.
+    ! CURRENT_STEP: Current step at which we are printing information for.
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: INPUT_STRING(:)
+    INTEGER, INTENT(IN) :: CURRENT_STEP
+    INTEGER :: I
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! If the first step is being printed then print to the report file.
+    IF ((CURRENT_STEP .EQ. 1) .AND. (MYID .EQ. 0)) THEN
+        !
+        WRITE(OUNITS(REPORT_U), '(25(A,1X))') &
+            & (TRIM(INPUT_STRING(I)),I = 1,SIZE(INPUT_STRING))
+        !
+    END IF
+    !
+    END SUBROUTINE WRITE_REPORT_FILE_OUTPUT_FILES
+    !
+    !===========================================================================
+    !
+    SUBROUTINE ADD_TO_OUTPUT_FILES(CURRENT_STEP, INPUT_STRING, &
+        &STRING_ARRAY)
+    !
+    ! This writes the file names of the user-defined output files from the 
+    ! simulation.config.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! INPUT_STRING: Character array denoting file name to print.
+    ! CURRENT_STEP: Current step at which we are printing information for.
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: INPUT_STRING
+    CHARACTER(LEN=16), INTENT(INOUT), ALLOCATABLE :: STRING_ARRAY(:)
+    INTEGER, INTENT(IN) :: CURRENT_STEP
+    !
+    CHARACTER(LEN=16), ALLOCATABLE :: TEMP_ARRAY(:)
+    INTEGER :: ARRAYSIZE, I
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! If the first step is being printed then print to the report file.
+    IF ((CURRENT_STEP .EQ. 1) .AND. (MYID .EQ. 0)) THEN
+        !
+        ! Append the INPUT_STRING to the present array and reallocate.
+        IF(ALLOCATED(STRING_ARRAY)) THEN
+            !
+            ARRAYSIZE = SIZE(STRING_ARRAY)
+            ALLOCATE(TEMP_ARRAY(ARRAYSIZE+1))
+            !
+            DO I = 1, ARRAYSIZE
+                !          
+                TEMP_ARRAY(I) = STRING_ARRAY(I)
+                !
+            END DO
+            !
+            TEMP_ARRAY(ARRAYSIZE+1) = INPUT_STRING
+            DEALLOCATE(STRING_ARRAY)
+            CALL MOVE_ALLOC(TEMP_ARRAY, STRING_ARRAY)
+            !
+        END IF
+        !
+    END IF
+    !
+    END SUBROUTINE ADD_TO_OUTPUT_FILES
+    !
+    !===========================================================================
+    !
+    SUBROUTINE WRITE_REPORT_FILE_COMPLETE_STEPS(FINAL_STEP)
+    !
+    ! This writes the completed number of steps from the driver as the current
+    ! simulation is either finishing successfully or terminated early.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! FINAL_STEP: Final completed step in this simulation
+    !
+    INTEGER, INTENT(IN) :: FINAL_STEP
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! If the first step is being printed then print to the report file.
+    IF (MYID .EQ. 0) THEN
+        !
+        WRITE(OUNITS(REPORT_U), '(A,I0)') 'number_of_steps ', &
+            & FINAL_STEP
+        !
+        CLOSE(OUNITS(REPORT_U))
+        !
+    END IF
+    !
+    END SUBROUTINE WRITE_REPORT_FILE_COMPLETE_STEPS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE WRITE_FORCE_FILE_HEADERS(DRIVER_TYPE)
+    !
+    ! This writes the file headers for surface force files. Consistent format 
+    ! across all drivers is maintained here. Assumes that the CALL is wrapped
+    ! in `IF (PRINT_OPTIONS%PRINT_FORCES) THEN` logic from where it is called.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! DRIVER_TYPE: Flag that denotes if the calling driver is uni- or triaxial
+    !   (1) = uniaxial, (2) = triaxial
+    !
+    INTEGER :: DRIVER_TYPE
+    !
+    ! Locals:
+    ! FORCE_HEADERU1/2: Headers for the uniaxial drivers
+    ! FORCE_HEADERT1/2: Headers for the triaxial drivers
+    !
+    CHARACTER(LEN=*), PARAMETER :: FORCE_HEADERU1 = &
+        &   '% step     INCR     Fx             Fy            &
+        & Fz             area A         TIME'
+    CHARACTER(LEN=*), PARAMETER :: FORCE_HEADERU2 = &
+        &   '% -------- -------- -------------- --------------&
+        & -------------- -------------- --------------'
+    !
+    CHARACTER(LEN=*), PARAMETER :: FORCE_HEADERT1 = &
+        &   '% step     incr     Fx             Fy            &
+        & Fz             area A         time           length'
+    CHARACTER(LEN=*), PARAMETER :: FORCE_HEADERT2 = &
+        &   '% -------- -------- -------------- --------------&
+        & -------------- -------------- -------------- -----------------'
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Check the input DRIVER_TYPE and print the correct headers
+    IF (DRIVER_TYPE .EQ. 1) THEN ! uniaxial
+        !
+        ! Print the headers to the files
+        WRITE(OUNITS(FORCE_U1),'(a)') FORCE_HEADERU1
+        WRITE(OUNITS(FORCE_U1),'(a)') FORCE_HEADERU2
+        WRITE(OUNITS(FORCE_U2),'(a)') FORCE_HEADERU1
+        WRITE(OUNITS(FORCE_U2),'(a)') FORCE_HEADERU2
+        WRITE(OUNITS(FORCE_U3),'(a)') FORCE_HEADERU1
+        WRITE(OUNITS(FORCE_U3),'(a)') FORCE_HEADERU2
+        WRITE(OUNITS(FORCE_U4),'(a)') FORCE_HEADERU1
+        WRITE(OUNITS(FORCE_U4),'(a)') FORCE_HEADERU2
+        WRITE(OUNITS(FORCE_U5),'(a)') FORCE_HEADERU1
+        WRITE(OUNITS(FORCE_U5),'(a)') FORCE_HEADERU2
+        WRITE(OUNITS(FORCE_U6),'(a)') FORCE_HEADERU1
+        WRITE(OUNITS(FORCE_U6),'(a)') FORCE_HEADERU2
+        !
+    ELSE IF (DRIVER_TYPE .EQ. 2) THEN ! triaxial
+        !
+        ! Print the headers to the files
+        WRITE(OUNITS(FORCE_U1),'(a)') FORCE_HEADERT1
+        WRITE(OUNITS(FORCE_U1),'(a)') FORCE_HEADERT2
+        WRITE(OUNITS(FORCE_U2),'(a)') FORCE_HEADERT1
+        WRITE(OUNITS(FORCE_U2),'(a)') FORCE_HEADERT2
+        WRITE(OUNITS(FORCE_U3),'(a)') FORCE_HEADERT1
+        WRITE(OUNITS(FORCE_U3),'(a)') FORCE_HEADERT2
+        WRITE(OUNITS(FORCE_U4),'(a)') FORCE_HEADERT1
+        WRITE(OUNITS(FORCE_U4),'(a)') FORCE_HEADERT2
+        WRITE(OUNITS(FORCE_U5),'(a)') FORCE_HEADERT1
+        WRITE(OUNITS(FORCE_U5),'(a)') FORCE_HEADERT2
+        WRITE(OUNITS(FORCE_U6),'(a)') FORCE_HEADERT1
+        WRITE(OUNITS(FORCE_U6),'(a)') FORCE_HEADERT2
+        !
+    END IF
+    !
+    END SUBROUTINE WRITE_FORCE_FILE_HEADERS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE WRITE_FORCE_FILE_DATA(DRIVER_TYPE, ISTEP, INCR, LOAD_ARRAY, &
+        & AREA, TIME, LENGTH)
+    !
+    ! This writes the actual data for surface force files. Consistent format 
+    ! across all drivers is maintained here. Assumes that the CALL is wrapped
+    ! in `IF (PRINT_OPTIONS%PRINT_FORCES) THEN` logic from where it is called.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! DRIVER_TYPE: Flag that denotes if the calling driver is uni- or triaxial
+    !   (1) = uniaxial, (2) = triaxial
+    ! ISTEP: Current timestep being printed
+    ! INCR: Current total increment being printed
+    ! LOAD_ARRAY: Contains the [X Y Z] loads on all surfaces
+    ! AREA: Current surface face areas bring printed
+    ! TIME: Current time value being printed
+    ! LENGTH: Current length of the mesh edges (triaxial only)
+    !
+    INTEGER :: DRIVER_TYPE
+    INTEGER :: ISTEP
+    INTEGER :: INCR
+    REAL(RK) :: LOAD_ARRAY(:,:)
+    REAL(RK) :: AREA(:)
+    REAL(RK) :: TIME
+    REAL(RK) :: LENGTH(:)
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Check the input DRIVER_TYPE and print the correct headers
+    IF (DRIVER_TYPE .EQ. 1) THEN ! uniaxial
+        !
+        ! Print the data to the files
+        WRITE(OUNITS(FORCE_U1), '(2(I8),5(E15.5))') ISTEP, INCR, &
+            & LOAD_ARRAY(1,:), AREA(1), TIME
+        WRITE(OUNITS(FORCE_U2), '(2(I8),5(E15.5))') ISTEP, INCR, &
+            & LOAD_ARRAY(2,:), AREA(2), TIME
+        WRITE(OUNITS(FORCE_U3), '(2(I8),5(E15.5))') ISTEP, INCR, &
+            & LOAD_ARRAY(3,:), AREA(3), TIME
+        WRITE(OUNITS(FORCE_U4), '(2(I8),5(E15.5))') ISTEP, INCR, &
+            & LOAD_ARRAY(4,:), AREA(4), TIME
+        WRITE(OUNITS(FORCE_U5), '(2(I8),5(E15.5))') ISTEP, INCR, &
+            & LOAD_ARRAY(5,:), AREA(5), TIME
+        WRITE(OUNITS(FORCE_U6), '(2(I8),5(E15.5))') ISTEP, INCR, &
+            & LOAD_ARRAY(6,:), AREA(6), TIME
+        !
+    ELSE IF (DRIVER_TYPE .EQ. 2) THEN ! triaxial
+        !
+        ! Print the data to the files
+        WRITE(OUNITS(FORCE_U1), '(2(I8),5(E15.5),E18.8)') ISTEP, INCR, & 
+            & LOAD_ARRAY(1,:), AREA(1), TIME, LENGTH(1)
+        WRITE(OUNITS(FORCE_U2), '(2(I8),5(E15.5),E18.8)') ISTEP, INCR, &
+            & LOAD_ARRAY(2,:), AREA(2), TIME, LENGTH(1)
+        WRITE(OUNITS(FORCE_U3), '(2(I8),5(E15.5),E18.8)') ISTEP, INCR, &
+            & LOAD_ARRAY(3,:), AREA(3), TIME, LENGTH(2)
+        WRITE(OUNITS(FORCE_U4), '(2(I8),5(E15.5),E18.8)') ISTEP, INCR, &
+            & LOAD_ARRAY(4,:), AREA(4), TIME, LENGTH(2)
+        WRITE(OUNITS(FORCE_U5), '(2(I8),5(E15.5),E18.8)') ISTEP, INCR, &
+            & LOAD_ARRAY(5,:), AREA(5), TIME, LENGTH(3)
+        WRITE(OUNITS(FORCE_U6), '(2(I8),5(E15.5),E18.8)') ISTEP, INCR, &
+            & LOAD_ARRAY(6,:), AREA(6), TIME, LENGTH(3)
+        !
+    END IF
+    !
+    END SUBROUTINE WRITE_FORCE_FILE_DATA
+    !
+    !===========================================================================
+    !
+    SUBROUTINE WRITE_CONV_FILE_HEADERS()
+    !
+    ! This writes the file headers for convergence report. Consistent format 
+    ! across all drivers is maintained here. Assumes that the CALL is wrapped
+    ! in `IF (PRINT_OPTIONS%PRINT_CONV) THEN` logic from where it is called.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Print the headers
+    WRITE(OUNITS(CONV_U),'(a)') '%   INCR     iter       NR     r_norm&
+        &        rx_norm       f_norm        delu_norm     delux_norm&
+        &    u_norm      cg_iter'
+    !
+    END SUBROUTINE WRITE_CONV_FILE_HEADERS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE WRITE_CONV_FILE_DATA(INCR, ITER, ITMETHOD, R_NORM, RX_NORM, &
+        & F_NORM, DELU_NORM, DELUX_NORM, U_NORM, CG_ITER_OUT)
+    !
+    ! This writes the file data for convergence report. This is only called
+    ! from the ITMETHOD_EVPS subroutine. Assumes that the CALL is wrapped in
+    ! `IF (PRINT_OPTIONS%PRINT_CONV) THEN` logic from where it is called.
+    !
+    ! Arguments:
+    ! INCR: Current total increment value
+    ! ITER: Current iteration within step
+    ! ITMETHOD: Flag denoting successive approx. (0) or newton-raphson (1) 
+    ! R_NORM: Residual norm -> sqrt(sum(resid * resid))
+    ! RX_NORM: Maximal absolute residual -> maxval(abs(resid))
+    ! F_NORM: Force norm -> sqrt(sum(force * force))
+    ! DELU_NORM: Change in velocity norm -> sqrt(sum(delta_vel * delta_vel))
+    ! DELUX_NORM: Maximal absolute change in velocity -> maxval(abs(delta_vel))
+    ! U_NORM: Velocity norm -> sqrt(sum(vel_o * vel_o))
+    ! CG_ITER_OUT: Number of conjugate-gradient (CG) iterations for this INCR
+    !
+    INTEGER  :: INCR, ITER, ITMETHOD, CG_ITER_OUT
+    REAL(RK) :: R_NORM, RX_NORM, F_NORM, DELU_NORM, DELUX_NORM, U_NORM
+    !---------------------------------------------------------------------------
+    !
+    ! Print the data to the files
+    WRITE(OUNITS(CONV_U),'(I8,1X,I8,1X,I8,1X,6D14.4,1X,I8)') INCR, ITER, &
+        & ITMETHOD, R_NORM, RX_NORM, F_NORM, DELU_NORM, DELUX_NORM, U_NORM, &
+        & CG_ITER_OUT
+    !
+    END SUBROUTINE WRITE_CONV_FILE_DATA
+    !
+    !===========================================================================
+    !
+    SUBROUTINE WRITE_UNIAXIAL_RESTART(INCR, TIME, LOAD, PREV_LOAD, AREA, &
+        & AREA0, CURRENT_STEP, PREVIOUS_LOAD, STEP_COMPLETE, DTIME_OLD)
+    !
+    ! WRITE uniaxial control restart information.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! INCR: Current step increment (additive).
+    ! TIME: Current step total time.
+    ! LOAD: Current load on all surfaces in the mesh.
+    ! PREV_LOAD: Previous step load value.
+    ! AREA/AREA0: Current and initial surface areas of the mesh at current step.
+    !
+    INTEGER,  INTENT(IN) :: INCR
+    REAL(RK), INTENT(IN) :: TIME
+    REAL(RK), INTENT(IN) :: LOAD(NSURFACES,3)
+    REAL(RK), INTENT(IN) :: PREV_LOAD
+    REAL(RK), INTENT(IN) :: AREA(NSURFACES), AREA0(NSURFACES)
+    INTEGER,  INTENT(IN) :: CURRENT_STEP
+    REAL(RK), INTENT(IN) :: PREVIOUS_LOAD(:)
+    LOGICAL,  INTENT(IN) :: STEP_COMPLETE
+    REAL(RK), INTENT(IN) :: DTIME_OLD
+    !
+    ! Locals:
+    ! MYUNIT: Current unit number to open restart file.
+    ! ISURF: Generic loop index to loop over mesh surfaces.
+    !
+    INTEGER :: MYUNIT
+    INTEGER :: ISURF
+    !
+    !---------------------------------------------------------------------------
+    !
+    IF (MYID .EQ. 0) THEN
+        !
+        MYUNIT = NEWUNITNUMBER()
+        !
+        OPEN(UNIT=MYUNIT, FILE=TRIM(OPTIONS%RSCTRL_OUT),&
+            & FORM='UNFORMATTED', ACTION='WRITE')
+        !
+        WRITE(MYUNIT) CURRENT_STEP
+        WRITE(MYUNIT) PREVIOUS_LOAD
+        WRITE(MYUNIT) STEP_COMPLETE
+        WRITE(MYUNIT) DTIME_OLD
+        WRITE(MYUNIT) INCR
+        WRITE(MYUNIT) TIME
+        !
+        DO ISURF = 1, NSURFACES
+            !
+            WRITE(MYUNIT) LOAD(ISURF,:)
+            !
+        ENDDO
+        !    
+        WRITE(MYUNIT) PREV_LOAD
+        WRITE(MYUNIT) AREA
+        WRITE(MYUNIT) AREA0
+        !
+        CLOSE(MYUNIT)
+        !
+    ENDIF
+    !
+    RETURN
+    !
+    END SUBROUTINE WRITE_UNIAXIAL_RESTART
+    !
+    !===========================================================================
+    !
+    SUBROUTINE WRITE_TRIAXCSR_RESTART(ISTEP,CURR_LOAD,PREV_LOAD,STEP_COMPLETE, &
+        & DTIME,INCR,TIME,SURF_LOAD_ARRAY,AREA,AREA0,LENGTH,LENGTH0,CURR_VEL, &
+        & S_PERT_MAG, T_PERT_MAG)
+    !
+    ! Write uniaxial control restart information.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! Needs to be defined - JC
+    !
+    LOGICAL, INTENT(IN)  :: STEP_COMPLETE
+    INTEGER, INTENT(IN)  :: ISTEP
+    INTEGER, INTENT(IN)  :: INCR
+    REAL(RK), INTENT(IN) :: CURR_LOAD(3), PREV_LOAD(3)  
+    REAL(RK), INTENT(IN) :: DTIME, TIME    
+    REAL(RK), INTENT(IN) :: SURF_LOAD_ARRAY(NSURFACES,3)
+    REAL(RK), INTENT(IN) :: AREA(NSURFACES), AREA0(NSURFACES)
+    REAL(RK), INTENT(IN) :: LENGTH(3), LENGTH0(3)
+    REAL(RK), INTENT(IN) :: CURR_VEL(3)
+    REAL(RK), INTENT(IN) :: S_PERT_MAG, T_PERT_MAG
+    !
+    ! Locals:
+    ! MYUNIT: Current unit number to open restart file.
+    ! ISURF: Generic loop index to loop over mesh surfaces.
+    !
+    INTEGER :: MYUNIT
+    INTEGER :: ISURF
+    !
+    !---------------------------------------------------------------------------
+    !
+    IF (MYID .EQ. 0) THEN
+        !
+        MYUNIT = NEWUNITNUMBER()
+        !       
+        OPEN(UNIT=MYUNIT, FILE=TRIM(OPTIONS%RSCTRL_OUT), &
+            & FORM='UNFORMATTED', ACTION='WRITE')
+        !
+        WRITE(MYUNIT) ISTEP
+        WRITE(MYUNIT) CURR_LOAD
+        WRITE(MYUNIT) PREV_LOAD
+        WRITE(MYUNIT) STEP_COMPLETE
+        WRITE(MYUNIT) DTIME
+        WRITE(MYUNIT) INCR
+        WRITE(MYUNIT) TIME
+        !
+        DO ISURF = 1, NSURFACES
+            !        
+            WRITE(MYUNIT) SURF_LOAD_ARRAY(ISURF,:)
+            !
+        ENDDO
+        !
+        WRITE(MYUNIT) AREA
+        WRITE(MYUNIT) AREA0
+        WRITE(MYUNIT) LENGTH
+        WRITE(MYUNIT) LENGTH0
+        WRITE(MYUNIT) CURR_VEL
+        WRITE(MYUNIT) S_PERT_MAG
+        WRITE(MYUNIT) T_PERT_MAG
+        !
+        CLOSE(MYUNIT)
+        !    
+    ENDIF
+    !
+    RETURN
+    !
+    END SUBROUTINE WRITE_TRIAXCSR_RESTART
+    !
+    !===========================================================================
+    !
+    SUBROUTINE WRITE_TRIAXCLR_RESTART(ISTEP, CURR_LOAD, PREV_LOAD, &
+        & FIRST_INCR_IN_STEP, INCR, TIME, SURF_LOAD_ARRAY, AREA, AREA0, &
+        & LENGTH, LENGTH0, CURR_VEL, PREV_ACTION, CURR_ACTION, &
+        & INITIAL_LOAD_DWELL_VEL, INITIAL_UNLOAD_DWELL_VEL)
+    !
+    !  Write TriaxCLR restart information.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    !
+    LOGICAL, INTENT(IN) :: FIRST_INCR_IN_STEP
+    INTEGER, INTENT(IN) :: ISTEP
+    INTEGER, INTENT(IN) :: INCR
+    INTEGER, INTENT(IN) :: PREV_ACTION, CURR_ACTION
+    REAL(RK), INTENT(IN) :: CURR_LOAD(3)
+    REAL(RK), INTENT(IN) :: PREV_LOAD(3)
+    REAL(RK), INTENT(IN) :: TIME
+    REAL(RK), INTENT(IN) :: SURF_LOAD_ARRAY(NSURFACES,3)
+    REAL(RK), INTENT(IN) :: AREA(NSURFACES)
+    REAL(RK), INTENT(IN) :: AREA0(NSURFACES)
+    REAL(RK), INTENT(IN) :: LENGTH(3), LENGTH0(3)
+    REAL(RK), INTENT(IN) :: CURR_VEL(3)
+    REAL(RK), INTENT(IN) :: INITIAL_LOAD_DWELL_VEL(3)
+    REAL(RK), INTENT(IN) :: INITIAL_UNLOAD_DWELL_VEL(3)
+    !
+    ! Locals:
+    !
+    INTEGER :: MYUNIT
+    INTEGER :: ISURF
+    !
+    !---------------------------------------------------------------------------
+    !
+    IF (MYID .EQ. 0) THEN
+        !
+        MYUNIT = NEWUNITNUMBER()
+        OPEN(UNIT = MYUNIT, FILE = TRIM(OPTIONS%RSCTRL_OUT), &
+            & FORM = 'UNFORMATTED', ACTION = 'WRITE')
+        !
+        WRITE(MYUNIT) ISTEP
+        WRITE(MYUNIT) CURR_LOAD
+        WRITE(MYUNIT) PREV_LOAD
+        WRITE(MYUNIT) FIRST_INCR_IN_STEP
+        WRITE(MYUNIT) INCR
+        WRITE(MYUNIT) TIME
+        !
+        DO ISURF = 1,NSURFACES
+            !
+            WRITE(MYUNIT) SURF_LOAD_ARRAY(ISURF, :)
+            !
+        ENDDO
+        WRITE(MYUNIT) AREA
+        WRITE(MYUNIT) AREA0
+        WRITE(MYUNIT) LENGTH
+        WRITE(MYUNIT) LENGTH0
+        WRITE(MYUNIT) CURR_VEL
+        WRITE(MYUNIT) PREV_ACTION
+        WRITE(MYUNIT) CURR_ACTION
+        WRITE(MYUNIT) INITIAL_LOAD_DWELL_VEL
+        WRITE(MYUNIT) INITIAL_UNLOAD_DWELL_VEL
+        !
+        CLOSE(MYUNIT)
+        !
+    ENDIF
+    !
+    RETURN
+    !
+    END SUBROUTINE WRITE_TRIAXCLR_RESTART
+    !
+END MODULE WRITE_OUTPUT_MOD
