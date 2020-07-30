@@ -1,0 +1,33 @@
+*.o
+*.a
+*.mod
+*.x
+*~
+*.x.dSYM
+*.cp* 
+*.fn* 
+*.ky* 
+*.pg* 
+*.tp* 
+*.vr* 
+*.mv*
+*.dvi
+*.info
+
+/lib/libf95/modules
+/lib/libparallel/modules_serial
+/lib/libparallel/modules_parallel
+/src/build/
+
+# Ignore AppleDouble files and Mac .DS_Store files
+._*
+.DS_Store
+
+# Ignore LaTeX auxilliary files
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.toc
+
+fepx.pdf

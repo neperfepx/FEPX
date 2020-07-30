@@ -1,0 +1,169 @@
+@c This file is part of the FEPX software package.
+@c Copyright (C) 1996-2020 ACME Lab
+@c See the COPYING file in the top-level directory.
+
+@node References
+@appendix References
+
+@enumerate
+
+@item @c [mar_daw_98a 1]
+E. B. Marin and P. R. Dawson.
+On modeling the elasto-viscoplastic response of metals using polycrystal plasticity. 
+@cite{Computer Methods in Applied Mechanics and Engineering}, 
+165:1-21, 
+1998.
+
+@item @c [mar_daw_98b 2]
+E. B. Marin and P. R. Dawson.
+Elastoplastic finite element analysis of metal deformations using polycrystal constititive models.
+@cite{Computer Methods in Applied Mechanics and Engineering},
+165:23-41,
+1998.
+
+@item @c [bea_daw_mat_koc_95 3]
+A. J. Beaudoin, P. R. Dawson, K. K. Mathur, and U. F. Kocks.
+A hybrid finite element formulation for polycrystal plasticity with consideration of macrostructural and microstructural linking.
+@cite{International Journal of Plasticity},
+11:501-521,
+1995.
+
+@item @c [mik_daw_99 4]
+D. P. Mika and P. R. Dawson.
+Polycrystal Plasticity Modeling of Intracrystalline Boundary Textures.
+@cite{Acta Materialia},
+47(4):1355-1369, 
+1999.
+
+@item @c [egg_daw_88 5]
+G. M. Eggert and P. R. Dawson.
+A viscoplastic formulation with elasticity for transient metal forming.
+@cite{Computer Methods in Applied Mechanics and Engineering},
+70:165-190,
+1988.
+
+@item @c [bar_daw_mil_99 6]
+N. R. Barton, P. R. Dawson, and M. P. Miller.
+Yield strength asymmetry predictions from polycrystal plasticity.
+@cite{Journal of Engineering Materials and Technology},
+121:230-239, 
+1999.
+
+@item @c [daw_mar_98p 7]
+P. R. Dawson and E. B. Marin.
+Computational mechanics for metal deformation processes using polycrystal plasticity.
+In Erik van der Giessen and Theodore Y. Wu, editors,
+@cite{Advances in Applied Mechanics},
+34:78-169.
+Academic Press,
+1998.
+
+@item @c [mat_daw_89 8]
+K. K. Mathur and P. R. Dawson.
+On modeling the development of crystallographic texture in bulk forming processes.
+@cite{International Journal of Plasticity},
+5:67-94,
+1989.
+
+@item @c [mat_daw_90 9]
+K. K. Mathur and P. R. Dawson.
+Texture development during wire drawing.
+@cite{Journal of Engineering Materials and Technology},
+112(3):292-297,
+1990.
+
+@item @c [kum_daw_95 10]
+A. Kumar and P. R. Dawson.
+Polycrystal plasticity modeling of bulk forming with finite elements over orientation space.
+@cite{Computational Mechanics},
+17:10-25,
+1995.
+
+@item @c [daw_wen_00 11]
+P. R. Dawson and H.-R. Wenk.
+Texturing the upper mantle during convection.
+@cite{Philosophical Magazine A},
+80(3):573-598, 
+2000. 
+
+@item @c [mathur_numiform95 12]
+K. K. Mathur.
+Parallel algorithms for large scale simulations in materials processing.
+In S. F. Shen and P. R. Dawson, editors,
+@cite{Simulation of Materials Processing: Theory, Methods and Applications – NUMIFORM
+95},
+109-114.
+A. A. Balkema,
+1995.
+
+@item @c [bea_mat_daw_joh_93 13]
+A. J. Beaudoin, K. K. Mathur, P. R. Dawson, and G.C. Johnson.
+Three-dimensional deformation process simulation with explicit use of polycrystalline plasticity models.
+@cite{International Journal of Plasticity},
+9:833-860,
+1993.
+
+@item @c [bea_daw_mat_koc_kor_94 14]
+A. J. Beaudoin, P. R. Dawson, K. K. Mathur, U. F. Kocks, and D. A. Korzekwa.
+Application of polycrystal plasticity to sheet forming.
+@cite{Computer Methods in Applied Mechanics and Engineering},
+117:49-70,
+1994.
+
+@item @c [rit_daw_09 15]
+H. Ritz and P. R. Dawson.
+Sensitivity to grain discretization of the simulated crystal stress distributions in fcc polycrystals.
+@cite{Modeling and Simulation in Materials Science and Engineering},
+17:1-21,
+2009.       
+
+@item @c [que_daw_bar_11 16]
+R. Quey, P. R. Dawson, and F. Barbe.
+Large-scale 3-D random polycrystals for the finite element method: generation meshing and remeshing.
+@cite{Computer Methods in Applied Mechanics and Engineering},
+200:1729-1745,
+2011.    
+
+@item @c [daw_boy_15a 17]
+P. R. Dawson and D. E. Boyce.
+FEpX – Finite Element Polycrystals: Theory, finite element formulation,
+numerical implementation and illustrative examples.
+@var{arXiv:1504.03296 [cond-mat.mtrl-sci]},
+2015.
+
+@item @c [ger_daw_08b 18]
+J. M. Gerken and P. R. Dawson.
+A finite element formulation to solve a non-local constitutive model with stresses and strains due to slip gradients.
+@cite{Computer Methods in Applied Mechanics and Engineering},
+197:1343-1361,
+2008.
+
+@item @c [car_daw_jmps_2019 19]
+R. A. Carson and P. R. Dawson.
+Formulation and Characterization of a Continuous Crystal Lattice Orientation Finite Element Method (LOFEM) and its Application to Dislocation Fields.  
+@cite{Journal of the Physics and Mechanics of Solids},
+126:1-26,
+2019. 	
+
+@item @c [kas_daw_cmame_2020 20]
+M. P. Kasemer and P. R. Dawson.
+A finite element methodology to incorporate kinematic activation of discrete deformation twins in a crystal plasticity framework.
+@cite{Computer Methods in Applied Mechanics and Engineering},
+358:112653,
+2020. 
+
+@item @c [car_daw_17 21]
+R. Carson, M. Obstalecki, M. Miller, and P. R. Dawson.
+Characterizing heterogeneous intragranular deformations in polycrystalline solids using diffraction-based and mechanics-based metrics.
+@cite{Modelling and Simulation in Materials Science and Engineering},
+25:055008,
+2017. 
+
+@item @c [turk_daw_04 22]
+H. S. Turkmen, M. P. Miller, P. R. Dawson, and J. C. Moosbrugger.
+A slip-based model for strength evolution during cyclic loading.
+@cite{Journal of Engineering Materials and Technology},
+126(4):329-338,
+2004.
+
+@end enumerate

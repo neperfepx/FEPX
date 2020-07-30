@@ -1,0 +1,392 @@
+@c This file is part of the FEPX software package.
+@c Copyright (C) 1996-2020 ACME Lab
+@c See the COPYING file in the top-level directory.
+
+@node Example Simulations
+@chapter Example Simulations
+
+Several example simulations come pre-packaged to get you started with running simulations.
+@c These simulations are small -- they are meant to be easily distributed and quickly performed on a modern laptop computer. Much larger meshes (many more grains, or finer microstructural features) are able to be simulated given more robust computational power -- either a computational workstation or a computational cluster.
+@c
+These examples are reference cases to show how a simulation should be built and how FEPX can interface with Neper in order to prepare mesh files as well as post-process a simulation directory. All examples contain the necessary configuration (@file{simulation.config}) and mesh (@file{simulation.msh})  files, along with a shell script to generate the mesh file directly from Neper. In order to run the provided shell scripts, you must have a configured installation of Neper present on your system.
+@c
+In the following, visualizations of the undeformed and deformed mesh are generated with Neper while graphs are generated with Gnuplot.
+
+All examples can be run either in serial or parallel (@pxref{Running a Simulation}), but the included scripts are preset to run in parallel on 2 cores, and parallel execution with OpenMPI via @code{mpirun} is assumed in the provided scripts. @c If your local system does not utilize OpenMPI or @code{mpirun}, an alternative MPI command will be necessary for parallel execution.
+
+A polycrystal containing 100 grains is generated via centroidal tessellation, for all examples. Each cell in the tessellation represents a discrete grain in the domain and all grains are volumetrically discretized into finite elements. Visualizations of the tessellated domain (morphology) and the associated finite element mesh are in @ref{mesh}.
+@c Embedded orientations in the @file{simulation.msh} file are defined in the active Rodrigues' convention, but this may be changed at will.
+Length units are assumed to be [mm], thus, all pressure units assumed to be [MPa] for the simulation (including input parameters).
+
+@float Figure,mesh
+@center @image{images/0_all,, 2.5in}
+@caption{(left) 100-grain polycrystal used in all examples, colored by grain id, and (right) its finite element mesh.}
+@end float
+
+@node Example Uniaxial
+@section Uniaxial Control (@file{examples/1_uniaxial})
+
+This example covers the uniaxial tensile deformation of an FCC polycrystal by strain targeting to 2% axial strain.  Material parameters are generic, being similar to a copper alloy, and are provided in @ref{uniaxial-elasticity} and @ref{uniaxial-plasticity}. Four steps are defined with 2 increments prescribed for each step. Grip boundary conditions are applied to the sample with the primary loading face set as @samp{z1} loaded in the @var{+Z} direction. Elemental stress and strain variables are output along with surface-integrated forces.  Illustrations of the stress and strain fields are provided in @ref{uniaxial}.
+
+@c Post-processed results are stored in @code{examples/1_uniaxial.sim} after running the @code{runexample.sh} script.
+
+@float Table,uniaxial-elasticity
+@caption{Single crystal elastic constants.}
+@multitable @columnfractions .2 .2 .2 .2 .2
+@headitem Phase
+@tab Type
+@tab @math{C_{11}}
+@tab @math{C_{12}}
+@tab @math{C_{44}}
+
+@item @math{\alpha}
+@tab FCC
+@tab @math{245.0 @times 10^3}
+@tab @math{155.0 @times 10^3}
+@tab @math{62.50 @times 10^3}
+@end multitable
+@end float
+
+@float Table,uniaxial-plasticity
+@caption{Initial slip system strengths and other plasticity parameters}
+@multitable @columnfractions .13 .10 .10 .10 .10 .10 .13 .13 .10
+@headitem Phase
+@tab @math{m}
+@tab @math{\dot\gamma_{0}}
+@tab @math{h_{0}}
+@tab @math{g_{0}}
+@tab @math{g_{s0}}
+@tab @math{m'}
+@tab @math{\dot\gamma_{s}}
+@tab @math{n'}
+
+@item @math{\alpha}
+@tab 0.05
+@tab 1.0
+@tab 200.0
+@tab 210.0
+@tab 330.0
+@tab @math{5.0 @times 10^{-3}}
+@tab @math{5.0 @times 10^{10}}
+@tab 1.0
+
+@end multitable
+@end float
+
+@float Figure,uniaxial
+@caption{Deformed sample at 2% axial strain (deformation field is exaggerated 10x for illustrative purposes), colored by (left) elastic strain (@math{\epsilon_{33}}) and (right) stress (@math{\sigma_{33}}).}
+@center @image{images/1_all,6.25in}
+@end float
+
+@float Figure,uniaxial-res
+@center @image{images/1_stressstrain,, 2.25in}
+@caption{Macroscopic stress-strain curve for the uniaxial tensile test recovered from post-processing the surface-integrated forces in @option{post.force.z1}. Markers denote values output at each increment.}
+@end float
+
+@node Example TriaxCSR
+@section Multiaxial Control with Constant Strain Rate (@file{examples/2_triaxCSR})
+
+This example covers the biaxial deformation of an HCP polycrystal at a constant strain rate followed by unloading. Loads are proportionally applied in the principal stress space as @math{-1}:0:1 for @math{\sigma_{1}}:@math{\sigma_{2}}:@math{\sigma_{3}}, respectively. Strict load tolerance options are prescribed and latent hardening is enabled. The primary loading direction is set to be coincident with the compressive stress direction or @var{X}, and a strain rate jump is applied on the third step, doubling the prescribed strain rate. Elemental equivalent plastic strain and plastic work are output along with surface-integrated forces. Material parameters are calibrated for the @math{\alpha}-phase of Ti-6Al-4V and are provided in @ref{multiaxial-strain-elasticity}, @ref{multiaxial-strain-plasticity-initial} and @ref{multiaxial-strain-plasticity-relative}. The latent parameters are input values to the hardening interaction matrix and the number of values changes depending on the crystal symmetry [@value{car_daw_17}].
+Illustrations of the results are provided in @ref{multiaxial-strain} and @ref{multiaxial-strain2}.
+
+@c Post-processed results are stored in @code{examples/2_triaxCSR.sim} after running the @code{runexample.sh} script. @c Visualizations of the undeformed and deformed mesh are generated with Neper's @samp{-V} module and the strain-time curves are generated with gnuplot @url{http://www.gnuplot.info/}.
+
+@float Table,multiaxial-strain-elasticity
+@caption{Single crystal elastic constants}
+@multitable @columnfractions .166 .166 .166 .166 .166 .166
+@headitem Phase
+@tab Type
+@tab @math{C_{11}}
+@tab @math{C_{12}}
+@tab @math{C_{13}}
+@tab @math{C_{44}}
+
+@item @math{\alpha}
+@tab HCP
+@tab @math{1.6966 @times 10^5}
+@tab @math{0.8866 @times 10^5}
+@tab @math{0.6166 @times 10^5}
+@tab @math{0.4250 @times 10^5}
+
+@end multitable
+@end float
+
+@float Table,multiaxial-strain-plasticity-initial
+@caption{Initial slip system strengths and other plasticity parameters}
+@multitable @columnfractions .13 .10 .10 .10 .10 .10 .13 .13 .10
+@headitem Phase
+@tab @math{m}
+@tab @math{\dot\gamma_{0}}
+@tab @math{h_{0}}
+@tab @math{g_{0}}
+@tab @math{g_{s0}}
+@tab @math{m'}
+@tab @math{\dot\gamma_{s}}
+@tab @math{n'}
+
+@item @math{\alpha}
+@tab 0.05
+@tab 1.0
+@tab 200.0
+@tab 210.0
+@tab 330.0
+@tab @math{5.0 @times 10^{-3}}
+@tab @math{5.0 @times 10^{10}}
+@tab 1.0
+
+@end multitable
+@end float
+
+@float Table,multiaxial-strain-plasticity-relative
+@caption{Relative slip system strengths and hardening parameters}
+@multitable @columnfractions .166 .166 .166 .166 .166 .166
+@headitem Phase
+@tab @math{c/a}
+@tab @math{prism/basal}
+@tab @math{pyram/basal}
+@tab @math{diag}
+@tab @math{h1}--@math{h7}
+
+@item @math{\alpha}
+@tab 1.587
+@tab 1.2
+@tab 1.7
+@tab 1.0
+@tab 1.4
+
+@end multitable
+@end float
+
+@float Figure,multiaxial-strain
+@center @image{images/2_all,6.25in}
+@caption{Deformed sample at prior to elastic unloading (deformation field is exaggerated 10x for illustrative purposes), colored by (left) plastic work (@math{W^{p}}) and (right) equivalent plastic strain (@math{\bar\epsilon^{P}}). Note that, unlike the deformed sample in @ref{uniaxial}, a multiaxial simulation will maintain the orthogonal, planar surfaces throughout the simulation.}
+@end float
+
+@float Figure,multiaxial-strain2
+@center @image{images/2_normalstraintime,, 3.5in}
+@caption{Macroscopic normal strain-time evolution over the prescribed biaxial deformation history. Note the rate increase at approximately 40 seconds corresponding to the strain-rate jump defined for step 3. This new strain rate will be maintained until the end of the simulation unless it is modified by an additional strain-rate jump definition.}
+@end float
+
+@node Example TriaxCLR
+@section Multiaxial Control with Constant Load Rate (@file{examples/3_triaxCLR})
+
+This example covers the triaxial deformation of a dual phase FCC/BCC polycrystal (shown on @ref{multiaxial-load}(left)) at a constant load rate followed by a dwell episode and subsequent unloading. Loads are proportionally applied in the principal stress space as @math{-0.375}:@math{-0.625}:1 for @math{\sigma_{1}}:@math{\sigma_{2}}:@math{\sigma_{3}}, respectively. Loose load tolerance options are prescribed, and cyclic hardening is enabled with generic values. The primary loading direction is set to be coincident with the tensile stress direction or @var{Z}, and a dwell episode is initiated on the third step for 500 seconds. Elemental critical resolved shear stresses and equivalent strains are output along with surface-integrated forces. Material parameters are calibrated for the austenitic (@math{\gamma}) and ferritic (@math{\alpha}) phases of an LDX-2101 steel and are provided in @ref{multiaxial-load-elasticity}, @ref{multiaxial-load-plasticity} and @ref{multiaxial-load-cyclic}. The cyclic parameters are typically calibrated from multi-step experimental data as outlined in Turkmen @emph{et al.} [@value{turk_daw_04}].
+Illustrations of the results are provided in @ref{multiaxial-load} and @ref{multiaxial-load2}.
+
+@float Table,multiaxial-load-elasticity
+@caption{Single crystal elastic constants}
+@multitable @columnfractions .2 .2 .2 .2 .2
+@headitem Phase
+@tab Type
+@tab @math{C_{11}}
+@tab @math{C_{12}}
+@tab @math{C_{44}}
+
+@item @math{\gamma}
+@tab FCC
+@tab @math{204.6 @times 10^3}
+@tab @math{137.7 @times 10^3}
+@tab @math{126.2 @times 10^3}
+
+@item @math{\alpha}
+@tab BCC
+@tab @math{236.9 @times 10^3}
+@tab @math{140.6 @times 10^3}
+@tab @math{116.0 @times 10^3}
+
+@end multitable
+@end float
+
+@float Table,multiaxial-load-plasticity
+@caption{Initial slip system strengths and other plasticity parameters}
+@multitable @columnfractions .13 .10 .10 .10 .10 .10 .13 .13 .10
+@headitem Phase
+@tab @math{m}
+@tab @math{\dot\gamma_{0}}
+@tab @math{h_{0}}
+@tab @math{g_{0}}
+@tab @math{g_{s0}}
+@tab @math{m'}
+@tab @math{\dot\gamma_{s}}
+@tab @math{n'}
+
+@item @math{\gamma / \alpha}
+@tab 0.02
+@tab 1.0
+@tab 391.9
+@tab 237.0
+@tab 335.0
+@tab 0.0
+@tab @math{5.0 @times 10^{10}}
+@tab 1.0
+
+@end multitable
+@end float
+
+@float Table,multiaxial-load-cyclic
+@caption{Cyclic hardening parameters}
+@multitable @columnfractions .166 .166 .166 .166 .166 .166
+@headitem Phase
+@tab @math{a}
+@tab @math{c}
+
+@item @math{\gamma/\alpha}
+@tab 0.05
+@tab 3.50
+
+@end multitable
+@end float
+
+@c Post-processed results are stored in @code{examples/3_triaxCLR.sim} after running the @code{runexample.sh} script. @c Visualizations of the undeformed and deformed mesh are generated with Neper's @samp{-V} module and the strain-time curves are generated with gnuplot @url{http://www.gnuplot.info/}.
+
+@float Figure,multiaxial-load
+@image{images/3_all,6.25in}
+@caption{(left) Grain and phase assignment distribution in the virtual sample. Red-colored grains are @math{\gamma}-phase and green-colored grains are @math{\alpha}-phase. (right) Elastically unloaded sample colored by critical resolved shear stress.}
+@end float
+
+@float Figure,multiaxial-load2
+@center @image{images/3_all2,6.25in}
+@caption{(left) Macroscopic normal stress-time evolution over the prescribed triaxial deformation history, and (right) macroscopic stress-strain curve defined by the @var{Z} surface. Note that the load rate in the @var{Z} direction is always held constant during the simulation (except under dwell) while the other two are automatically modified to maintain load proportionality in throughout the simulation.}
+@end float
+
+@node Example Restart
+@section Restarting a Simulation with Appended Load Steps (@file{examples/4_restart})
+
+A typical use case for the restart capabilities are to append additional loading steps to a completed simulation or to add additional loading cycles to a deformed sample. This example covers the triaxial deformation of an FCC polycrystal at a constant strain rate followed by unloading. Loads are proportionally applied in the principal stress space as 0:0:1 for @math{\sigma_{1}}:@math{\sigma_{2}}:@math{\sigma_{3}}, respectively. Strict load tolerance options are prescribed, and @samp{restart} is enabled in the second cycle directory. The primary loading direction is set to be coincident with the tensile stress direction @w{or @var{Z}}. Elemental equivalent plastic deformation rate, slip system shears, slip system shear rates, nodal coordinates, and restart files are output. Restart files are only printed on the first cycle. Material parameters are calibrated for a AL6XN steel and are provided in @ref{restart-elasticity} and @ref{restart-plasticity}.  Illustrations of the results are provided in @ref{restart}.
+
+The included shell script will run the initial simulation in @file{examples/cycle1} which outputs restart data files and runs 4 load steps. After successful completion of the first cycle, the mesh file and restart files are copied into the secondary directory (@file{examples/cycle2}) and the simulation is run again for another 4 load steps. The configuration file (@file{simulation.config}) in @file{examples/cycle2} contains the following input to allow for appending load steps:
+
+@inputfilehead
+@example
+@option{restart}
+@option{rsctrl_in} @var{cycle1.control}
+@option{rsfield_base_in} @var{cycle1.field}
+@end example
+@inputfilefoot
+
+along with the additional load steps in the @samp{Deformation History} section. The restarted simulation will continue on step 5 or the fifth entry of @samp{target_csr_load}. Restart control information will print to the console upon the execution of the second cycle:
+
+@inputfilehead
+@example
+@option{...}
+@option{Info   : Reading restart control information...}
+@option{Info   :   - Restart parameters:}
+@option{Info   :     > Current  step: 5}
+@option{Info   :     > Previous incr: 12}
+@option{Info   :     > Previous time:    32.550874}
+@option{Info   :     > Previous load:     0.000013    0.000009    0.057716}
+@option{Info   :     > Loads on X0:      -0.430259    0.154719   -0.090039}
+@option{Info   :       Loads on X1:       0.018997    0.027109    0.087723}
+@option{Info   :       Loads on Y0:       0.015428    0.173415    0.812759}
+@option{Info   :       Loads on Y1:       0.164721    0.017949    0.382483}
+@option{Info   :       Loads on Z0:       0.101304    0.332793    5.337486}
+@option{Info   :       Loads on Z1:       0.068256   -0.079349   -4.786040}
+@option{Info   : Running step 5...}
+@option{...}
+@end example
+@inputfilefoot
+
+to quickly assess the state of the sample when the simulation is restarted.
+
+@float Table,restart-elasticity
+@caption{Single crystal elastic constants}
+@multitable @columnfractions .2 .2 .2 .2 .2
+@headitem Phase
+@tab Type
+@tab @math{C_{11}}
+@tab @math{C_{12}}
+@tab @math{C_{44}}
+
+@item @math{\alpha}
+@tab FCC
+@tab @math{204.6 @times 10^3}
+@tab @math{137.7 @times 10^3}
+@tab @math{126.2 @times 10^3}
+
+@end multitable
+@end float
+
+@float Table,restart-plasticity
+@caption{Initial slip system strengths and other plasticity parameters}
+@multitable @columnfractions .13 .10 .10 .10 .10 .10 .13 .13 .10
+@headitem Phase
+@tab @math{m}
+@tab @math{\dot\gamma_{0}}
+@tab @math{h_{0}}
+@tab @math{g_{0}}
+@tab @math{g_{s0}}
+@tab @math{m'}
+@tab @math{\dot\gamma_{s}}
+@tab @math{n'}
+
+@item @math{\alpha}
+@tab 0.02
+@tab 1.0
+@tab 375.0
+@tab 160.0
+@tab 1000.0
+@tab 0.0
+@tab @math{5.0 @times 10^{10}}
+@tab 1.0
+
+@end multitable
+@end float
+
+@float Figure,restart
+@center @image{images/4_all,6.25in}
+@caption{Undeformed sample after the second cycle is completed, (left) colored by accumulated slip shear on the @math{(1 1 1)[1 \bar 1 0]} system and (right) colored by accumulated slip shear on the @math{ (1 \bar 1 1)[0 1 1]} system.}
+@end float
+
+@page
+@node Example External
+@section Running a Simulation with External Definition Files (@file{examples/5_external})
+
+Certain simulation input may be input from external files in order to allow for a static configuration and mesh file to be used for multiple simulations while certain microstructure information is varied. This example covers the uniaxial tension/compression deformation of a dual phase FCC/BCC polycrystal including in-grain orientation distributions (@pxref{external}) by load targeting to @w{+/- 500 N}. Three steps are defined with a standard time-step value of @w{0.05 s} and a minimum time-step value of @w{0.0001 s}. Minimal boundary conditions are applied to the sample with the primary loading face set as @samp{x1} loaded in the @var{+X} direction. Elemental orientations and grain/phase assignments are read in from the external files @file{simulation.ori} and @file{simulation.phase}, respectively. Elemental equivalent deformation rate, work, orientations, surface-integrated forces, and nodal coordinates are output. Material parameters are calibrated for the austenitic (@math{\gamma}) and ferritic (@math{\alpha}) phases of a LDX-2101 steel and were previously provided in @ref{multiaxial-load-elasticity}, @ref{multiaxial-load-plasticity} and @ref{multiaxial-load-cyclic}.  Illustrations of the results are provided in @ref{external-res} and @ref{external-res2}.
+
+Phases are assigned to grains in @file{simulation.phase} based on grain ID, resulting in a 50%/50% phase distribution, by:
+
+@inputfilehead
+@example
+@option{$Groups}
+@option{elset}
+@option{100}
+@option{1} @var{1}
+@option{2} @var{1}
+...
+@option{99} @var{2}
+@option{100} @var{2}
+@option{$EndGroups}
+@end example
+@inputfilefoot
+
+Orientations are assigned to individual elements in the mesh by:
+
+@inputfilehead
+@example
+@option{$ElementOrientations}
+@option{8708} @var{euler-kocks:active}
+@option{1} @var{6.349166835919} @var{67.275898117529} @var{29.537233804094}
+@option{2} @var{8.653690385311}  @var{68.201858718768} @var{31.235331537403}
+...
+@option{8707} @var{42.109264933841} @var{11.308783985040} @var{10.705208235064}
+@option{8708} @var{72.138689534253} @var{12.023401345800} @var{37.167988589686}
+@option{$EndElementOrientations}
+@end example
+@inputfilefoot
+
+Note that even though @samp{$ElsetOrientations} are also present in @file{simulation.ori} as generated via Neper, the presence of @samp{$ElementOrientations} will always override any other orientations present in @file{simulation.ori} or in the mesh file (@file{simulation.msh}).
+
+@float Figure,external
+@center @image{images/5_eltorientations,, 2.5in}
+@caption{Undeformed sample colored by orientation. Per-element orientations are assigned to the sample allowing for the prescription of initial misorientation within grains. Per-element orientations are generated from a 3-variate normal distribution with an average misorientation angle (with respect to a grain's average orientation) of 5 degrees.}
+@end float
+
+@float Figure,external-res
+@center @image{images/5_all,6.25in}
+@caption{Deformed sample after the (left) first step and (right) second step are completed (deformation field is exaggerated 50x for illustrative purposes). The left figure is colored by equivalent deformation rate and the right figure is colored by work. Note that, unlike in @ref{uniaxial}, the edges of the control surfaces need not remain constrained with the minimal boundary conditions.}
+@end float
+
+@float Figure,external-res2
+@center @image{images/5_stresstime,, 3in}
+@caption{Macroscopic stress-time evolution over the prescribed deformation history. Note the increased point densities near to the load direction change exhibiting the simulation time-step value decreasing to accurately reach the load targets.}
+@end float

@@ -1,0 +1,11 @@
+@c This file is part of the FEPX software package.
+@c Copyright (C) 1996-2020 ACME Lab
+@c See the COPYING file in the top-level directory.
+
+@iftex
+@set FEPX_VERSION 1.0.0
+@end iftex
+
+@ifinfo
+@set FEPX_VERSION 1.0.0
+@end ifinfo
