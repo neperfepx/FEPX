@@ -18,8 +18,8 @@ git commit $1
 status="$?"
 
 date=`date +"%d %b %G"`
-tag=`git describe | grep v1.0.0 | awk -F- '{print $1}'`
-id=` git describe | grep v1.0.0 | awk -F- '{print $3}'`
+tag=`git describe | grep start | awk -F- '{print $1}'`
+id=` git describe | grep start | awk -F- '{print $3}'`
 
 if [ "$tag" == "" ]
 then
