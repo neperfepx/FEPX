@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>FEPX: Finite Element Polycrystal Plasticity &#8212; FEPX 1.0.0 documentation</title>
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="author" title="About these documents" href="about.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Downloads" href="downloads.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head>
+  <body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="#">
+          FEPX</a>
+        <span class="navbar-text navbar-version pull-left"><b>version 1.0.0 (30 July 2020)</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul>
+<li class="toctree-l1"><a class="reference internal" href="downloads.html">Downloads</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="downloads.html#current-official-release">Current official release</a></li>
+<li class="toctree-l2"><a class="reference internal" href="downloads.html#development-repository">Development repository</a></li>
+<li class="toctree-l2"><a class="reference internal" href="downloads.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="community.html">Community</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="community.html#keeping-up-to-date">Keeping up-to-date</a></li>
+<li class="toctree-l2"><a class="reference internal" href="community.html#getting-support">Getting Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="community.html#contributing">Contributing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">FEPX: Finite Element Polycrystal Plasticity</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#current-developers">Current Developers</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="downloads.html" title="Next Chapter: Downloads"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">Downloads &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/index.rst.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="fepx-finite-element-polycrystal-plasticity">
+<h1>FEPX: Finite Element Polycrystal Plasticity<a class="headerlink" href="#fepx-finite-element-polycrystal-plasticity" title="Permalink to this headline">¶</a></h1>
+<table border="1" class="docutils">
+<colgroup>
+<col width="60%" />
+<col width="40%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><p class="first">FEPX is a finite element software package for polycrystal plasticity.
+It can model both the global and local mechanical behaviors of
+large polycrystalline aggregates with complex microstructures via a
+scalable parallel framework. Its primary features are:</p>
+<ul>
+<li><p class="first"><strong>Nonlinear kinematics capable of resolving large (or finite)
+strains</strong> and large rotations</p>
+<p>Polycrystals can be deformed to small strains (elastic regime,
+elastic-plastic transition) or large strains, up to values of ~0.4,
+of even more with the aid of remeshing (via Neper)</p>
+</li>
+<li><p class="first"><strong>Anisotropic elasticity</strong> based on crystal symmetry (cubic and
+hexagonal)</p>
+</li>
+<li><p class="first"><strong>Anisotropic / crystal plasticity</strong></p>
+<ul class="simple">
+<li>Rate-dependent slip restricted to dominant slip systems</li>
+<li>Isotropic or latent hardenings (interaction matrix)</li>
+<li>Cyclic hardening</li>
+<li>FCC, BCC and HCP slip systems</li>
+</ul>
+<p>Multiphase polycrystals (e.g. BCC/HCP) can be used.</p>
+</li>
+<li><p class="first"><strong>State variable evolution for crystal lattice orientation and slip
+system strengths</strong></p>
+</li>
+<li><p class="first"><strong>Robust numerical methodologies</strong> with a data <strong>parallel
+implementation</strong> via Message Passing Interface (MPI) routines</p>
+<p>Simulations can be run in parallel on 1000+ cores,
+making it suitable to routinely handle 1000 to 10000-grain
+polycrystals meshed into 3M+ elements. The code can also be run
+in serial for testing or small simulations.</p>
+</li>
+<li><p class="first"><strong>Generalized boundary conditions with an assortment of
+standard boundary conditions</strong></p>
+<ul class="simple">
+<li>Standard or custom boundary conditions</li>
+<li>Uniaxial and multiaxial loadings, either strain or
+load-controlled</li>
+<li>Monotonic or cyclic loadings</li>
+</ul>
+<p>The loading is defined as <em>steps</em> which prescribe specific strain
+or strength targets.</p>
+</li>
+<li><p class="first"><strong>Wide array of output results</strong></p>
+</li>
+</ul>
+<p>FEPX interfaces primarily with the program <a class="reference external" href="http://neper.info">Neper</a>,
+which acts as the primary pre- and post-processor. Neper handles the
+generation of FEPX’s microstructure input (the mesh), as well as the
+conversion of raw output to more accessible formats, and a wide array of
+output visualization.</p>
+<p class="last">All input files are prescribed non-interactively to FEPX, using command
+lines and / or ASCII files. FEPX is written in Fortran 90/95, is
+dependence-free, and can be compiled (via CMake) and run on any Unix-like
+system (including MacOS).</p>
+</td>
+<td><a class="first reference internal image-reference" href="_images/home.png"><img alt="_images/home.png" class="align-right" src="_images/home.png" style="width: 90%;" /></a>
+<p class="last"><a class="reference download internal" href="_downloads/home.sh" download=""><code class="xref download docutils literal"><span class="pre">script</span></code></a>,
+<a class="reference download internal" href="_downloads/home.config" download=""><code class="xref download docutils literal"><span class="pre">config</span></code></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="contents">
+<h2>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="downloads.html">Downloads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community.html">Community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="current-developers">
+<h2>Current Developers<a class="headerlink" href="#current-developers" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="https://eng.ua.edu/eng-directory/dr-matthew-kasemer/">Matthew Kasemer</a>, <a class="reference external" href="https://acmelab.ua.edu">ACME Lab</a></li>
+<li>Jonathan Cappola, <a class="reference external" href="https://acmelab.ua.edu">ACME Lab</a></li>
+</ul>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

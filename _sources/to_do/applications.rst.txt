@@ -1,0 +1,30 @@
+.. _applications_link:
+
+Applications
+============
+
+Here is a tentative list of the works (journal papers and books) using FEPX. If you think your
+work should be listed here, please `contact us <mkasemer@eng.ua.edu>`_.
+
+.. contents::
+   :depth: 2
+   :local:
+
+2020
+----
+
+- M. Kasemer, E. Zepeda-Alarcon, R. Carson, P. Dawson, H.-R. Wenk, *Deformation heterogeneity and intragrain lattice misorientations in high strength contrast dual-phase bridgmanite/periclase*, **Acta Materialia**, doi://10.1016/j.actamat.2020.02.061.
+
+- M. Kasemer and P. Dawson, *A finite element methodology to incorporate kinematic activation of discrete deformation twins in a crystal plasticity framework*, **Computer Methods in Applied Mechanics and Engineering**, doi://10.1016/j.cma.2019.112653
+
+2018
+----
+
+- K. Chatterjee, M.P. Echlin, M. Kasemer, P.G. Callahan, T.M. Pollock, P. Dawson, *Prediction of tensile stiffness and strength of Ti-6Al-4V using instantiated volume elements and crystal plasticity*, **Acta Materialia**, doi://10.1016/j.actamat.2018.07.011
+
+2017
+----
+
+- M. Kasemer, M.P. Echlin, J.C. Stinville, T.M. Pollock, P. Dawson, *On slip initiation in equiaxed α/β Ti-6Al-4V*, **Acta Materialia**, doi://10.1016/j.actamat.2017.06.059
+
+- M. Kasemer, R. Quey, P. Dawson, *The influence of mechanical constraints introduced by β annealed microstructures on the yield strength and ductility of Ti-6Al-4V*, **Journal of the Mechanics and Physics of Solids**, doi://10.1016/j.jmps.2017.03.013
