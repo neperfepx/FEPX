@@ -16,7 +16,7 @@ FEPX: Finite Element Polycrystal Plasticity
 |                                                                         |    :align: right                               |
 |  Polycrystals can be deformed to small strains (elastic regime,         |                                                |
 |  elastic-plastic transition) or large strains, up to values of ~0.4,    |                                                |
-|  of even more with the aid of remeshing (via Neper)                     |                                                |
+|  or even more with the aid of remeshing (via Neper)                     |                                                |
 |                                                                         |                                                |
 |- **Anisotropic elasticity** based on crystal symmetry (cubic and        |                                                |
 |  hexagonal)                                                             |                                                |
@@ -28,7 +28,7 @@ FEPX: Finite Element Polycrystal Plasticity
 |  - Cyclic hardening                                                     |                                                |
 |  - FCC, BCC and HCP slip systems                                        |                                                |
 |                                                                         |                                                |
-|  Multiphase polycrystals (e.g. BCC/HCP) can be used.                    |                                                |
+|- **Multiphase polycrystals** (e.g. BCC/HCP) can be simulated.           |                                                |
 |                                                                         |                                                |
 |- **State variable evolution for crystal lattice orientation and slip    |                                                |
 |  system strengths**                                                     |                                                |
@@ -36,8 +36,8 @@ FEPX: Finite Element Polycrystal Plasticity
 |- **Robust numerical methodologies** with a data **parallel              |                                                |
 |  implementation** via Message Passing Interface (MPI) routines          |                                                |
 |                                                                         |                                                |
-|  Simulations can be run in parallel on 1000+ cores,                     |                                                |
-|  making it suitable to routinely handle 1000 to 10000-grain             |                                                |
+|  Simulations can be run in parallel on 1,000+ cores,                    |                                                |
+|  making it suitable to routinely handle 1,000 to 10,000-grain           |                                                |
 |  polycrystals meshed into 3M+ elements. The code can also be run        |                                                |
 |  in serial for testing or small simulations.                            |                                                |
 |                                                                         |                                                |
@@ -50,17 +50,21 @@ FEPX: Finite Element Polycrystal Plasticity
 |  - Monotonic or cyclic loadings                                         |                                                |
 |                                                                         |                                                |
 |  The loading is defined as *steps* which prescribe specific strain      |                                                |
-|  or strength targets.                                                   |                                                |
+|  or load targets.                                                       |                                                |
 |                                                                         |                                                |
 |- **Wide array of output results**                                       |                                                |
+|								          |						   |
+|  Users can request a variety of output to be print to file, including   |						   |
+|  (but not limited to) stress and strain tensors, crystal orientation,   |						   |
+|  deformation rates, and work.						  |						   |
 |                                                                         |                                                |
 |FEPX interfaces primarily with the program `Neper <http://neper.info>`_, |                                                |
 |which acts as the primary pre- and post-processor. Neper handles the     |                                                |
-|generation of FEPX's microstructure input (the mesh), as well as the     |                                                |
+|generation of FEPX's microstructure input (the mesh), the                |                                                |
 |conversion of raw output to more accessible formats, and a wide array of |                                                |
 |output visualization.                                                    |                                                |
 |                                                                         |                                                |
-|All input files are prescribed non-interactively to FEPX, using command  |                                                |
+|All input files to FEPX are prescribed non-interactively, using command  |                                                |
 |lines and / or ASCII files. FEPX is written in Fortran 90/95, is         |                                                |
 |dependence-free, and can be compiled (via CMake) and run on any Unix-like|                                                |
 |system (including MacOS).                                                |                                                |

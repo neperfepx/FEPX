@@ -24,7 +24,7 @@ Development repository
 ----------------------
 
 The development version is hosted on GitHub:
-https://github.com/acmelab_ua/FEPX.  This is also the place for code contributions, see the `community <community.html#contributing>`_ page.
+https://github.com/acmelab-ua/FEPX.  This is also the place for code contributions, see the `community <community.html#contributing>`_ page.
 
 References
 ----------
