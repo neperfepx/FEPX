@@ -1,6 +1,7 @@
 New in 1.1.0 (21 Oct 2020):
-- Overhauled restart capabilities 
-- Added element volume printing
+- Overhauled restart capabilities
+- Fiber averaging routines are now live
+- Added printing for various new output variables
 - Made minor fixes, polished documentation
 
 New in 1.0.0 (30 Jul 2020):
