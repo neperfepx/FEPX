@@ -17,7 +17,7 @@ It you use FEPX for your own work, please mention it explicitly and cite one or 
 Current official release
 ------------------------
 
-- `FEPX-1.0.0.tar.gz (30 Jul 2020) <tarballs/FEPX-1.0.0.tar.gz>`_: source code and documentation
+- `FEPX-1.1.0.tar.gz (21 Oct 2020) <tarballs/FEPX-1.1.0.tar.gz>`_: source code and documentation
 - `fepx.pdf <docs/fepx.pdf>`_: documentation
 
 Development repository

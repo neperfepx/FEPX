@@ -2,16 +2,27 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Features &#8212; FEPX 1.0.0 documentation</title>
+    <title>Features &#8212; FEPX 1.1.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
     <link rel="author" title="About these documents" href="../about.html" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -19,12 +30,9 @@
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js "></script>
-<script type="text/javascript" src="../_static/js/jquery-fix.js "></script>
-<script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
-<script type="text/javascript" src="../_static/bootstrap-sphinx.js "></script>
 
-  </head><body>
+  </head>
+  <body>
 
   <div id="navbar" class="navbar navbar-default navbar-fixed-top">
     <div class="container">
@@ -37,7 +45,7 @@
         </button>
         <a class="navbar-brand" href="../index.html">
           FEPX</a>
-        <span class="navbar-text navbar-version pull-left"><b>version 1.0.0 (30 July 2020)</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>version 1.1.0 (21 Oct 2020)</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -148,7 +156,7 @@
 
 <div class="container">
   <div class="row">
-    <div class="body col-md-12 content" role="main">
+    <div class="col-md-12 content">
       
   <div class="section" id="features">
 <span id="features-link"></span><h1>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h1>
@@ -166,7 +174,7 @@
 a modern laptop computer. Much larger meshes (many more grains, or finer microstructural features) are able to be simulated given more robust computational power - either a computational
 workstation or a computational cluster.</p>
 <p>The example simulations detailed on this page are also outlined in detail within the documentation. A domain of a 100 grain aggregate with a synthetic microstructure generated via centroidal tessellation is utilized for all examples. Each cell in the tessellation represents a discrete grain in the domain and all grains are volumetrically discretized into finite elements. Below are the commands to generate the tessellation and finite element mesh via <a class="reference external" href="https://http://www.neper.info/">Neper</a>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ neper -T -n 100 -reg 1 -morpho &quot;centroidal&quot; -oricrysym &quot;cubic&quot; -o simulation
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ neper -T -n 100 -reg 1 -morpho &quot;centroidal&quot; -oricrysym &quot;cubic&quot; -o simulation
 $ neper -M simulation.tess -order 2 -rcl 1.2
 </pre></div>
 </div>
@@ -180,7 +188,7 @@ $ neper -M simulation.tess -order 2 -rcl 1.2
 conditions are applied to the sample with the primary loading face set as ‘z1’ loaded in the ‘+Z’
 direction.</p>
 <a class="reference internal image-reference" href="to_do/imgs/1_e33_deform.png"><img alt="to_do/imgs/1_e33_deform.png" src="to_do/imgs/1_e33_deform.png" style="width: 25%;" /></a>
-<p><code class="xref download docutils literal notranslate"><span class="pre">gene_gene.sh</span></code></p>
+<p><code class="xref download docutils literal"><span class="pre">gene_gene.sh</span></code></p>
 </div>
 <div class="section" id="multiaxial-deformation-with-constant-strain-rate">
 <h2>Multiaxial Deformation with Constant Strain Rate<a class="headerlink" href="#multiaxial-deformation-with-constant-strain-rate" title="Permalink to this headline">¶</a></h2>
@@ -191,7 +199,7 @@ is enabled. The primary loading direction is set to be coincident with the compr
 direction or ‘x’ and a strain rate jump is applied on the third step doubling the prescribed
 strain rate.</p>
 <a class="reference internal image-reference" href="to_do/imgs/2_eqplstrain_deform.png"><img alt="to_do/imgs/2_eqplstrain_deform.png" src="to_do/imgs/2_eqplstrain_deform.png" style="width: 25%;" /></a>
-<p><code class="xref download docutils literal notranslate"><span class="pre">gene_morp.sh</span></code></p>
+<p><code class="xref download docutils literal"><span class="pre">gene_morp.sh</span></code></p>
 </div>
 <div class="section" id="multiaxial-deformation-with-constant-load-rate">
 <h2>Multiaxial Deformation with Constant Load Rate<a class="headerlink" href="#multiaxial-deformation-with-constant-load-rate" title="Permalink to this headline">¶</a></h2>
@@ -202,7 +210,7 @@ load tolerance options are prescribed and ‘cyclic’ hardening is enabled with
 The primary loading direction is set to be coincident with the tensile stress direction or ‘z’
 and a dwell episode is initiated on the third step for 500 seconds.</p>
 <a class="reference internal image-reference" href="to_do/imgs/3_crss_deform.png"><img alt="to_do/imgs/3_crss_deform.png" src="to_do/imgs/3_crss_deform.png" style="width: 25%;" /></a>
-<p><code class="xref download docutils literal notranslate"><span class="pre">gene_mult.sh</span></code></p>
+<p><code class="xref download docutils literal"><span class="pre">gene_mult.sh</span></code></p>
 </div>
 <div class="section" id="restarting-a-simulation">
 <h2>Restarting a Simulation<a class="headerlink" href="#restarting-a-simulation" title="Permalink to this headline">¶</a></h2>
@@ -212,7 +220,7 @@ Loads are proportionally applied in the principal stress space as ‘0:0:1’ fo
 directory. The primary loading direction is set to be coincident with the tensile stress direction
 or ‘z’.</p>
 <a class="reference internal image-reference" href="to_do/imgs/4_slipshear7_cycle2.png"><img alt="to_do/imgs/4_slipshear7_cycle2.png" src="to_do/imgs/4_slipshear7_cycle2.png" style="width: 25%;" /></a>
-<p><code class="xref download docutils literal notranslate"><span class="pre">gene_peri.sh</span></code></p>
+<p><code class="xref download docutils literal"><span class="pre">gene_peri.sh</span></code></p>
 </div>
 <div class="section" id="running-a-simulation-with-external-file-reading">
 <h2>Running a Simulation with External File Reading<a class="headerlink" href="#running-a-simulation-with-external-file-reading" title="Permalink to this headline">¶</a></h2>
@@ -223,7 +231,7 @@ conditions are applied to the sample with the primary loading face set as ‘x1�
 direction. Elemental orientations and grain/phase assignments are read in from the external
 files simulation.ori and simulation.phase, respectively.</p>
 <a class="reference internal image-reference" href="to_do/imgs/5_eltorientations.png"><img alt="to_do/imgs/5_eltorientations.png" src="to_do/imgs/5_eltorientations.png" style="width: 25%;" /></a>
-<p><code class="xref download docutils literal notranslate"><span class="pre">gene_cut.sh</span></code></p>
+<p><code class="xref download docutils literal"><span class="pre">gene_cut.sh</span></code></p>
 </div>
 </div>
 

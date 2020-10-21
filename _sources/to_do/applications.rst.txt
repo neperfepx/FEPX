@@ -13,14 +13,33 @@ work should be listed here, please `contact us <mkasemer@eng.ua.edu>`_.
 2020
 ----
 
-- M. Kasemer, E. Zepeda-Alarcon, R. Carson, P. Dawson, H.-R. Wenk, *Deformation heterogeneity and intragrain lattice misorientations in high strength contrast dual-phase bridgmanite/periclase*, **Acta Materialia**, doi://10.1016/j.actamat.2020.02.061.
+- M. Kasemer, E. Zepeda-Alarcon, R. Carson, P. Dawson, H.-R. Wenk, *Deformation heterogeneity and intragrain lattice misorientations in high strength contrast dual-phase bridgmanite/periclase*, **Acta Materialia**, doi://10.1016/j.actamat.2020.02.061
 
-- M. Kasemer and P. Dawson, *A finite element methodology to incorporate kinematic activation of discrete deformation twins in a crystal plasticity framework*, **Computer Methods in Applied Mechanics and Engineering**, doi://10.1016/j.cma.2019.112653
+- M. Kasemer, P. Dawson, *A finite element methodology to incorporate kinematic activation of discrete deformation twins in a crystal plasticity framework*, **Computer Methods in Applied Mechanics and Engineering**, doi://10.1016/j.cma.2019.112653
+
+- M. Kasemer, P. Dawson, *The Incorporation of Discrete Deformation Twins in a Crystal Plasticity Finite Element Framework*, **Magnesium Technology 2020**, doi://10.1007/978-3-030-36647-6_24
+
+2019
+----
+
+- K. Chatterjee, R.A. Carson, P.R. Dawson, *Estimation of Errors in Stress Distributions Computed in Finite Element Simulations of Polycrystals*, **Integrating Materials and Manufacturing Innovation**, doi://10.1007/s40192-019-00158-z
+
+- A.C. Poshadel, P.R. Dawson, *A Methodology to Evaluate Continuum-Scale Yield Surfaces Based on the Spatial Distributions of Yielding at the Crystal Scale*, **Metallurgical and Materials Transactions A**, doi://10.1007/s11661-019-05187-z
+
+- R. Carson, P. Dawson, *Formulation and characterization of a continuous crystal lattice orientation finite element method (LOFEM) and its application to dislocation fields*, **Journal of the Mechanics and Physics of Solids**, doi://10.1016/j.jmps.2019.02.006
+
+- A.C. Poshadel, M.A. Gharghouri, P.R. Dawson, *Sensitivity of Crystal Stress Distributions to the Definition of Virtual Two-Phase Samples*, **Metallurgical and Materials Transactions A**, doi://10.1007/s11661-018-5085-2
+
+- A.C. Poshadel, M.A. Gharghouri, P.R. Dawson, *Initiation and Propagation of Plastic Yielding in Duplex Stainless Steel*, **Metallurgical and Materials Transactions A**, doi://10.1007/s11661-018-5009-1
+
+- A.C. Poshadel, P.R. Dawson, *Role of anisotropic strength and stiffness in governing the initiation and propagation of yielding in polycrystalline solids*, **Metallurgical and Materials Transactions A**, doi://10.1007/s11661-018-5013-5
 
 2018
 ----
 
 - K. Chatterjee, M.P. Echlin, M. Kasemer, P.G. Callahan, T.M. Pollock, P. Dawson, *Prediction of tensile stiffness and strength of Ti-6Al-4V using instantiated volume elements and crystal plasticity*, **Acta Materialia**, doi://10.1016/j.actamat.2018.07.011
+
+- P.R. Dawson, D.E. Boyce, J.S. Park, E. Wielewski, M.P. Miller, *Determining the strengths of HCP slip systems using harmonic analyses of lattice strain distributions*, **Acta Materialia**, doi://10.1016/j.actamat.2017.10.032
 
 2017
 ----
@@ -28,3 +47,23 @@ work should be listed here, please `contact us <mkasemer@eng.ua.edu>`_.
 - M. Kasemer, M.P. Echlin, J.C. Stinville, T.M. Pollock, P. Dawson, *On slip initiation in equiaxed α/β Ti-6Al-4V*, **Acta Materialia**, doi://10.1016/j.actamat.2017.06.059
 
 - M. Kasemer, R. Quey, P. Dawson, *The influence of mechanical constraints introduced by β annealed microstructures on the yield strength and ductility of Ti-6Al-4V*, **Journal of the Mechanics and Physics of Solids**, doi://10.1016/j.jmps.2017.03.013
+
+- R. Carson, M. Obstalecki, M. Miller, P. Dawson, *Characterizing heterogeneous intragranular deformations in polycrystalline solids using diffraction-based and mechanics-based metrics*, **Modelling and Simulation in Materials Science and Engineering**, doi://10.1088/1361-651X/aa6dc5
+
+- E. Wielewski, D.E. Boyce, J.S. Park, M.P. Miller, P.R. Dawson, *A methodology to determine the elastic moduli of crystals by matching experimental and simulated lattice strain pole figures using discrete harmonics*, **Acta Materialia**, doi://10.1016/j.actamat.2016.12.026
+
+2015
+----
+
+- R. Quey, J.H. Driver, P.R. Dawson, *Intra-grain orientation distributions in hot-deformed aluminium: orientation dependence and relation to deformation mechanisms*, **Journal of the Mechanics and Physics of Solids**, doi://10.1016/j.jmps.2015.07.014
+
+- S.L. Wong, M. Obstalecki, M.P. Miller, P.R. Dawson, *Stress and deformation heterogeneity in individual grains within polycrystals subjected to fully reversed cyclic loading*, **Journal of the Mechanics and Physics of Solids**, doi://10.1016/j.jmps.2015.03.010
+
+2014
+----
+
+- M.P. Miller, P.R. Dawson, *Understanding local deformation in metallic polycrystals using high energy X-rays and finite elements*, **Current Opinion in Solid State and Materials Science**, doi://10.1016/j.cossms.2014.09.001
+
+- M. Obstalecki, S.L. Wong, P.R. Dawson, M.P. Miller, *Quantitative analysis of crystal scale deformation heterogeneity during cyclic plasticity using high-energy X-ray diffraction and finite-element simulation*, **Acta Materialia**, doi://10.1016/j.actamat.2014.04.059
+
+- J.C. Schuren, S.L Wong, P.R. Dawson, M.P. Miller, *Integrating experiments and simulations to estimate uncertainty in lattice strain measurements*, **The Journal of Strain Analysis for Engineering Design**, doi://10.1177/0309324713492325
