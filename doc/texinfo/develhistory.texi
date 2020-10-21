@@ -105,6 +105,7 @@ Examples of investigations of this nature include: a kinematic model with slip g
 
 @sp 1
 
+@iftex
 Dr. Paul R. Dawson
 @sp -0.1
 Joseph C. Ford Professor of Engineering Emeritus
@@ -112,3 +113,11 @@ Joseph C. Ford Professor of Engineering Emeritus
 Sibley School of Mechanical and Aerospace Engineering
 @sp -0.1
 Cornell University
+@end iftex
+
+@ifinfo
+Dr. Paul R. Dawson @*
+Joseph C. Ford Professor of Engineering Emeritus @*
+Sibley School of Mechanical and Aerospace Engineering @*
+Cornell University
+@end ifinfo

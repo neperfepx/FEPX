@@ -73,11 +73,18 @@ $$ \dot{\gamma}^{\alpha} = \dot{\gamma}_{0}
          \over g^{\alpha} \right)^{1/m} \rm sgn({\tau}^{\alpha}),  $$
 @end tex
 
-where @math{@dot{\gamma}_0} (@option{gammadot_0}) is the fixed-rate strain rate scaling coefficient (expressed in [force/area]), and @math{m} (@option{m}) is the rate sensitivity exponent.
+where
+@iftex
+@math{@dot{\gamma}_0}
+@end iftex
+@ifinfo
+@math{{\gamma}_0 dot}
+@end ifinfo
+(@option{gammadot_0}) is the fixed-rate strain rate scaling coefficient (expressed in [force/area] @footnote{All variables presented in this chapter (if applicable) are detailed by their dimensions instead of any specific unit. No unit system is inherently assumed by FEPX and the chosen unit system and value magnitudes should be consistent with the chosen length scale for the domain. For example, if it is assumed that the length scale is @samp{mm} and SI units are to be used, then [force/area] will be understood to be [MPa]. The unit for time, however, is always assumed to be seconds [s].}), and @math{m} (@option{m}) is the rate sensitivity exponent.
 
 @sp 1
 
-For an isotropic hardening assumption, slip system strength evolution (hardening) is modeled by:
+For an isotropic hardening assumption @footnote{Note that for HCP materials, the implementation of an isotropic hardening assumption is  such that the shape of the single crystal yield surface is maintained. That is, the slip rates on the basal, prismatic, and pyramidal slip systems will harden such that the ratios of slip strengths remains constant. The consequence of this is that for HCP materials, this is not a true isotropic assumption, as the different slip families may harden at different rates (depending on the ratios of slip system strengths).}, slip system strength evolution (hardening) is modeled by:
 
 @c evolution of slip strengths
 @tex
@@ -101,7 +108,21 @@ $$ g_{s}(\dot{\gamma}) = g_{s0}
          \over \dot{\gamma}_{s0} \right)^{m'}, $$
 @end tex
 
-where @math{g_{s0}} (@option{g_s0}) is the initial slip system saturation strength (expressed in [force/area]), @math{m'} (@option{m_prime}) is the saturation strength rate scaling exponent, and @math{@dot{\gamma}_{s0}} (@option{gammadot_s0}) is the initial saturation slip system shear rate. Note that, in the above two equations, @math{@dot{\gamma}} is calculated as:
+where @math{g_{s0}} (@option{g_s0}) is the initial slip system saturation strength (expressed in [force/area]), @math{m'} (@option{m_prime}) is the saturation strength rate scaling exponent, and
+@iftex
+@math{@dot{\gamma}_{s0}}
+@end iftex
+@ifinfo
+@math{\gamma_{s0} dot}
+@end ifinfo
+(@option{gammadot_s0}) is the initial saturation slip system shear rate. Note that, in the above two equations,
+@iftex
+@math{@dot{\gamma}}
+@end iftex
+@ifinfo
+@math{\gamma dot}
+@end ifinfo
+is calculated as:
 
 @tex
 $$ \dot{\gamma} = \sum_{\alpha}
@@ -146,10 +167,7 @@ $$ \dot{g^{\alpha}} = h_{0}
 
 where the model parameters are the same as the isotropic case described above, with the addition of @math{h_{\alpha \beta}}, the slip interaction matrix. The slip interaction matrix only allows for interactions from direct and coplanar slip families. The slip interaction matrix is defined by the diagonal entry, @math{d}, and the off-diagonal entries, @math{h_{1},\dots, h_{n}}. These input parameters are defined by @option{diag}, @option{h1}, @option{h2}, @option{h3}, and @option{h4} for FCC materials, @option{diag}, @option{h1}, @option{h2}, @option{h3}, @option{h4}, @option{h5}, and @option{h6} for BCC materials, and @option{diag}, @option{h1}, @option{h2}, @option{h3}, @option{h4}, @option{h5}, @option{h6}, and @option{h7} for HCP materials. A more complete description can be found in Carson @w{@emph{et al.} [@value{car_daw_17}]}.
 
-@sp 1
-
-For a hexagonal material, other parameters are utilized to define the crystal structure, which are
-@emph{(i)} the c/a ratio (@option{c_over_a}), @emph{(ii)} @option{prismatic_to_basal} is the ratio of the initial slip system strength of the prismatic slip family to that of the basal family, and @emph{(iii)} @option{pyramidal_to_basal} is the ratio of the initial slip system strength of the pyramidal slip family to that of the basal slip family. The value of the initial slip system strength (@option{g_0}) is assumed to be that of the basal slip family.
+For a hexagonal material, the c/a ratio (@option{c_over_a}) must also be defined. The initial slip strengths (@option{g_0}) must be provided as a set of three values. The order of the values for @option{g_0} is assumed to be: basal slip family strength, prismatic slip family strength, and pyramidal slip family strength.
 
 @node Input Parameters
 @subsubsection Input Parameters
@@ -175,6 +193,7 @@ Each phase requires the specification of a consistent set of single-crystal mate
 
 where @code{@var{value}} is the phase identification number (ranging from 1 to @var{nphases}).
 
+@c DEBUG: `nphases` is not defined anywhere. Should be `number_of_phases` instead?
 @c Any values defined after @code{@var{curr_phase}} will be applied to all grains of the phase.
 @need 1200
 First, the crystal symmetry is defined by:
@@ -214,15 +233,13 @@ and, for an @samp{hcp} crystal structure:
 @end example
 @inputfilefoot
 
-where @option{c11-c44} are expressed in [force/area] @footnote{All variables presented in this chapter (if applicable) are detailed by their dimensions instead of any specific unit. No unit system is inherently assumed by FEPX and the chosen unit system and value magnitudes should be consistent with the chosen length scale for the domain. For example, if it is assumed that the length scale is @samp{mm} and SI units are to be used, then [force/area] will be understood to be [MPa]. The unit for time, however, is always assumed to be seconds [s].}. For @samp{hcp} materials, the @math{C_{33}} elastic constant is constrained by the other four nonzero moduli and is not required as direct input.
+where @option{c11-c44} are expressed in [force/area]. For @samp{hcp} materials, the @math{C_{33}} elastic constant is constrained by the other four nonzero moduli and is not required as direct input.
 
-For the @samp{hcp} crystal structure, additional crystal parameters need to be provided:
+For the @samp{hcp} crystal structure, an additional crystal parameter needs to be provided:
 
 @inputfilehead
 @example
 @option{c_over_a} @var{value}
-@option{prismatic_to_basal} @var{value}
-@option{pyramidal_to_basal} @var{value}
 @end example
 @inputfilefoot
 
@@ -230,16 +247,18 @@ Crystallographic slip (plasticity) parameters are defined as:
 
 @inputfilehead
 @example
-@option{m} @var{value}
+@option{m} @var{value(s)}
 @option{gammadot_0} @var{value}
 @option{h_0} @var{value}
-@option{g_0} @var{value}
+@option{g_0} @var{value(s)}
 @option{g_s0} @var{value}
 @option{m_prime} @var{value}
 @option{gammadot_s0} @var{value}
 @option{n} @var{value}
 @end example
 @inputfilefoot
+
+For hexagonal materials, multiple values may be provided for the rate sensitivity exponent, @samp{m}, and the initial slip system strengths, @option{g_0}. If a single value is provided for @option{m}, a constant rate sensitivity exponent is assumed across all slip families. If three values are provided for @option{m}, varying rate sensitivity exponents are applied on a per-slip family basis. Additionally, @option{g_0} must be defined by three unique values. The order of the values for @option{m} and @option{g_0} is assumed to be: basal slip family, prismatic slip family, and pyramidal slip family.
 
 @c {@bf The next 6 lines should be moved to 2.1.1.1, when not already present there (don't repreat the definitions). Some of the terms appearing here are not to be defined in 2.1.1.1 - fix.}@*
 @c where @option{m} is the fixed-state strain rate sensitivity,
@@ -288,14 +307,14 @@ where @code{@var{diag}} is the diagonal coefficient and @code{@var{h1-h7}} are t
 @node Deformation History
 @subsection Deformation History
 
-A variety of deformation modes are available that are capable of reproducing various mechanical loading configurations. A deformation history is defined by both steps and increments, where steps are made of one or several increments. A @dfn{step} defines the strain or load targets that are to be reached for a given step; variable printing is only performed at the end of a step. An @dfn{increment} occurs within a step to reach the prescribed step target while ensuring numerical stability. A single step shall only define a single strain or load target.  Of course, the relative order of the steps defined for the deformation history matters and should be written in an ascending manner.
+A variety of deformation modes are available that are capable of reproducing various mechanical loading configurations. A deformation history is defined by both steps and increments, where steps are made of one or several increments. Steps define the strain or load targets that are to be reached during the simulation, and results can only be printed at the end of steps. One or several increments occur within each step to reach the prescribed step target while ensuring numerical stability. A step target can be expressed in terms of @dfn{strain} or @dfn{load}. The @dfn{strain} refers to the engineering strain as computed from the displacement of the loading surface and the initial sample length along the loading direction, and the @dfn{load} refers to the total force on the loading surface. Of course, the relative order of the steps defined for the deformation history matters and should be written in an ascending manner.
 
 Deformation histories are divided into uniaxial loading and multiaxial loading. In general, the multiaxial loading definition is technically triaxial in nature; however, biaxial loading may be performed by zeroing out one of the load columns accordingly. The available deformation history configuration options follow.
 
 @node DH Uniaxial
 @subsubsection Uniaxial
 
-Uniaxial loading is always strain controlled, however, either specific strain targets or specific load targets may be prescribed. For strain targeting, the number of increments for a given step must be provided as opposed to a time-step value. For load targeting, the bounds on the time-step value are provided in order to control both the accuracy and, indirectly, the number of increments taken per step. These time-step values should be defined relative to the @option{strain_rate} value prescribed in the @file{simulation.config} file.
+Uniaxial loading is always strain controlled (internally); however, either specific strain targets or specific load targets may be prescribed. For strain targeting, the number of increments for a given step must be provided as opposed to a time-step value. For load targeting, the bounds on the time-step value are provided in order to control both the accuracy and, indirectly, the number of increments taken per step. These time-step values should be defined relative to the @option{strain_rate} value (@pxref{Boundary Conditions}).
 
 Strain targeting allows the definition of loading to specific uniaxial strain states. This deformation history is defined as follows:
 
@@ -308,9 +327,9 @@ Strain targeting allows the definition of loading to specific uniaxial strain st
 @end example
 @inputfilefoot
 
-where @code{@var{nsteps}} is the number of strain steps that are defined in the file after this line, @code{@var{target_val}} is the desired strain value to be reached, @code{@var{n_incr}} is the number of increments to be performed in order to complete the step, and @code{@var{print_flag}} allows for the printing (or suppressing) of specific steps. The options available for @code{@var{print_flag}} are: @samp{print_data} or @samp{suppress_data}.
+where @code{@var{nsteps}} is the number of strain steps that are defined in the file after this line, @code{@var{target_val}} is the desired strain value to be reached, @code{@var{n_incr}} is the number of increments to be performed in order to complete the step, and @code{@var{print_flag}} allows for the printing (or not) of specific steps. The options available for @code{@var{print_flag}} are: @samp{print_data} or @samp{suppress_data}.
 
-Load targeting allows the definition of loading to specific uniaxial load states. A @dfn{load} refers to a surface-integrated force and not a stress on the loading surface of interest. This deformation history is defined as follows:
+Load targeting allows the definition of loading to specific uniaxial load states. This deformation history is defined as follows:
 
 @inputfilehead
 @example
@@ -321,7 +340,7 @@ Load targeting allows the definition of loading to specific uniaxial load states
 @end example
 @inputfilefoot
 
-where @code{@var{nsteps}} is the number of load steps that are defined in the file after this line, @code{@var{target_val}} is the desired load value to be reached, @code{@var{dt_max}} is the maximum time-step value to be used for a given increment, @code{@var{dt_min}} is the minimum time-step value to be used for a given increment, and @code{@var{print_flag}} allows for the printing (or suppressing) of specific steps. The options available for @code{@var{print_flag}} are: @samp{print_data} or @samp{suppress_data}.
+where @code{@var{nsteps}} is the number of load steps that are defined in the file after this line, @code{@var{target_val}} is the desired load value to be reached, @code{@var{dt_max}} is the maximum time-step value to be used for a given increment, @code{@var{dt_min}} is the minimum time-step value to be used for a given increment, and @code{@var{print_flag}} allows for the printing (or not) of specific steps. The options available for @code{@var{print_flag}} are: @samp{print_data} or @samp{suppress_data}.
 
 Strain rate jumps are also available for both uniaxial deformation modes and are defined by adding the following input to the block:
 
@@ -333,12 +352,13 @@ Strain rate jumps are also available for both uniaxial deformation modes and are
 @end example
 @inputfilefoot
 
-where @code{@var{njumps}} is the number of strain rate jumps defined in the file, @code{@var{target_step}} defines which @option{target_strain} step is assigned a new strain rate, @code{@var{new_strain_rate}} is the new strain rate to be assigned and has units of [1/s]. In general, the strain rate jumps should be of a similar magnitude to the @option{strain_rate} defined previously.
+where @code{@var{njumps}} is the number of strain rate jumps defined in the file after this line, @code{@var{target_step}} defines which @option{target_strain} step is assigned a new strain rate, and @code{@var{new_strain_rate}} is the new strain rate to be assigned and has units of [1/s]. In general, and for numerical stability, the strain rate jumps should be of a similar magnitude to the @option{strain_rate} defined previously.
 
 @node DH Multiaxial
 @subsubsection Multiaxial
 
-Multiaxial loading is designed to operate on cubic domains at either a constant engineering strain rate or constant load rate. The principal loading directions must be aligned with the coordinate axes of the mesh and the surface face normals should likewise be coincident with the coordinate axis of the mesh. Symmetry boundary conditions are enforced on the three faces of minimal coordinates (@samp{@var{*0}}). Normal velocities are applied to the faces of maximal coordinates (@samp{@var{*1}}), and traction components parallel to the control surface are set to zero. The velocity on the primary control surface is held constant through the simulation.
+Multiaxial loading is always strain controlled (internally) and operates at either a constant engineering strain rate or constant load rate; however, only specific load targets may be prescribed.
+The principal loading directions must be aligned with the coordinate axes of the mesh and the surface face normals should likewise be coincident with the coordinate axis of the mesh. Symmetry boundary conditions (zero normal velocities) are enforced on the three faces of minimal coordinates (@samp{@var{*0}}), and, in the general case, non-zero normal velocities are applied to the faces of maximal coordinates (@samp{@var{*1}}). The velocity on the primary control surface is held constant through the simulation (except during a strain rate jump).
 
 Multiaxial loading with a constant strain rate (CSR) is defined as follows:
 
@@ -351,9 +371,9 @@ Multiaxial loading with a constant strain rate (CSR) is defined as follows:
 @end example
 @inputfilefoot
 
-where @code{@var{nsteps}} is the number of CSR load steps that are defined in the file after this line, @code{@var{load_x}} is the desired load value to be reached in the @samp{x} coordinate axis direction, @code{@var{load_y}} is the desired load value to be reached in the @samp{y} coordinate axis direction, @code{@var{load_z}} is the desired load value to be reached in the @samp{z} coordinate axis direction, @code{@var{dt_max}} is the maximum time-step value to be used for a given increment, @code{@var{dt_min}} is the minimum time-step value to be used for a given increment, and @code{@var{print_flag}} allows for the printing (or suppressing) of specific steps. The options available for @code{@var{print_flag}} are: @samp{print_data} or @samp{suppress_data}.
+where @code{@var{nsteps}} is the number of CSR load steps that are defined in the file after this line, @code{@var{load_x}} is the desired load value to be reached in the @samp{x} coordinate axis direction, @code{@var{load_y}} is the desired load value to be reached in the @samp{y} coordinate axis direction, @code{@var{load_z}} is the desired load value to be reached in the @samp{z} coordinate axis direction, @code{@var{dt_max}} is the maximum time-step value to be used for a given increment, @code{@var{dt_min}} is the minimum time-step value to be used for a given increment, and @code{@var{print_flag}} allows for the printing (or not) of specific steps. The options available for @code{@var{print_flag}} are: @samp{print_data} or @samp{suppress_data}.
 
-Strain rate jumps are also available for this deformation mode and are defined by adding the following input to the block:
+Strain rate jumps are available for this deformation mode and are defined by adding the following input to the block:
 
 @inputfilehead
 @example
@@ -363,7 +383,7 @@ Strain rate jumps are also available for this deformation mode and are defined b
 @end example
 @inputfilefoot
 
-where @code{@var{njumps}} is the number of strain rate jumps defined in the file, @code{@var{target_step}} defines which @option{target_csr_load} step is assigned a new strain rate, @code{@var{new_strain_rate}} is the new strain rate to be assigned and has units of [1/s].
+where @code{@var{njumps}} is the number of strain rate jumps defined in the file after this line, @code{@var{target_step}} defines which @option{target_csr_load} step is assigned a new strain rate, and @code{@var{new_strain_rate}} is the new strain rate to be assigned and has units of [1/s].
 
 Multiaxial loading with a constant load rate (CLR) is defined as follows:
 
@@ -376,7 +396,7 @@ Multiaxial loading with a constant load rate (CLR) is defined as follows:
 @end example
 @inputfilefoot
 
-where @code{@var{nsteps}} is the number of CLR load steps that are defined in the file after this line, @code{@var{load_x}} is the desired load value to be reached in the @samp{x} coordinate axis direction, @code{@var{load_y}} is the desired load value to be reached in the @samp{y} coordinate axis direction, @code{@var{load_z}} is the desired load value to be reached in the @samp{z} coordinate axis direction, @code{@var{target_time_incr}} is the physical time increment to be reached for the given @option{target_clr_load} steps for a given load rate, and @code{@var{print_flag}} allows for the printing (or suppressing) of specific steps. The options available for @code{@var{print_flag}} are: @samp{print_data} or @samp{suppress_data}.
+where @code{@var{nsteps}} is the number of CLR load steps that are defined in the file after this line, @code{@var{load_x}} is the desired load value to be reached in the @samp{x} coordinate axis direction, @code{@var{load_y}} is the desired load value to be reached in the @samp{y} coordinate axis direction, @code{@var{load_z}} is the desired load value to be reached in the @samp{z} coordinate axis direction, @code{@var{target_time_incr}} is the physical time increment to be reached for the given @option{target_clr_load} steps for a given load rate, and @code{@var{print_flag}} allows for the printing (or not) of specific steps. The options available for @code{@var{print_flag}} are: @samp{print_data} or @samp{suppress_data}.
 
 Load rate jumps and dwell episodes are available for this deformation mode. A dwell episode maintains the macroscopic loads of the step in which it is defined, but holds the ramp rate at zero for the amount of time defined by @code{@var{dwell_time}}. These options are defined as follows:
 
@@ -390,7 +410,7 @@ For load rate jumps:
 @end example
 @inputfilefoot
 
-where @code{@var{njumps}} is the number of load rate jumps defined in the file, @code{@var{target_step}} defines which @option{target_clr_load} step is assigned a new load rate, @code{@var{new_load_rate}} is the new load rate to be assigned and has units of [force/(area-s)].
+where @code{@var{njumps}} is the number of load rate jumps defined in the file after this line, @code{@var{target_step}} defines which @option{target_clr_load} step is assigned a new load rate, and @code{@var{new_load_rate}} is the new load rate to be assigned and has units of [force/s].
 
 For dwell episodes:
 
@@ -402,7 +422,7 @@ For dwell episodes:
 @end example
 @inputfilefoot
 
-where @code{@var{nepisodes}} is the number of dwell episodes defined in the file, @code{@var{target_step}} defines which @option{target_clr_load} step is assigned to dwell, @code{@var{dwell_time}} is the physical amount of time in [s] for a given dwell episode, @code{@var{target_time_incr}} is the physical time increment to be reached for the given dwell episode, and @code{@var{print_flag}} allows for the printing (or suppressing) of specific steps. The options available for @code{@var{print_flag}} are: @samp{print_data} or @samp{suppress_data}.
+where @code{@var{nepisodes}} is the number of dwell episodes defined in the file after this line, @code{@var{target_step}} defines which @option{target_clr_load} step is assigned to dwell, @code{@var{dwell_time}} is the physical amount of time in [s] for a given dwell episode, @code{@var{target_time_incr}} is the physical time increment to be reached for the given dwell episode, and @code{@var{print_flag}} allows for the printing (or not) of specific steps. The options available for @code{@var{print_flag}} are: @samp{print_data} or @samp{suppress_data}.
 
 @c Need to confirm the "physicality" of the target_time_incr and how it is used internally.
 
@@ -461,7 +481,7 @@ Minimal boundary conditions are defined as follows:
 
 @inputfilehead
 @example
-@option{boundary_conditions} @option{minimal}
+@option{boundary_conditions} @option{uniaxial_minimal}
 @option{loading_direction} @var{sample_dir}
 @option{strain_rate} @var{value}
 @end example
@@ -501,9 +521,17 @@ where @code{@var{sample_dir}} is the direction along the a positive sample axis 
 @node Externally Defined Boundary Conditions (Optional)
 @subsection Externally Defined Boundary Conditions (Optional)
 
-Boundary conditions other than those defined in @ref{Boundary Conditions} can be applied using an external @file{simulation.bcs} containing per-node constraints. Of course, this file should be generated for a singular @file{simulation.msh} file (if the finite element mesh in the @file{simulation.msh} file changes, then the associated @file{simulation.bcs} file will need to be generated anew).
+Boundary conditions different from the ones defined in @ref{Boundary Conditions} can be applied using an external @file{simulation.bcs} containing per-node constraints. Of course, this file should be generated for a singular @file{simulation.msh} file (if the finite element mesh in the @file{simulation.msh} file changes, then the associated @file{simulation.bcs} file will need to be generated anew).
 
-@dfn{External boundary conditions} are defined as follows, in the @file{simulation.bcs} file:
+To read in external boundary conditions, the following line must be added to the @file{simulation.config} file:
+
+@inputfilehead
+@example
+@option{read_bcs_from_file}
+@end example
+@inputfilefoot
+
+The per-node constraints are defined as follows, in the @file{simulation.bcs} file:
 
 @inputfilehead
 @example
@@ -513,16 +541,6 @@ Boundary conditions other than those defined in @ref{Boundary Conditions} can be
 @inputfilefoot
 
 where @code{@var{node_id}} is a unique 1-indexed identification number, @code{@var{coord_index}} defines the sample axis the constraint is applied to, and @code{@var{vel}} is the velocity being applied to the node in the constraint direction. The options for @code{@var{coord_index}} are: @samp{x}, @samp{y}, or @samp{z}. A singular @code{@var{coord_index}}/@code{@var{vel}} pair should be defined per-line for a given @code{@var{node_id}}.  The velocities should be prescribed relative to the mesh dimensions and time-step size in order to produce expected strain rates.
-
-To read in external boundary conditions, the following line must be added to the @file{simulation.config} file:
-
-@inputfilehead
-@example
-@option{read_bcs_from_file} @var{file_name}
-@end example
-@inputfilefoot
-
-where @code{@var{file_name}} is an optional string defining the system file name of the external boundary condition file. The value of @option{file_name}, by default, is assumed to be @samp{simulation.bcs}.
 
 @node Externally Defined Orientations or Phase Assignments (Optional)
 @subsection Externally Defined Phases and Orientations (Optional)
@@ -576,6 +594,8 @@ where @code{@var{output_file_name}} is the particular field variable file to be 
 
 @item @samp{defrate-pl-eq} - Equivalent plastic deformation rate
 
+@item @samp{elt-vol} - Elemental Volume
+
 @item @samp{ori} - Crystallographic orientations
 
 @item @samp{slip} - Slip system shear
@@ -611,6 +631,19 @@ where @code{@var{output_file_name}} is the particular field variable file to be 
 @end itemize
 
 A full description of each output variable can be found in @ref{Simulation Output}.
+
+@node Fiber Averaging of Output Variables (Optional)
+@subsection Fiber Averaging of Output Variables (Optional)
+
+The average and standard deviation of certain output variables may be calculated depending on whether or not they belong to a user-defined crystallographic fiber. To activate this option, the following line must be added to the @file{simulation.config} file:
+
+@inputfilehead
+@example
+@option{run_fiber_average}
+@end example
+@inputfilefoot
+
+More detailed information on the structure of this external file can be found in @ref{The Fiber Averaging File (Optional)}.
 
 @node Optional Input Parameters
 @subsection Optional Input Parameters
@@ -648,9 +681,10 @@ These options may pertain to specific deformation modes or control standard simu
 
 @end itemize
 
-Additional input regarding @c fiber-averaging routines,
-restart capabilities and external file read-in are presented separately, @c @pxref{DEBUG},
-@pxref{Restarting a Simulation}, and @ref{External Orientation Assignment (Optional)} and @ref{External Crystallographic Phase Assignment (Optional)}, respectively.
+@c DEBUG: The below line can likely be removed and we can just add the input commands 
+@c to the above itemized list accordingly (adding the references per-line). - JC
+Additional input commands related to fiber-averaging routines, restart capabilities and external file read-in are presented separately, @pxref{The Fiber Averaging File (Optional)},
+@ref{Restarting a Simulation}, @ref{External Orientation Assignment (Optional)}, and @ref{External Crystallographic Phase Assignment (Optional)}, respectively.
 
 @node Optional Convergence Parameters
 @subsection Optional Convergence Parameters
@@ -712,7 +746,7 @@ The convergence of the material stress state for both the viscoplastic and elast
 @node The Mesh File
 @section The Mesh File (@file{simulation.msh})
 
-This file contains the finite element mesh information along with phase assignments and crystal orientations. The mesh file is generally generated by Neper and not directly modified.  A brief description is provided below, which a more complete description can be found in the Neper reference manual, @url{https://rquey.github.io/neper/docs/neper.pdf}.  The file can be opened by Gmsh for interactive visualization.
+This file contains the finite element mesh information along with phase assignments and crystal orientations. The mesh file is generally generated by Neper and not directly modified.  A brief description is provided below, which a more complete description can be found in the Neper reference manual, @url{https://neper.info/docs/neper.pdf}.  The file can be opened by Gmsh for interactive visualization.
 
 The file is structured in several, successive @dfn{fields} that define different aspects of the mesh. Each of these fields is wrapped by @samp{$@var{Field}/$End@var{Field}} lines, where @samp{@var{Field}} is a short description of the information stored within the block. A typical @file{simulation.msh} file will contain the following information:
 
@@ -773,7 +807,14 @@ The following @code{@var{orientation_descriptor}} types are available (associate
 
 @itemize
 
-@item For @samp{rodrigues}, each orientation is described by @math{r_1, r_2, r_3}, where the Rodrigues vector is @math{{@bf r} = {@bf t} \tan{(\omega / 2)} }. The per-line format is:
+@item For @samp{rodrigues}, each orientation is described by @math{r_1, r_2, r_3}, where the Rodrigues vector is
+@iftex
+@math{{@bf r} = {@bf t} \tan{(\omega / 2)} }.
+@end iftex
+@ifinfo
+@math{{r} = {t} \tan{(\omega / 2)} }.
+@end ifinfo
+The per-line format is:
 
 @inputfilehead
 @example
@@ -843,3 +884,18 @@ $EndGroups
 
 where @code{@var{group_entity}} defines the phase assignment method and must always be defined as @samp{elset}, @code{@var{number_of_group_entities}} is the number of grain/phase pairs defined in the field, @code{@var{entity_id}} is a unique 1-indexed identification number, and @code{@var{group}} is an 1-indexed value that defines the phase for a given grain.
 
+@node The Fiber Averaging File (Optional)
+@section The Fiber Averaging File (Optional, @file{simulation.fib})
+
+This file contains the definitions of crystallographic fibers. For each crystallographic fiber, the values of certain simulation variables are averaged (and the standard deviation calculated) for the elements which are oriented such that they belong to each fiber. Additionally, statistics on the elements that belong to each fiber are printed, such as the number of elements, the volume of the collective elements, and the list of elements that belong to a fiber. A full description of the fiber averaging output is discussed later (@pxref{Fiber Averaging Output} for a description of this output).
+
+The structure of the @file{simulation.fib} is as follows:
+
+@inputfilehead
+@example
+@var{h k l} @var{u v w} @var{phase} @var{ang_tol}
+...
+@end example
+@inputfilefoot
+
+Each line defines a single crystallographic fiber, where @code{@var{h k l}} are integer values for the crystallographic direction, @code{@var{u v w}} are real values for the sample direction, @code{@var{phase}} is an integer that specifies the crystallographic phase (beginning with 1), and @code{@var{ang_tol}} is a real value that defines the angular tolerance for which to accept a crystal as belonging to a fiber. All 8 values describing a fiber are expected to be separated by a space. The values provided for @code{@var{phase}} must correspond to the phase identification numbers defined in the @file{simulation.config} file. 

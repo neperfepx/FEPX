@@ -23,6 +23,7 @@ MODULE WRITE_OUTPUT_MOD
 ! WRITE_CONV_FILE_DATA: Writes the various convergence statistics
 !
 ! Writing restart files from the various drivers:
+! WRITE_RESTART_FIELD: Writes field data for restarting a simulation.
 ! WRITE_UNIAXIAL_RESTART: Writes required information for the uniaxial restart
 ! WRITE_TRIAXCSR_RESTART: Writes required information for the triaxcsr restart
 ! WRITE_TRIAXCLR_RESTART: Writes required information for the triaxclr restart
@@ -30,15 +31,17 @@ MODULE WRITE_OUTPUT_MOD
 ! To do:
 ! - is PROB_TYPE necessary for PRINT_STEP?
 !
+USE INTRINSICTYPESMODULE, ONLY: RK=>REAL_KIND
+USE PARALLEL_MOD
+!
 USE DIMSMODULE
 USE CONSTANTSMODULE, ONLY: RK_PI_OVER_180, RK_ROOT_2
 USE READ_INPUT_MOD
 USE MICROSTRUCTURE_MOD
 USE ORIENTATION_CONVERSION_MOD
-USE SIMULATION_CONFIGURATION_MOD
 USE SURF_INFO_MOD, ONLY: NSURFACES
 USE UNITS_MOD
-USE UTILSCRYSTALMODULE
+USE MATRIX_OPERATIONS_MOD
 !
 IMPLICIT NONE
 !
@@ -48,9 +51,9 @@ PUBLIC
 !
 CONTAINS
     !
-    SUBROUTINE PRINT_STEP(STEP, PROB_TYPE, CRD, VEL, ORIENT, WTS, HARD, ELAS, &
-        & S3X3, DEFF, EQSTRAIN, DPEFF, EQPLSTRAIN, VGRAD, DP_HAT, WP_HAT, &
-        & GAMMA, GAMMADOT, WORK, WORKP, D_TOT)
+    SUBROUTINE PRINT_STEP(STEP, PROB_TYPE, CRD, VEL, ORIENT, WTS, HARD, ELVOL,&
+        & ELAS, S3X3, DEFF, EQSTRAIN, DPEFF, EQPLSTRAIN, VGRAD, DP_HAT, &
+        & WP_HAT, GAMMA, GAMMADOT, WORK, WORKP, D_TOT)
     !
     ! Print variables on a given load step
     !
@@ -62,7 +65,7 @@ CONTAINS
     ! CRD: Nodal coordinates
     ! VEL: Nodal velocities
     ! ORIENT: Elemental orientation tensors (to be converted)
-    ! WTS: Grain weights
+    ! WTS: Grain weights - This is legacy and can likely be removed.
     ! HARD: Elemental CRSS values
     ! ELAS: Elemental elastic strain tensors (upper triangle, i.e. 6-vector)
     ! S3X3: Elemental stress tensors (3x3 matrix)
@@ -77,6 +80,7 @@ CONTAINS
     ! WORK: Elemental total work (scalar)
     ! WORKP: Elemental plastic work (scalar)
     ! D_TOT: Elemental total deformation rate tensor (3x3 matrix)
+    ! ELVOL: Elemental volume
     !
     INTEGER, INTENT(IN) :: STEP
     INTEGER, INTENT(IN) :: PROB_TYPE
@@ -85,6 +89,7 @@ CONTAINS
     REAL(RK), INTENT(IN) :: ORIENT(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: WTS(0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: HARD(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN), OPTIONAL :: ELVOL(EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN), OPTIONAL :: ELAS(0:5, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN), OPTIONAL :: S3X3(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN), OPTIONAL :: EQSTRAIN(EL_SUB1:EL_SUP1)
@@ -158,7 +163,7 @@ CONTAINS
     IF (PRINT_OPTIONS%PRINT_COORDINATES) THEN
         !
         IO = OUNITS(COORDS_U)
-        WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, DOF_SUB1, DOF_SUP1
+        WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, DOF_SUB1 + 1, DOF_SUP1 + 1
         WRITE(IO, '(3(e13.7,1x))') (CRD(J), J = DOF_SUB1, DOF_SUP1)
         !
         CALL ADD_TO_OUTPUT_FILES(STEP, 'coo', NODE_RESULTS)
@@ -170,7 +175,7 @@ CONTAINS
     IF (PRINT_OPTIONS%PRINT_VELOCITIES) THEN
         !
         IO = OUNITS(VEL_U)
-        WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, DOF_SUB1, DOF_SUP1
+        WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, DOF_SUB1 + 1, DOF_SUP1 + 1
         WRITE(IO, '(3(e13.7,1x))') (VEL(J), J = DOF_SUB1, DOF_SUP1)
         !
         CALL ADD_TO_OUTPUT_FILES(STEP, 'vel', NODE_RESULTS)
@@ -187,7 +192,7 @@ CONTAINS
         !
         ! Write header
         !
-        WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+        WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
         !
         ! Determine passive (C2S) or active (S2C) from orientation options
         !
@@ -311,24 +316,83 @@ CONTAINS
         !
         CALL ADD_TO_OUTPUT_FILES(STEP, 'crss', ELEM_RESULTS)
         !
-        WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+        WRITE(IO, '(A2,(3(I0,1X)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
         !
         DO J = EL_SUB1, EL_SUP1
             !
             DO IGRAIN = 0, NGRAIN1
                 !
-                IF(OPTIONS%HARD_TYPE.EQ.'isotropic') THEN
+                ! First, check if the element is FCC/BCC.
+                IF ((CRYS_OPTIONS%CRYSTAL_TYPE(PHASE(J)) .EQ. 1) .OR. &
+                    & (CRYS_OPTIONS%CRYSTAL_TYPE(PHASE(J)) .EQ. 2)) THEN
                     !
-                    WRITE(IO, '(18(e13.7,1x))') (HARD(0, IGRAIN, J))
+                    ! Next, check if the hardening is isotropic or anisotropic.
+                    IF ((OPTIONS%HARD_TYPE .EQ. 'isotropic') .OR. &
+                        & (OPTIONS%HARD_TYPE .EQ. 'cyclic_isotropic')) THEN
+                        !
+                        WRITE(IO, '(1(E13.7,1X))') (HARD(0, IGRAIN, J))
+                        !
+                    ELSE IF (OPTIONS%HARD_TYPE .EQ. 'latent') THEN
+                        !
+                        WRITE(IO, '(12(E13.7,1X))') HARD(0:11, IGRAIN, J)
+                        !
+                    ELSE
+                        !
+                        CALL PAR_QUIT('Error  :     > Invalid hardening type &
+                            &provided.')
+                        !
+                    ENDIF
                     !
-                ELSE
+                ! Else, check if the element is HCP.
+                ELSE IF (CRYS_OPTIONS%CRYSTAL_TYPE(PHASE(J)) .EQ. 3) THEN
                     !
-                    WRITE(IO, '(18(e13.7,1x))') (HARD(I, IGRAIN, J), &
-                        & I = 0, MAXSLIP1)
+                    ! Next, check if the hardening is isotropic or anisotropic.
+                    IF ((OPTIONS%HARD_TYPE .EQ. 'isotropic') .OR. &
+                        & (OPTIONS%HARD_TYPE .EQ. 'cyclic_isotropic')) THEN
+                        !
+                        WRITE(IO, '(3(E13.7,1X))') (HARD(0, IGRAIN, J)), &
+                            & CRYS_OPTIONS%PRISMATIC_TO_BASAL(PHASE(J)) &
+                            & * (HARD(0, IGRAIN, J)), &
+                            & CRYS_OPTIONS%PYRAMIDAL_TO_BASAL(PHASE(J)) &
+                            & * (HARD(0, IGRAIN, J))
+                        !
+                    ELSE IF (OPTIONS%HARD_TYPE .EQ. 'latent') THEN
+                        !
+                        WRITE(IO, '(18(E13.7,1X))') &
+                            & HARD(0:2, IGRAIN, J), &
+                            & CRYS_OPTIONS%PRISMATIC_TO_BASAL(PHASE(J)) &
+                            & * HARD(3:5, IGRAIN, J), &
+                            & CRYS_OPTIONS%PYRAMIDAL_TO_BASAL(PHASE(J)) &
+                            & * HARD(6:17, IGRAIN, J)
+                        !
+                    ELSE
+                        !
+                        CALL PAR_QUIT('Error  :     > Invalid hardening type &
+                            &provided.')
+                        !
+                    ENDIF
                     !
                 ENDIF
                 !
             ENDDO
+            !
+        ENDDO
+        !
+    ENDIF
+    !
+    ! Element volume (scalar)
+    !
+    IF (PRINT_OPTIONS%PRINT_ELVOL) THEN
+        !
+        IO = OUNITS(ELVOL_U)
+        !
+        CALL ADD_TO_OUTPUT_FILES(STEP, 'elt-vol', ELEM_RESULTS)
+        !
+        WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
+        !
+        DO I = EL_SUB1, EL_SUP1
+            !
+            WRITE(IO, '(e13.7)') ELVOL(I)
             !
         ENDDO
         !
@@ -345,7 +409,7 @@ CONTAINS
             !
             CALL ADD_TO_OUTPUT_FILES(STEP, 'strain-el', ELEM_RESULTS)
             !
-            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
             DO I = EL_SUB1, EL_SUP1
                 !
@@ -375,7 +439,7 @@ CONTAINS
             !
             CALL ADD_TO_OUTPUT_FILES(STEP, 'stress', ELEM_RESULTS)
             !
-            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
             DO I = EL_SUB1, EL_SUP1
                 !
@@ -396,7 +460,7 @@ CONTAINS
             !
             CALL ADD_TO_OUTPUT_FILES(STEP, 'sliprate', ELEM_RESULTS)
             !
-            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
             DO I = EL_SUB1, EL_SUP1
                 !
@@ -421,7 +485,7 @@ CONTAINS
             !
             CALL ADD_TO_OUTPUT_FILES(STEP, 'stress-eq', ELEM_RESULTS)
             !
-            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
             DO I = EL_SUB1, EL_SUP1
                 !
@@ -440,7 +504,7 @@ CONTAINS
             !
             CALL ADD_TO_OUTPUT_FILES(STEP, 'defrate-eq', ELEM_RESULTS)
             !
-            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
             DO I = EL_SUB1, EL_SUP1
                 !
@@ -458,7 +522,7 @@ CONTAINS
             !
             CALL ADD_TO_OUTPUT_FILES(STEP, 'strain-eq', ELEM_RESULTS)
             !
-            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
             DO I = EL_SUB1, EL_SUP1
                 !
@@ -476,7 +540,7 @@ CONTAINS
             !
             CALL ADD_TO_OUTPUT_FILES(STEP, 'defrate-pl-eq', ELEM_RESULTS)
             !
-            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
             DO I = EL_SUB1, EL_SUP1
                 !
@@ -494,7 +558,7 @@ CONTAINS
             !
             CALL ADD_TO_OUTPUT_FILES(STEP, 'strain-pl-eq', ELEM_RESULTS)
             !
-            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
             DO I = EL_SUB1, EL_SUP1
                 !
@@ -512,7 +576,7 @@ CONTAINS
             !
             CALL ADD_TO_OUTPUT_FILES(STEP, 'velgrad', ELEM_RESULTS)
             !
-            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
             DO I = EL_SUB1, EL_SUP1
                 !
@@ -532,7 +596,7 @@ CONTAINS
             !
             CALL ADD_TO_OUTPUT_FILES(STEP, 'defrate-pl', ELEM_RESULTS)
             !
-            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
             DO I = EL_SUB1, EL_SUP1
                 !
@@ -574,7 +638,7 @@ CONTAINS
             !
             CALL ADD_TO_OUTPUT_FILES(STEP, 'spinrate', ELEM_RESULTS)
             !
-            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
             DO I = EL_SUB1, EL_SUP1
                 !
@@ -610,7 +674,7 @@ CONTAINS
             !
             CALL ADD_TO_OUTPUT_FILES(STEP, 'slip', ELEM_RESULTS)
             !
-            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
             DO I = EL_SUB1, EL_SUP1
                 !
@@ -633,7 +697,7 @@ CONTAINS
             !
             CALL ADD_TO_OUTPUT_FILES(STEP, 'work', ELEM_RESULTS)
             !
-            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
             DO I = EL_SUB1, EL_SUP1
                 !
@@ -651,7 +715,7 @@ CONTAINS
             !
             CALL ADD_TO_OUTPUT_FILES(STEP, 'work-pl', ELEM_RESULTS)
             !
-            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
             DO I = EL_SUB1, EL_SUP1
                 !
@@ -669,11 +733,11 @@ CONTAINS
             !
             CALL ADD_TO_OUTPUT_FILES(STEP, 'defrate', ELEM_RESULTS)
             !
-            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1, EL_SUP1
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
             DO I = EL_SUB1, EL_SUP1
                 !
-                ! Written as 11, 22, 33, 23, 13, 12 in (DEBUG) basis
+                ! Written as 11, 22, 33, 23, 13, 12 in sample basis
                 !
                 WRITE(IO, '(9(e13.7,1x))') D_TOT(0,0,I), D_TOT(1,1,I), &
                     & D_TOT(2,2,I), D_TOT(1,2,I), D_TOT(0,2,I), D_TOT(0,1,I)
@@ -850,9 +914,13 @@ CONTAINS
     ! All printed data should be public from the top-level so no arguments.
     IF (MYID .EQ. 0) THEN
         !
+        ! Print the number of nodes, elements, and partitions
+        !
         WRITE(OUNITS(REPORT_U), '(A,I0)') 'number_of_nodes ', NUMNP
         WRITE(OUNITS(REPORT_U), '(A,I0)') 'number_of_elements ', NUMELM
         WRITE(OUNITS(REPORT_U), '(A,I0)') 'number_of_partitions ', NUMPROCS
+        !
+        ! Print number of elements on each partition
         !
         WRITE(OUNITS(REPORT_U), '(A)', ADVANCE='NO') 'number_of_elements_bypartition '
         !
@@ -862,6 +930,8 @@ CONTAINS
             !
         END DO
         !
+        ! Print number of nodes on each partition
+        !
         WRITE(OUNITS(REPORT_U), '(/,A)', ADVANCE='NO') 'number_of_nodes_bypartition '
         !
         DO I = 0, NUMPROCS-1
@@ -870,8 +940,17 @@ CONTAINS
             !
         END DO
         !
-        WRITE(OUNITS(REPORT_U), '(/,A,I0)') 'number_of_slip_systems ', MAXSLIP 
-        WRITE(OUNITS(REPORT_U), '(A,A,A,A)') 'orientation_definition ', &
+        ! Print number of slip systems and the orientation definition
+        !
+        WRITE(OUNITS(REPORT_U), '(/,A)', ADVANCE='NO') 'number_of_slip_systems '
+        !
+        DO I = 1, NUMPHASES
+            !
+            WRITE(OUNITS(REPORT_U), '(I0, A)', ADVANCE='NO') CTYPE(I)%NUMSLIP, ' '
+            !
+        END DO
+        !    
+        WRITE(OUNITS(REPORT_U), '(/,A,A,A,A)') 'orientation_definition ', &
             & TRIM(ORIENTATION_OPTIONS%ORIENTATION_PARAMETERIZATION), ':', &
             & TRIM(ORIENTATION_OPTIONS%ORIENTATION_CONVENTION)
         !
@@ -898,11 +977,19 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    ! If the first step is being printed then print to the report file.
-    IF ((CURRENT_STEP .EQ. 1) .AND. (MYID .EQ. 0)) THEN
+    ! Only print to the post.report file from the root processor
+    !
+    IF (MYID .EQ. 0) THEN
         !
-        WRITE(OUNITS(REPORT_U), '(25(A,1X))') &
-            & (TRIM(INPUT_STRING(I)),I = 1,SIZE(INPUT_STRING))
+        ! If the first step is being printed then print to the report file.
+        ! If the "first" step after restarting a simulation, also print.
+        IF (((CURRENT_STEP .EQ. 1)) .OR. ((OPTIONS%RESTART .EQV. .TRUE.) .AND. &
+            & (CURRENT_STEP .EQ. OPTIONS%RESTART_INITIAL_STEP))) THEN
+            !
+            WRITE(OUNITS(REPORT_U), '(25(A,1X))') &
+                & (TRIM(INPUT_STRING(I)),I = 1,SIZE(INPUT_STRING))
+            !
+        END IF
         !
     END IF
     !
@@ -931,24 +1018,32 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    ! If the first step is being printed then print to the report file.
-    IF ((CURRENT_STEP .EQ. 1) .AND. (MYID .EQ. 0)) THEN
+    ! Only print to the post.report file from the root processor
+    !
+    IF (MYID .EQ. 0) THEN
         !
-        ! Append the INPUT_STRING to the present array and reallocate.
-        IF(ALLOCATED(STRING_ARRAY)) THEN
+        ! If the first step is being printed then print to the report file.
+        ! If the "first" step after restarting a simulation, also print.
+        IF (((CURRENT_STEP .EQ. 1)) .OR. ((OPTIONS%RESTART .EQV. .TRUE.) .AND. &
+            & (CURRENT_STEP .EQ. OPTIONS%RESTART_INITIAL_STEP))) THEN
             !
-            ARRAYSIZE = SIZE(STRING_ARRAY)
-            ALLOCATE(TEMP_ARRAY(ARRAYSIZE+1))
-            !
-            DO I = 1, ARRAYSIZE
-                !          
-                TEMP_ARRAY(I) = STRING_ARRAY(I)
+            ! Append the INPUT_STRING to the present array and reallocate.
+            IF(ALLOCATED(STRING_ARRAY)) THEN
                 !
-            END DO
-            !
-            TEMP_ARRAY(ARRAYSIZE+1) = INPUT_STRING
-            DEALLOCATE(STRING_ARRAY)
-            CALL MOVE_ALLOC(TEMP_ARRAY, STRING_ARRAY)
+                ARRAYSIZE = SIZE(STRING_ARRAY)
+                ALLOCATE(TEMP_ARRAY(ARRAYSIZE+1))
+                !
+                DO I = 1, ARRAYSIZE
+                    !
+                    TEMP_ARRAY(I) = STRING_ARRAY(I)
+                    !
+                END DO
+                !
+                TEMP_ARRAY(ARRAYSIZE+1) = INPUT_STRING
+                DEALLOCATE(STRING_ARRAY)
+                CALL MOVE_ALLOC(TEMP_ARRAY, STRING_ARRAY)
+                !
+            END IF
             !
         END IF
         !
@@ -958,7 +1053,7 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE WRITE_REPORT_FILE_COMPLETE_STEPS(FINAL_STEP)
+    SUBROUTINE WRITE_REPORT_FILE_COMPLETE_STEPS(FINAL_STEP, PRINT_ARRAY)
     !
     ! This writes the completed number of steps from the driver as the current
     ! simulation is either finishing successfully or terminated early.
@@ -967,16 +1062,38 @@ CONTAINS
     !
     ! Arguments:
     ! FINAL_STEP: Final completed step in this simulation
+    ! PRINT_ARRAY: Array of integers denoting which steps are to be printed
     !
     INTEGER, INTENT(IN) :: FINAL_STEP
+    INTEGER, INTENT(IN) :: PRINT_ARRAY(:)
+    !
+    ! Locals:
+    ! I: Generic looping index
+    !
+    INTEGER :: I
     !
     !---------------------------------------------------------------------------
     !
     ! If the first step is being printed then print to the report file.
     IF (MYID .EQ. 0) THEN
         !
+        ! Print the completed number of steps
+        !
         WRITE(OUNITS(REPORT_U), '(A,I0)') 'number_of_steps ', &
             & FINAL_STEP
+        !
+        ! Print the IDs of the steps that were requested to be printed
+        !
+        WRITE(OUNITS(REPORT_U), '(A)', ADVANCE='NO') 'printed_steps '
+        !
+        DO I = 1, SIZE(PRINT_ARRAY,1)
+            !
+            IF (PRINT_ARRAY(I) .EQ. 0) WRITE(OUNITS(REPORT_U), &
+                & '(I0, A)', ADVANCE='NO') I, ' '
+            !
+        END DO
+        !
+        ! Close the report file before ending the process
         !
         CLOSE(OUNITS(REPORT_U))
         !
@@ -1020,7 +1137,15 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
+    ! If restartinbg with appending then we don't need the headers
+    IF (OPTIONS%RESTART_FILE_HANDLING .EQ. 0) THEN
+        !
+        RETURN
+        !
+    END IF
+    !
     ! Check the input DRIVER_TYPE and print the correct headers
+    !
     IF (DRIVER_TYPE .EQ. 1) THEN ! uniaxial
         !
         ! Print the headers to the files
@@ -1173,6 +1298,93 @@ CONTAINS
         & CG_ITER_OUT
     !
     END SUBROUTINE WRITE_CONV_FILE_DATA
+    !
+    !===========================================================================
+    !
+    SUBROUTINE WRITE_RESTART_FIELD(VELOCITY, C0_ANGS, C_ANGS, &
+        & RSTAR, RSTAR_N, WTS, CRSS, CRSS_N, &
+        & E_ELAS_KK_BAR, SIG_VEC_N, EQSTRAIN, EQPLSTRAIN, GAMMA, &
+        & EL_WORK_N, EL_WORKP_N, EL_WORK_RATE_N, EL_WORKP_RATE_N)
+    !
+    !  Writes field data for restarting simulation
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    !
+    REAL(RK), INTENT(IN) :: VELOCITY(DOF_SUB1:DOF_SUP1)
+    REAL(RK), INTENT(IN) :: C0_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: C_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: RSTAR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: RSTAR_N(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: WTS(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: CRSS(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: CRSS_N(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: E_ELAS_KK_BAR(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: SIG_VEC_N(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: EQSTRAIN(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: EQPLSTRAIN(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: GAMMA(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: EL_WORK_N(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: EL_WORKP_N(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: EL_WORK_RATE_N(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: EL_WORKP_RATE_N(EL_SUB1:EL_SUP1)
+    !
+    ! Locals:
+    !
+    INTEGER :: MYUNIT
+    CHARACTER(LEN=8) :: CHARID ! assumes less than 10,000 processes
+    !
+    INTRINSIC :: TRIM
+    !
+    !----------------------------------------------------------------------
+    !
+    MYUNIT = NEWUNITNUMBER()
+    WRITE(CHARID, '(I0)') MYID + 1
+    !
+    OPEN(UNIT=MYUNIT, FILE=TRIM(OPTIONS%RSFIELD_BASE_OUT)//'.core'//TRIM(CHARID), &
+         &   FORM ='UNFORMATTED', ACTION ='WRITE')
+    !
+    !  Velocity and coordinates.
+    !
+    WRITE(MYUNIT) COORDS
+    WRITE(MYUNIT) VELOCITY  
+    !
+    !  Orientations, weights and hardnesses.
+    !
+    WRITE(MYUNIT) C0_ANGS
+    WRITE(MYUNIT) C_ANGS
+    WRITE(MYUNIT) RSTAR
+    WRITE(MYUNIT) RSTAR_N
+    WRITE(MYUNIT) WTS
+    WRITE(MYUNIT) CRSS
+    WRITE(MYUNIT) CRSS_N
+    !
+    !  Elastic Strains.
+    !
+    WRITE(MYUNIT) GELA_KK_BAR
+    WRITE(MYUNIT) GSIG_VEC_N
+    WRITE(MYUNIT) PELA_KK_BAR
+    WRITE(MYUNIT) PSIG_VEC_N
+    WRITE(MYUNIT) E_ELAS_KK_BAR
+    WRITE(MYUNIT) SIG_VEC_N
+    !
+    !  Equivalent Strains
+    !
+    WRITE(MYUNIT) EQSTRAIN
+    WRITE(MYUNIT) EQPLSTRAIN
+    WRITE(MYUNIT) GAMMA
+    !
+    !  Total work, plastic work, and rates.
+    !
+    WRITE(MYUNIT) EL_WORK_N
+    WRITE(MYUNIT) EL_WORKP_N
+    WRITE(MYUNIT) EL_WORK_RATE_N
+    WRITE(MYUNIT) EL_WORKP_RATE_N
+    !
+    CLOSE(MYUNIT)
+    !
+    END SUBROUTINE WRITE_RESTART_FIELD
     !
     !===========================================================================
     !

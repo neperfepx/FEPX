@@ -45,7 +45,7 @@ MODULE StressSolveVpModule
   USE DimsModule
   USE microstructure_mod
   USE ConvergenceModule, ONLY: cv_options
-  USE UtilsCrystalModule
+  USE MATRIX_OPERATIONS_MOD
 
   IMPLICIT  NONE
 
@@ -127,7 +127,7 @@ CONTAINS
       if ((myid .eq. 0) .and. vp_log) then
             WRITE(DFLT_U, '(A)') 'Warning:       . STRESS_SOLVE_VP: '
             WRITE(DFLT_U, '(A)') 'Warning:       . ',count(.not. converged),'&
-                & grains did not converge'
+                & elements did not converge'
             WRITE(DFLT_U, '(A)') 'Warning:       . after ', ntrials,' trials.'
       endif
 

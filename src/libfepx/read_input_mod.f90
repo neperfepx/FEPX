@@ -6,14 +6,24 @@ MODULE READ_INPUT_MOD
 !
 ! Module to handle all generic file read-in functionality. Specific file
 ! handling (restart, BCs, and powder-diffraction) are maintained in their
-! own respective modules for ease of modification.
+! own respective modules for ease of modification. Simulation configuration
+! parameters (and their associated scope) is now stored here.
 !
 ! Contains subroutines:
+!
+! For reading in the mesh file:
 ! ALLOCATE_MSH: Allocates mesh arrays based on the problem size.
 ! GET_MSH_SIZE: Scrapes the msh file and retrieve the number of nodes and elems.
 ! READ_SPATIAL_MSH: Parent subroutine to handle msh file parsing process.
+! READ_RESTART_FIELD: Reads field data for restarting a simulation.
 !
-! Contains helper subroutines (supporting READ_SPATIAL_MSH):
+! For reading in simulation configuration parameters:
+! INITIALIZE_OPTIONS - Initializes options and input.
+! PROCESS_INPUT - Processes options and input.
+!
+! Contains helper subroutines:
+!
+! For parsing the mesh (and related external) file:
 ! GET_NODE_INFO: Gets the number of nodes in the mesh.
 ! GET_ELEM_INFO: Gets the number of elements in the mesh and partitions.
 ! READ_MESH_FORMAT: Reads in gmsh file format - 2.2 0 8 only.
@@ -26,15 +36,99 @@ MODULE READ_INPUT_MOD
 ! READ_ORIENTATIONS: Read in grain (or element) orientations.
 ! READ_GROUPS: Read in grain phases (assumes single-phase by default). -OPTIONAL
 !
+! For parsing the simulation configuration file:
+! Standard options:
+!  EXEC_MAX_INCR
+!  EXEC_MAX_TOTAL_TIME
+!  EXEC_DEF_CONTROL_BY
+!  EXEC_CHECK_NECKING
+!  EXEC_LOAD_TOL
+!  EXEC_DTIME_FACTOR
+!  EXEC_RESTART
+!  EXEC_RSFIELD_BASE_IN
+!  EXEC_RSFIELD_BASE_OUT
+!  EXEC_RSCTRL_IN
+!  EXEC_RSCTRL_OUT
+!  EXEC_HARD_TYPE
+!  EXEC_READ_ORI_FROM_FILE
+!  EXEC_READ_PHASE_FROM_FILE
+! Printing options:
+!  EXEC_PRINT
+!  EXEC_SUPPRESS
+! Boundary conditions options:
+!  EXEC_READ_BCS_FROM_FILE
+!  EXEC_BOUNDARY_CONDITIONS
+!  EXEC_LOADING_FACE
+!  EXEC_LOADING_DIRECTION
+!  EXEC_STRAIN_RATE
+!  EXEC_LOAD_RATE
+! Crystal parameter options:
+!  EXEC_NUMBER_OF_PHASES
+!  EXEC_CRYSTAL_TYPE
+!  EXEC_PHASEEXEC_PHASE
+!  EXEC_M
+!  EXEC_GAMMADOT_0
+!  EXEC_H_0
+!  EXEC_G_0
+!  EXEC_G_S0
+!  EXEC_M_PRIME
+!  EXEC_GAMMADOT_S0
+!  EXEC_N
+!  EXEC_C11
+!  EXEC_C12
+!  EXEC_C13
+!  EXEC_C44
+!  EXEC_C_OVER_A
+!  EXEC_CYCLIC_PARAMETER_A
+!  EXEC_CYCLIC_PARAMETER_C
+!  EXEC_LATENT_PARAMETERS
+! Uniaxial control options:
+!  EXEC_NUMBER_OF_STRAIN_STEPS
+!  EXEC_NUMBER_OF_STRAIN_RATE_JUMPS
+!  EXEC_TARGET_STRAIN
+!  EXEC_STRAIN_RATE_JUMP
+!  EXEC_NUMBER_OF_LOAD_STEPS
+!  EXEC_TARGET_LOAD
+! Triaxial CSR options:
+!  EXEC_MAX_BC_ITER
+!  EXEC_MIN_PERT_FRAC
+!  EXEC_LOAD_TOL_ABS
+!  EXEC_LOAD_TOL_REL
+!  EXEC_NUMBER_OF_CSR_LOAD_STEPS
+!  EXEC_TARGET_CSR_LOAD
+! Triaxial CLR options:
+!  EXEC_MAX_STRAIN_INCR
+!  EXEC_MAX_STRAIN
+!  EXEC_MAX_EQSTRAIN
+!  EXEC_NUMBER_OF_CLR_LOAD_STEPS
+!  EXEC_TARGET_CLR_LOAD
+!  EXEC_NUMBER_OF_LOAD_RATE_JUMPS
+!  EXEC_LOAD_RATE_JUMP
+!  EXEC_NUMBER_OF_DWELL_EPISODES
+!  EXEC_DWELL_EPISODE
+! Powder diffraction options:
+!  EXEC_RUN_POWDER_DIFFRACTION
+!  EXEC_READ_VOLUME
+!  EXEC_READ_INTERIOR
+!
+USE LIBF95, ONLY: EXECCOMMAND, NEWUNITNUMBER
 USE INTRINSICTYPESMODULE, ONLY: RK=>REAL_KIND
 USE PARALLEL_MOD
-! 
+!
+USE DIMSMODULE
+USE CONVERGENCEMODULE, ONLY: CONVERGENCEKEYWORDINPUT
 USE SURFACE_MOD
 USE SURF_INFO_MOD
-USE SIMULATION_CONFIGURATION_MOD
-USE UNITS_MOD
 !
 IMPLICIT NONE
+!
+! Private
+!
+INTEGER, PARAMETER, PRIVATE :: MAX_PATH_LEN=1024
+INTEGER, PARAMETER, PRIVATE :: MAX_FILE_LEN=256
+INTEGER, PRIVATE :: IOERR
+CHARACTER(LEN=MAX_PATH_LEN), PRIVATE :: PRIV_FNAME
+INTEGER, PRIVATE :: PRIV_INPUNIT
 !
 ! Public
 !
@@ -79,6 +173,203 @@ REAL(RK), ALLOCATABLE :: GRAIN_ORIENTATION(:,:)
 !
 LOGICAL :: READ_ELEM_PART = .FALSE.
 LOGICAL :: READ_NODE_PART = .FALSE.
+!
+! Elastic strain/stress and post_update_n internal variables
+!
+REAL(RK), ALLOCATABLE :: PELA_KK_BAR(:)
+REAL(RK), ALLOCATABLE :: PSIG_VEC_N(:,:,:)
+REAL(RK), ALLOCATABLE :: PCRSS_N(:,:,:)
+REAL(RK), ALLOCATABLE :: PRSTAR_N(:,:,:,:)
+!
+REAL(RK), ALLOCATABLE :: GELA_KK_BAR(:,:,:)
+REAL(RK), ALLOCATABLE :: GSIG_VEC_N(:,:,:,:)
+!
+! Internal variables needed for work related calculations
+!
+REAL(RK), ALLOCATABLE :: EL_WORK_N(:)
+REAL(RK), ALLOCATABLE :: EL_WORKP_N(:)
+REAL(RK), ALLOCATABLE :: EL_WORK_RATE_N(:)
+REAL(RK), ALLOCATABLE :: EL_WORKP_RATE_N(:)
+REAL(RK), ALLOCATABLE :: EL_WORK(:)
+REAL(RK), ALLOCATABLE :: EL_WORKP(:)
+REAL(RK), ALLOCATABLE :: D_TOT(:, :, :) 
+!
+! Configuration types
+!
+TYPE OPTIONS_TYPE
+    !
+    INTEGER  :: MAX_INCR
+    REAL(RK) :: MAX_TOTAL_TIME
+    INTEGER  :: DEF_CONTROL_BY
+    LOGICAL  :: CHECK_NECKING
+    REAL(RK) :: LOAD_TOL
+    REAL(RK) :: DTIME_FACTOR
+    LOGICAL  :: RESTART
+    INTEGER  :: RESTART_FILE_HANDLING
+    INTEGER  :: RESTART_INITIAL_STEP
+    CHARACTER(LEN=MAX_FILE_LEN) :: RSFIELD_BASE_IN
+    CHARACTER(LEN=MAX_FILE_LEN) :: RSFIELD_BASE_OUT
+    CHARACTER(LEN=MAX_FILE_LEN) :: RSCTRL_IN
+    CHARACTER(LEN=MAX_FILE_LEN) :: RSCTRL_OUT
+    CHARACTER(LEN=MAX_FILE_LEN) :: RSVAR_BASE_OUT
+    CHARACTER(LEN=18) :: HARD_TYPE
+    LOGICAL  :: READ_ORI_FROM_FILE
+    CHARACTER(LEN=MAX_FILE_LEN) :: ORI_FILE
+    LOGICAL  :: READ_PHASE_FROM_FILE
+    CHARACTER(LEN=MAX_FILE_LEN) :: PHASE_FILE
+    !
+END TYPE OPTIONS_TYPE
+!
+TYPE PRINT_OPTIONS_TYPE
+    !
+    LOGICAL :: PRINT_COORDINATES
+    LOGICAL :: PRINT_VELOCITIES
+    LOGICAL :: PRINT_ORIENTATIONS
+    LOGICAL :: PRINT_CRSS
+    LOGICAL :: PRINT_EQSTRESS
+    LOGICAL :: PRINT_STRESS
+    LOGICAL :: PRINT_STRAIN
+    LOGICAL :: PRINT_GAMMADOT
+    LOGICAL :: PRINT_DEFF
+    LOGICAL :: PRINT_DPEFF
+    LOGICAL :: PRINT_ELVOL
+    LOGICAL :: PRINT_EQSTRAIN
+    LOGICAL :: PRINT_EQPLSTRAIN
+    LOGICAL :: PRINT_VGRAD
+    LOGICAL :: PRINT_DPHAT
+    LOGICAL :: PRINT_WPHAT
+    LOGICAL :: PRINT_GAMMA
+    LOGICAL :: PRINT_RESTART
+    LOGICAL :: PRINT_FORCES
+    LOGICAL :: PRINT_CONV
+    LOGICAL :: PRINT_WORK
+    LOGICAL :: PRINT_WORKP
+    LOGICAL :: PRINT_DEFRATE
+    !
+END TYPE PRINT_OPTIONS_TYPE
+!
+TYPE BOUNDARY_CONDITIONS_TYPE
+    !
+    LOGICAL  :: READ_BCS_FROM_FILE
+    CHARACTER(LEN=MAX_FILE_LEN) :: BCS_FILE
+    INTEGER  :: BOUNDARY_CONDITIONS
+    INTEGER  :: LOADING_FACE
+    INTEGER  :: LOADING_DIRECTION
+    REAL(RK) :: STRAIN_RATE
+    REAL(RK) :: LOAD_RATE
+    !
+END TYPE BOUNDARY_CONDITIONS_TYPE
+!
+TYPE CRYS_OPTIONS_TYPE
+    !
+    INTEGER :: NUMBER_OF_PHASES
+    INTEGER :: PHASE
+    ! Required crystal parameters for all phases.
+    INTEGER,  ALLOCATABLE :: CRYSTAL_TYPE(:)
+    REAL(RK), ALLOCATABLE :: M(:)
+    REAL(RK), ALLOCATABLE :: GAMMADOT_0(:)
+    REAL(RK), ALLOCATABLE :: H_0(:)
+    REAL(RK), ALLOCATABLE :: G_0(:)
+    REAL(RK), ALLOCATABLE :: G_S0(:)
+    REAL(RK), ALLOCATABLE :: M_PRIME(:)
+    REAL(RK), ALLOCATABLE :: GAMMADOT_S0(:)
+    REAL(RK), ALLOCATABLE :: N(:)
+    REAL(RK), ALLOCATABLE :: C11(:)
+    REAL(RK), ALLOCATABLE :: C12(:)
+    REAL(RK), ALLOCATABLE :: C13(:)
+    REAL(RK), ALLOCATABLE :: C44(:)
+    ! HCP specific parameter data.
+    REAL(RK), ALLOCATABLE :: C_OVER_A(:)
+    REAL(RK), ALLOCATABLE :: PRISMATIC_TO_BASAL(:)
+    REAL(RK), ALLOCATABLE :: PYRAMIDAL_TO_BASAL(:)
+    ! Hardening related parameters.
+    REAL(RK), ALLOCATABLE :: CYCLIC_PARAMETER_A(:)
+    REAL(RK), ALLOCATABLE :: CYCLIC_PARAMETER_C(:)
+    REAL(RK), ALLOCATABLE :: LATENT_PARAMETERS(:,:)
+    !
+    ! Rate dependence options for HCP materials
+    LOGICAL,  ALLOCATABLE :: USE_ANISO_M(:)
+    REAL(RK), ALLOCATABLE :: ANISO_M(:, :)
+    !
+END TYPE CRYS_OPTIONS_TYPE
+!
+TYPE UNIAXIAL_CONTROL_TYPE
+    ! Uniaxial strain target parameters.    
+    INTEGER :: NUMBER_OF_STRAIN_STEPS
+    INTEGER :: NUMBER_OF_STRAIN_RATE_JUMPS
+    INTEGER :: CURRENT_STRAIN_TARGET
+    INTEGER :: CURRENT_STRAIN_JUMP
+    REAL(RK), ALLOCATABLE :: TARGET_STRAIN(:,:)
+    REAL(RK), ALLOCATABLE :: STRAIN_RATE_JUMP(:,:)
+    CHARACTER(LEN=15) :: TEMP
+    ! Uniaxial load target parameters.
+    INTEGER :: NUMBER_OF_LOAD_STEPS
+    INTEGER :: CURRENT_LOAD_TARGET
+    REAL(RK), ALLOCATABLE :: TARGET_LOAD(:,:)
+    !
+END TYPE UNIAXIAL_CONTROL_TYPE
+!
+TYPE TRIAXCSR_OPTIONS_TYPE
+    !
+    INTEGER  :: MAX_BC_ITER
+    REAL(RK) :: MAX_STRAIN
+    REAL(RK) :: MAX_EQSTRAIN
+    REAL(RK) :: MIN_PERT_FRAC
+    REAL(RK) :: LOAD_TOL_ABS
+    REAL(RK) :: LOAD_TOL_REL
+    CHARACTER(LEN=15) :: TEMP_CSR
+    INTEGER :: NUMBER_OF_CSR_LOAD_STEPS
+    INTEGER :: CURRENT_CSR_LOAD_TARGET
+    REAL(RK), ALLOCATABLE :: TARGET_CSR_LOAD(:,:)
+    !
+END TYPE TRIAXCSR_OPTIONS_TYPE
+!
+TYPE TRIAXCLR_OPTIONS_TYPE
+    !
+    REAL(RK) :: LOAD_TOL_ABS
+    INTEGER  :: MAX_BC_ITER 
+    REAL(RK) :: MAX_STRAIN_INCR
+    REAL(RK) :: MAX_STRAIN
+    REAL(RK) :: MAX_EQSTRAIN
+    CHARACTER(LEN=15) :: TEMP_CLR
+    INTEGER :: NUMBER_OF_CLR_LOAD_STEPS
+    INTEGER :: CURRENT_CLR_LOAD_TARGET
+    REAL(RK), ALLOCATABLE :: TARGET_CLR_LOAD(:,:)
+    INTEGER :: NUMBER_OF_LOAD_RATE_JUMPS
+    INTEGER :: NUMBER_OF_DWELL_EPISODES
+    INTEGER :: CURRENT_LOAD_RATE_JUMP
+    INTEGER :: CURRENT_DWELL_EPISODE
+    REAL(RK), ALLOCATABLE :: LOAD_RATE_JUMP(:,:)
+    REAL(RK), ALLOCATABLE :: DWELL_EPISODE(:,:)
+    !
+END TYPE TRIAXCLR_OPTIONS_TYPE
+!
+TYPE FIBER_AVERAGE_OPTIONS_TYPE
+    !
+    LOGICAL :: RUN_FIBER_AVERAGE
+    LOGICAL :: READ_VOLUME
+    LOGICAL :: READ_INTERIOR
+    CHARACTER(LEN=MAX_FILE_LEN) :: FIBER_AVERAGE_FILE
+    CHARACTER(LEN=MAX_FILE_LEN) :: VOLUME_FILE
+    CHARACTER(LEN=MAX_FILE_LEN) :: INTERIOR_FILE
+    !
+END TYPE FIBER_AVERAGE_OPTIONS_TYPE
+!
+TYPE(OPTIONS_TYPE) :: OPTIONS
+TYPE(PRINT_OPTIONS_TYPE) :: PRINT_OPTIONS
+TYPE(BOUNDARY_CONDITIONS_TYPE) :: BCS_OPTIONS
+TYPE(CRYS_OPTIONS_TYPE) :: CRYS_OPTIONS
+TYPE(UNIAXIAL_CONTROL_TYPE) :: UNIAXIAL_OPTIONS
+TYPE(TRIAXCSR_OPTIONS_TYPE) :: TRIAXCSR_OPTIONS
+TYPE(TRIAXCLR_OPTIONS_TYPE) :: TRIAXCLR_OPTIONS
+TYPE(FIBER_AVERAGE_OPTIONS_TYPE) :: FIBER_AVERAGE_OPTIONS
+!
+!  Deformation control :
+!
+INTEGER, PARAMETER :: UNIAXIAL_LOAD_TARGET = 1
+INTEGER, PARAMETER :: UNIAXIAL_STRAIN_TARGET = 2
+INTEGER, PARAMETER :: TRIAXIAL_CONSTANT_STRAIN_RATE = 3
+INTEGER, PARAMETER :: TRIAXIAL_CONSTANT_LOAD_RATE = 4
 !
 CONTAINS
     !
@@ -359,10 +650,6 @@ CONTAINS
             !
         END DO
         !
-        ! DEBUG WRITE
-!        WRITE(*,*) 'Number of elem partitions: ', NPARTS
-!        WRITE(*,*) 'Element step indices: ', CHG_INDEX
-        !
         ! Build bound array for NPARTS -> (1,:) is EL_SUB1, (2,:) is EL_SUP1.
         TEMPVAL = 0
         DO I = 1, NPARTS
@@ -387,11 +674,6 @@ CONTAINS
             !
         END DO
         !
-        ! DEBUG WRITE
-!        DO I = 1, NPARTS
-!            WRITE(*,*) 'Partition ', I, ': ', TEMPVAL(I,:)
-!        END DO
-        !
     END IF
     !
     ! Read the end of section footer.
@@ -415,7 +697,7 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE READ_SPATIAL_MSH(IO)    
+    SUBROUTINE READ_SPATIAL_MSH(IO, CONSOLE_UNIT)    
     !
     ! Parse the .msh file and have each processor store only what it needs.
     !
@@ -425,6 +707,7 @@ CONTAINS
     ! IO: Input unit for .msh file.
     !
     INTEGER, INTENT(IN) :: IO
+    INTEGER, INTENT(IN) :: CONSOLE_UNIT
     !
     ! Locals:
     ! EOFSTAT: Value that confirms if FORTRAN is at the end of a file.
@@ -504,7 +787,7 @@ CONTAINS
             CASE('$Groups') ! Grain/phase assignment for multiphase (OPTIONAL).
                 !
                 BACKSPACE(IO)
-                CALL READ_GROUPS(IO)
+                CALL READ_GROUPS(IO, CONSOLE_UNIT)
                 !
             ! END CASE            
             !
@@ -515,6 +798,93 @@ CONTAINS
     RETURN
     !
     END SUBROUTINE READ_SPATIAL_MSH
+    !
+    !===========================================================================
+    !
+    SUBROUTINE READ_RESTART_FIELD(VELOCITY, C0_ANGS, C_ANGS, &
+        & RSTAR, RSTAR_N, WTS, CRSS, CRSS_N, &
+        & E_ELAS_KK_BAR, SIG_VEC_N, EQSTRAIN, EQPLSTRAIN, GAMMA, &
+        & EL_WORK_N, EL_WORKP_N, EL_WORK_RATE_N, EL_WORKP_RATE_N)
+    !
+    !  Reads field data for restarting simulation
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    !
+    REAL(RK), INTENT(OUT) :: VELOCITY(DOF_SUB1:DOF_SUP1)
+    REAL(RK), INTENT(OUT) :: C0_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT) :: C_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT) :: RSTAR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT) :: RSTAR_N(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT) :: WTS(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT) :: CRSS(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT) :: CRSS_N(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT) :: E_ELAS_KK_BAR(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT) :: SIG_VEC_N(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT) :: EQSTRAIN(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT) :: EQPLSTRAIN(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT) :: GAMMA(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT) :: EL_WORK_N(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT) :: EL_WORKP_N(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT) :: EL_WORK_RATE_N(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT) :: EL_WORKP_RATE_N(EL_SUB1:EL_SUP1)
+    !
+    ! Locals:
+    !
+    INTEGER :: MYUNIT
+    CHARACTER(LEN=8) :: CHARID ! assumes less than 10,000 processes
+    !
+    INTRINSIC :: TRIM
+    !
+    !----------------------------------------------------------------------
+    !
+    MYUNIT = NEWUNITNUMBER()
+    WRITE(CHARID, '(I0)') MYID + 1
+    !
+    OPEN(UNIT=MYUNIT, FILE=TRIM(OPTIONS%RSFIELD_BASE_IN)//'.core'//TRIM(CHARID), &
+         &   FORM='UNFORMATTED', ACTION='READ')
+    !
+    !  Velocity and coordinates.
+    !
+    READ(MYUNIT) COORDS
+    READ(MYUNIT) VELOCITY  
+    !
+    !  Orientations, weights and hardnesses.
+    !
+    READ(MYUNIT) C0_ANGS
+    READ(MYUNIT) C_ANGS
+    READ(MYUNIT) RSTAR
+    READ(MYUNIT) RSTAR_N
+    READ(MYUNIT) WTS
+    READ(MYUNIT) CRSS
+    READ(MYUNIT) CRSS_N
+    !
+    !  Elastic Strains.
+    !
+    READ(MYUNIT) GELA_KK_BAR
+    READ(MYUNIT) GSIG_VEC_N
+    READ(MYUNIT) PELA_KK_BAR
+    READ(MYUNIT) PSIG_VEC_N
+    READ(MYUNIT) E_ELAS_KK_BAR
+    READ(MYUNIT) SIG_VEC_N
+    !
+    !  Equivalent Strains.
+    !
+    READ(MYUNIT) EQSTRAIN
+    READ(MYUNIT) EQPLSTRAIN
+    READ(MYUNIT) GAMMA
+    !
+    !  Total work, plastic work, and rates.
+    !
+    READ(MYUNIT) EL_WORK_N
+    READ(MYUNIT) EL_WORKP_N
+    READ(MYUNIT) EL_WORK_RATE_N
+    READ(MYUNIT) EL_WORKP_RATE_N
+    !
+    CLOSE(MYUNIT)
+    !
+    END SUBROUTINE READ_RESTART_FIELD
     !
     !===========================================================================
     !
@@ -798,7 +1168,8 @@ CONTAINS
             !
             ! Increment NELM by 1 to ensure NP is assigned correctly
             NELM = NELM + 1
-            NUM_GRAINS = TAG1
+            ! Check NUM_GRAINS against itself to handle partitioned meshes
+            NUM_GRAINS = MAX(NUM_GRAINS, TAG1)
             !
         END IF
         !
@@ -1131,10 +1502,6 @@ CONTAINS
         !
     END DO
     !
-    ! DEBUG WRITE
-!    WRITE(*,*) 'Number of node partitions: ', NPARTS
-!    WRITE(*,*) 'Nodal step indices: ', CHG_INDEX
-    !
     ! Build the bound array for NPARTS -> (1,:) is NP_SUB1, (2,:) is NP_SUP1.
     TEMPVAL = 0
     DO I = 1, NPARTS
@@ -1159,10 +1526,6 @@ CONTAINS
         !
     END DO
     !
-    ! DEBUG WRITE
-!    DO I = 1, NPARTS
-!        WRITE(*,*) 'Partition ', I, ': ', TEMPVAL(I,:)
-!    END DO
     ! Read the end of section footer.
     READ(IO, '(A)', IOSTAT = IERR) LINE
     !
@@ -1495,10 +1858,6 @@ CONTAINS
         !
     END IF
     !
-    ! DEBUG PRINT
-    ! WRITE(*, '(3(E17.7,1X))') GRAIN_ORIENTATION
-    ! WRITE(*,*) SIZE(GRAIN_ORIENTATION,1), SIZE(GRAIN_ORIENTATION,2)
-    !
     RETURN
     !
     END SUBROUTINE READ_ELSETORIENTATIONS
@@ -1712,17 +2071,13 @@ CONTAINS
         !
     END IF
     !
-    ! DEBUG PRINT
-    ! WRITE(*, '(3(E17.7,1X))') GRAIN_ORIENTATION
-    ! WRITE(*,*) SIZE(GRAIN_ORIENTATION,1), SIZE(GRAIN_ORIENTATION,2)
-    !
     RETURN
     !
     END SUBROUTINE READ_ELEMENTORIENTATIONS
     !
     !===========================================================================
     !
-    SUBROUTINE READ_GROUPS(IO)
+    SUBROUTINE READ_GROUPS(IO, CONSOLE_UNIT)
     !
     ! Read grain and phase information from either the .msh file or an external
     ! simulation.phase file. If we are reading in phases from an external
@@ -1734,6 +2089,7 @@ CONTAINS
     ! IO: Input unit for .msh file.
     !
     INTEGER, INTENT(IN) :: IO
+    INTEGER, INTENT(IN) :: CONSOLE_UNIT
     !
     ! Locals:
     ! IERR: Value that confirms if a READ() fails.
@@ -1767,8 +2123,8 @@ CONTAINS
         !
         IF (MYID .EQ. 0) THEN
             !
-            WRITE(DFLT_U, '(A)') 'Info   :   [i] No phase assignments found &
-                &in `simulation.msh`.'
+            WRITE(CONSOLE_UNIT, '(A)') 'Info   :   [i] No phase assignments &
+                &found in `simulation.msh`.'
             !
         END IF
         !
@@ -1845,5 +2201,2757 @@ CONTAINS
     RETURN
     !
     END SUBROUTINE READ_GROUPS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE INITIALIZE_OPTIONS()
+    !
+    ! Initialize inputs and assign default values.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Standard options
+    OPTIONS%MAX_INCR = 50000
+    OPTIONS%MAX_TOTAL_TIME = 12000.0
+    OPTIONS%DEF_CONTROL_BY = UNIAXIAL_STRAIN_TARGET
+    OPTIONS%CHECK_NECKING = .FALSE.
+    OPTIONS%LOAD_TOL = 0.0
+    OPTIONS%DTIME_FACTOR = 1.001
+    OPTIONS%HARD_TYPE = 'isotropic' ! set what type of hardening module used
+    OPTIONS%RESTART = .FALSE.
+    OPTIONS%RESTART_FILE_HANDLING = -1
+    OPTIONS%RESTART_INITIAL_STEP = -1
+    OPTIONS%RSFIELD_BASE_IN = 'pre.restart.field'
+    OPTIONS%RSFIELD_BASE_OUT = 'post.restart.field'
+    OPTIONS%RSCTRL_IN = 'pre.restart.control'
+    OPTIONS%RSCTRL_OUT = 'post.restart.control'
+    OPTIONS%RSVAR_BASE_OUT = 'rst1'
+    OPTIONS%READ_ORI_FROM_FILE = .FALSE.
+    OPTIONS%ORI_FILE = ''
+    OPTIONS%READ_PHASE_FROM_FILE = .FALSE.
+    OPTIONS%PHASE_FILE = ''
+    !
+    ! Printing options
+    PRINT_OPTIONS%PRINT_COORDINATES = .FALSE.
+    PRINT_OPTIONS%PRINT_VELOCITIES = .FALSE.
+    PRINT_OPTIONS%PRINT_ORIENTATIONS = .FALSE.
+    PRINT_OPTIONS%PRINT_CRSS = .FALSE.
+    PRINT_OPTIONS%PRINT_STRAIN = .FALSE.
+    PRINT_OPTIONS%PRINT_STRESS = .FALSE.
+    PRINT_OPTIONS%PRINT_GAMMADOT = .FALSE.
+    PRINT_OPTIONS%PRINT_DEFF = .FALSE.
+    PRINT_OPTIONS%PRINT_DPEFF = .FALSE.
+    PRINT_OPTIONS%PRINT_ELVOL = .FALSE.
+    PRINT_OPTIONS%PRINT_EQSTRESS = .FALSE.
+    PRINT_OPTIONS%PRINT_EQSTRAIN = .FALSE.
+    PRINT_OPTIONS%PRINT_EQPLSTRAIN = .FALSE.
+    PRINT_OPTIONS%PRINT_VGRAD = .FALSE.
+    PRINT_OPTIONS%PRINT_DPHAT = .FALSE.
+    PRINT_OPTIONS%PRINT_WPHAT = .FALSE.
+    PRINT_OPTIONS%PRINT_GAMMA = .FALSE.
+    PRINT_OPTIONS%PRINT_RESTART = .FALSE.
+    PRINT_OPTIONS%PRINT_FORCES = .FALSE.
+    PRINT_OPTIONS%PRINT_CONV = .FALSE.
+    PRINT_OPTIONS%PRINT_WORK = .FALSE.
+    PRINT_OPTIONS%PRINT_WORKP = .FALSE.
+    PRINT_OPTIONS%PRINT_DEFRATE = .FALSE.
+    !
+    ! Boundary condition options
+    BCS_OPTIONS%READ_BCS_FROM_FILE = .FALSE.
+    BCS_OPTIONS%BCS_FILE = ''
+    BCS_OPTIONS%BOUNDARY_CONDITIONS = 0
+    BCS_OPTIONS%LOADING_FACE = 0
+    BCS_OPTIONS%LOADING_DIRECTION = 0
+    !
+    ! Crystal parameters
+    CRYS_OPTIONS%NUMBER_OF_PHASES = 0
+    CRYS_OPTIONS%PHASE = 0
+    !
+    ! Uniaxial control options
+    UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_STEPS = 0
+    UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_RATE_JUMPS = 0
+    UNIAXIAL_OPTIONS%NUMBER_OF_LOAD_STEPS = 0
+    !
+    ! Triaxial CSR options
+    TRIAXCSR_OPTIONS%NUMBER_OF_CSR_LOAD_STEPS = 0
+    TRIAXCSR_OPTIONS%MAX_BC_ITER = 10
+    TRIAXCSR_OPTIONS%MIN_PERT_FRAC = 1e-3
+    TRIAXCSR_OPTIONS%LOAD_TOL_ABS = 0.1
+    TRIAXCSR_OPTIONS%LOAD_TOL_REL = 0.001
+    TRIAXCSR_OPTIONS%MAX_STRAIN = 0.2
+    TRIAXCSR_OPTIONS%MAX_EQSTRAIN = 0.2
+    !
+    ! Triaxial CLR options
+    TRIAXCLR_OPTIONS%NUMBER_OF_CLR_LOAD_STEPS = 0
+    TRIAXCLR_OPTIONS%NUMBER_OF_LOAD_RATE_JUMPS = 0
+    TRIAXCLR_OPTIONS%NUMBER_OF_DWELL_EPISODES = 0
+    TRIAXCLR_OPTIONS%MAX_BC_ITER = 10
+    TRIAXCSR_OPTIONS%LOAD_TOL_ABS = 0.1
+    TRIAXCLR_OPTIONS%MAX_STRAIN_INCR = 0.001
+    TRIAXCLR_OPTIONS%MAX_STRAIN = 0.2
+    TRIAXCLR_OPTIONS%MAX_EQSTRAIN = 0.2
+    !
+    ! Fiber averaging options
+    FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE = .FALSE.
+    FIBER_AVERAGE_OPTIONS%READ_VOLUME = .FALSE.
+    FIBER_AVERAGE_OPTIONS%READ_INTERIOR = .FALSE.
+    FIBER_AVERAGE_OPTIONS%FIBER_AVERAGE_FILE = ''
+    FIBER_AVERAGE_OPTIONS%VOLUME_FILE = ''
+    FIBER_AVERAGE_OPTIONS%INTERIOR_FILE = ''
+    !
+    END SUBROUTINE INITIALIZE_OPTIONS
+    !
+    !===========================================================================
+    !
+    LOGICAL FUNCTION PROCESS_INPUT(CMDLINE, INUNIT, STATUS)
+    !
+    !  Process options and input.
+    !
+    !---------------------------------------------------------------------------
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: CMDLINE
+    INTEGER, INTENT(IN)  :: INUNIT
+    INTEGER, INTENT(OUT) :: STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    STATUS = 0; PROCESS_INPUT = .TRUE.
+    !
+    PRIV_INPUNIT = INUNIT ! make available to callbacks
+    !
+    ! Standard options
+    IF (EXECCOMMAND('max_incr', CMDLINE, &
+                & EXEC_MAX_INCR, STATUS)) RETURN
+    IF (EXECCOMMAND('max_total_time', CMDLINE, &
+                & EXEC_MAX_TOTAL_TIME, STATUS)) RETURN
+    IF (EXECCOMMAND('def_control_by', CMDLINE, &
+                & EXEC_DEF_CONTROL_BY, STATUS)) RETURN
+    IF (EXECCOMMAND('check_necking', CMDLINE, &
+                & EXEC_CHECK_NECKING, STATUS)) RETURN
+    IF (EXECCOMMAND('load_tol', CMDLINE, &
+                & EXEC_LOAD_TOL, STATUS)) RETURN
+    IF (EXECCOMMAND('dtime_factor', CMDLINE, &
+                & EXEC_DTIME_FACTOR, STATUS)) RETURN
+    IF (EXECCOMMAND('restart', CMDLINE, &
+                & EXEC_RESTART, STATUS)) RETURN
+    IF (EXECCOMMAND('rsfield_base_in', CMDLINE, &
+                & EXEC_RSFIELD_BASE_IN, STATUS)) RETURN
+    IF (EXECCOMMAND('rsfield_base_out', CMDLINE, &
+                & EXEC_RSFIELD_BASE_OUT, STATUS)) RETURN
+    IF (EXECCOMMAND('rsctrl_in', CMDLINE, &
+                & EXEC_RSCTRL_IN, STATUS)) RETURN
+    IF (EXECCOMMAND('rsctrl_out', CMDLINE, &
+                & EXEC_RSCTRL_OUT, STATUS)) RETURN
+    IF (EXECCOMMAND('rsvar_base_out', CMDLINE, &
+                & EXEC_RSVAR_BASE_OUT, STATUS)) RETURN
+    IF (EXECCOMMAND('hard_type', CMDLINE, &
+                & EXEC_HARD_TYPE, STATUS)) RETURN
+    IF (EXECCOMMAND('read_ori_from_file', CMDLINE, &
+                & EXEC_READ_ORI_FROM_FILE, STATUS)) RETURN
+    IF (EXECCOMMAND('read_phase_from_file', CMDLINE, &
+                & EXEC_READ_PHASE_FROM_FILE, STATUS)) RETURN
+    !
+    ! Printing options
+    IF (EXECCOMMAND('print', CMDLINE, &
+                & EXEC_PRINT, STATUS)) RETURN
+    IF (EXECCOMMAND('suppress', CMDLINE, &
+                & EXEC_SUPPRESS, STATUS)) RETURN
+    !
+    ! Boundary conditions options
+    IF (EXECCOMMAND('read_bcs_from_file', CMDLINE, &
+                & EXEC_READ_BCS_FROM_FILE, STATUS)) RETURN
+    IF (EXECCOMMAND('boundary_conditions', CMDLINE, &
+                & EXEC_BOUNDARY_CONDITIONS, STATUS)) RETURN
+    IF (EXECCOMMAND('loading_face', CMDLINE, &
+                & EXEC_LOADING_FACE, STATUS)) RETURN
+    IF (EXECCOMMAND('loading_direction', CMDLINE, &
+                & EXEC_LOADING_DIRECTION, STATUS)) RETURN
+    IF (EXECCOMMAND('strain_rate', CMDLINE, &
+                & EXEC_STRAIN_RATE, STATUS)) RETURN
+    IF (EXECCOMMAND('load_rate', CMDLINE, &
+                & EXEC_LOAD_RATE, STATUS)) RETURN
+    !
+    ! Crystal parameter options
+    IF (EXECCOMMAND('number_of_phases', CMDLINE, &
+                & EXEC_NUMBER_OF_PHASES, STATUS)) RETURN
+    IF (EXECCOMMAND('crystal_type', CMDLINE, &
+                & EXEC_CRYSTAL_TYPE, STATUS)) RETURN
+    IF (EXECCOMMAND('phase', CMDLINE, &
+                & EXEC_PHASE, STATUS)) RETURN
+    IF (EXECCOMMAND('m', CMDLINE, &
+                & EXEC_M, STATUS)) RETURN
+    IF (EXECCOMMAND('gammadot_0', CMDLINE, &
+                & EXEC_GAMMADOT_0, STATUS)) RETURN
+    IF (EXECCOMMAND('h_0', CMDLINE, &
+                & EXEC_H_0, STATUS)) RETURN
+    IF (EXECCOMMAND('g_0', CMDLINE, &
+                & EXEC_G_0, STATUS)) RETURN
+    IF (EXECCOMMAND('g_s0', CMDLINE, &
+                & EXEC_G_S0, STATUS)) RETURN
+    IF (EXECCOMMAND('m_prime', CMDLINE, &
+                & EXEC_M_PRIME, STATUS)) RETURN
+    IF (EXECCOMMAND('gammadot_s0', CMDLINE, &
+                & EXEC_GAMMADOT_S0, STATUS)) RETURN
+    IF (EXECCOMMAND('n', CMDLINE, &
+                & EXEC_N, STATUS)) RETURN
+    IF (EXECCOMMAND('c11', CMDLINE, &
+                & EXEC_C11, STATUS)) RETURN
+    IF (EXECCOMMAND('c12', CMDLINE, &
+                & EXEC_C12, STATUS)) RETURN
+    IF (EXECCOMMAND('c13', CMDLINE, &
+                & EXEC_C13, STATUS)) RETURN
+    IF (EXECCOMMAND('c44', CMDLINE, &
+                & EXEC_C44, STATUS)) RETURN
+    IF (EXECCOMMAND('c_over_a', CMDLINE, &
+                & EXEC_C_OVER_A, STATUS)) RETURN
+    IF (EXECCOMMAND('cyclic_parameter_a', CMDLINE, &
+                & EXEC_CYCLIC_PARAMETER_A, STATUS)) RETURN
+    IF (EXECCOMMAND('cyclic_parameter_c', CMDLINE, &
+                & EXEC_CYCLIC_PARAMETER_C, STATUS)) RETURN
+    IF (EXECCOMMAND('latent_parameters', CMDLINE, &
+                & EXEC_LATENT_PARAMETERS, STATUS)) RETURN
+    !
+    ! Uniaxial control options
+    IF (EXECCOMMAND('number_of_strain_steps', CMDLINE, &
+                & EXEC_NUMBER_OF_STRAIN_STEPS, STATUS)) RETURN
+    IF (EXECCOMMAND('number_of_strain_rate_jumps', CMDLINE, &
+                & EXEC_NUMBER_OF_STRAIN_RATE_JUMPS, STATUS)) RETURN
+    IF (EXECCOMMAND('target_strain', CMDLINE, &
+                & EXEC_TARGET_STRAIN, STATUS)) RETURN
+    IF (EXECCOMMAND('strain_rate_jump', CMDLINE, &
+                & EXEC_STRAIN_RATE_JUMP, STATUS)) RETURN
+    IF (EXECCOMMAND('number_of_load_steps', CMDLINE, &
+                & EXEC_NUMBER_OF_LOAD_STEPS, STATUS)) RETURN
+    IF (EXECCOMMAND('target_load', CMDLINE, &
+                & EXEC_TARGET_LOAD, STATUS)) RETURN
+    !
+    ! Triaxial CSR options
+    IF (EXECCOMMAND('max_bc_iter', CMDLINE, &
+                & EXEC_MAX_BC_ITER, STATUS)) RETURN
+    IF (EXECCOMMAND('min_pert_frac', CMDLINE, &
+                & EXEC_MIN_PERT_FRAC, STATUS)) RETURN
+    IF (EXECCOMMAND('load_tol_abs', CMDLINE, &
+                & EXEC_LOAD_TOL_ABS, STATUS)) RETURN
+    IF (EXECCOMMAND('load_tol_rel', CMDLINE, &
+                & EXEC_LOAD_TOL_REL, STATUS)) RETURN
+    IF (EXECCOMMAND('number_of_csr_load_steps', CMDLINE, &
+                & EXEC_NUMBER_OF_CSR_LOAD_STEPS, STATUS)) RETURN
+    IF (EXECCOMMAND('target_csr_load', CMDLINE, &
+                & EXEC_TARGET_CSR_LOAD, STATUS)) RETURN
+    !
+    ! Triaxial CLR options
+    IF (EXECCOMMAND('max_strain_incr', CMDLINE, &
+                & EXEC_MAX_STRAIN_INCR, STATUS)) RETURN
+    IF (EXECCOMMAND('max_strain', CMDLINE, &
+                & EXEC_MAX_STRAIN, STATUS)) RETURN
+    IF (EXECCOMMAND('max_eqstrain', CMDLINE, &
+                & EXEC_MAX_EQSTRAIN, STATUS)) RETURN
+    IF (EXECCOMMAND('number_of_clr_load_steps', CMDLINE, &
+                & EXEC_NUMBER_OF_CLR_LOAD_STEPS, STATUS)) RETURN
+    IF (EXECCOMMAND('target_clr_load', CMDLINE, &
+                & EXEC_TARGET_CLR_LOAD, STATUS)) RETURN
+    IF (EXECCOMMAND('number_of_load_rate_jumps', CMDLINE, &
+                & EXEC_NUMBER_OF_LOAD_RATE_JUMPS, STATUS)) RETURN
+    IF (EXECCOMMAND('load_rate_jump', CMDLINE, &
+                & EXEC_LOAD_RATE_JUMP, STATUS)) RETURN
+    IF (EXECCOMMAND('number_of_dwell_episodes', CMDLINE, &
+                & EXEC_NUMBER_OF_DWELL_EPISODES, STATUS)) RETURN
+    IF (EXECCOMMAND('dwell_episode', CMDLINE, &
+                & EXEC_DWELL_EPISODE, STATUS)) RETURN
+    !
+    ! Fiber averaging options
+    IF (EXECCOMMAND('run_fiber_average', CMDLINE, &
+                & EXEC_RUN_FIBER_AVERAGE, STATUS)) RETURN
+    IF (EXECCOMMAND('read_volume', CMDLINE, &
+                & EXEC_READ_VOLUME, STATUS)) RETURN
+    IF (EXECCOMMAND('read_interior', CMDLINE, &
+                & EXEC_READ_INTERIOR, STATUS)) RETURN
+    !
+    IF (ConvergenceKeywordInput(CMDLINE, INUNIT, STATUS)) RETURN
+    !
+    ! No calls matched the keyword
+    !
+    PROCESS_INPUT = .FALSE.
+    !
+    END FUNCTION PROCESS_INPUT
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_MAX_INCR(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) OPTIONS%MAX_INCR
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_MAX_INCR
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_MAX_TOTAL_TIME(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN)  :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) OPTIONS%MAX_TOTAL_TIME
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_MAX_TOTAL_TIME
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_DEF_CONTROL_BY(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN)  :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    S = 0
+    !
+    SELECT CASE (TRIM(ADJUSTL(A)))
+        !
+        CASE ('uniaxial_load_target')
+            !
+            OPTIONS%DEF_CONTROL_BY = UNIAXIAL_LOAD_TARGET
+            !
+        CASE ('uniaxial_strain_target')
+            !
+            OPTIONS%DEF_CONTROL_BY = UNIAXIAL_STRAIN_TARGET
+            !
+        CASE ('triaxial_constant_strain_rate')
+            !
+            OPTIONS%DEF_CONTROL_BY = TRIAXIAL_CONSTANT_STRAIN_RATE
+            !
+        CASE ('triaxial_constant_load_rate')
+            !
+            OPTIONS%DEF_CONTROL_BY = TRIAXIAL_CONSTANT_LOAD_RATE
+            !
+        CASE DEFAULT
+            !
+            S = 1
+            !
+        ! END CASE
+        !
+    END SELECT
+    !
+    END SUBROUTINE EXEC_DEF_CONTROL_BY
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_CHECK_NECKING(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    S = 0
+    !
+    SELECT CASE (TRIM(ADJUSTL(A)))
+        !
+        CASE ('on','On','ON','true','True','TRUE')
+            !
+            OPTIONS%CHECK_NECKING = .TRUE.
+            !
+        CASE ('off','Off','OFF','false','False','FALSE')
+            !
+            OPTIONS%CHECK_NECKING = .FALSE.
+            !
+        CASE DEFAULT
+            !
+            S = 1
+            !
+        ! END CASE
+        !
+    END SELECT
+    !
+    END SUBROUTINE EXEC_CHECK_NECKING
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_LOAD_TOL(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN)  :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) OPTIONS%LOAD_TOL
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE IF ((IOERR .EQ. 0) .AND. (OPTIONS%LOAD_TOL .GE. 0.0)) THEN
+        !
+        S = 0
+        !
+    ELSE
+        !
+        S = 1
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_LOAD_TOL
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_DTIME_FACTOR(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN)  :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) OPTIONS%DTIME_FACTOR
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE IF ((IOERR .EQ. 0) .AND. (OPTIONS%DTIME_FACTOR .GE. 1.0)) THEN
+        !
+        S = 0
+        !
+    ELSE
+        !
+        S = 1
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_DTIME_FACTOR
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_RESTART(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN)  :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    CHARACTER(LEN=128) :: FIELD_NAME
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *) FIELD_NAME
+    !
+    S = 0
+    !
+    ! Note that (0) denotes file appending while (1) denotes new files will
+    ! be written. Appending will also create new files if they are not present.
+    !
+    SELECT CASE (TRIM(ADJUSTL(FIELD_NAME)))
+        !
+        CASE('append','Append','APPEND')
+            !
+            OPTIONS%RESTART = .TRUE.
+            OPTIONS%RESTART_FILE_HANDLING = 0
+            !
+        CASE('new_file','New_file','New_File', 'NEW_FILE')
+            !
+            OPTIONS%RESTART = .TRUE.
+            OPTIONS%RESTART_FILE_HANDLING = 1
+            !
+        CASE DEFAULT
+            !
+            S = 1
+            !
+        ! END CASE
+        !
+    END SELECT
+    !
+    END SUBROUTINE EXEC_RESTART
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_RSFIELD_BASE_IN(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN)  :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *) OPTIONS%RSFIELD_BASE_IN
+    OPTIONS%RSFIELD_BASE_IN = ADJUSTL(OPTIONS%RSFIELD_BASE_IN)
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_RSFIELD_BASE_IN
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_RSFIELD_BASE_OUT(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN)  :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *) OPTIONS%RSFIELD_BASE_OUT
+    OPTIONS%RSFIELD_BASE_OUT = ADJUSTL(OPTIONS%RSFIELD_BASE_OUT)
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_RSFIELD_BASE_OUT
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_RSCTRL_IN(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN)  :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *) OPTIONS%RSCTRL_IN
+    OPTIONS%RSCTRL_IN = ADJUSTL(OPTIONS%RSCTRL_IN)
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_RSCTRL_IN
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_RSCTRL_OUT(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN)  :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *) OPTIONS%RSCTRL_OUT
+    OPTIONS%RSCTRL_OUT = ADJUSTL(OPTIONS%RSCTRL_OUT)
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_RSCTRL_OUT
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_RSVAR_BASE_OUT(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN)  :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    INTEGER, DIMENSION(8) :: TIMEVALUES
+    CHARACTER(LEN=16) :: TEMP
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *) OPTIONS%RSVAR_BASE_OUT
+    OPTIONS%RSVAR_BASE_OUT = ADJUSTL(OPTIONS%RSVAR_BASE_OUT)
+    !
+    S = 0
+    !
+    ! If the user supplies an automatic entry as the string
+    SELECT CASE (TRIM(ADJUSTL(OPTIONS%RSVAR_BASE_OUT)))
+        !
+        CASE('{date_time}', '{DATE_TIME}')
+            !
+            CALL DATE_AND_TIME(VALUES = TIMEVALUES)
+            WRITE(TEMP, "(I0,I0,I0,A1,I0,I0)") &
+                & TIMEVALUES(1), TIMEVALUES(2), TIMEVALUES(3), '-', &
+                & TIMEVALUES(5), TIMEVALUES(6)
+            !
+            OPTIONS%RSVAR_BASE_OUT = TRIM(ADJUSTL(TEMP))
+            !
+        CASE('{date}', '{DATE}')
+            !
+            CALL DATE_AND_TIME(VALUES = TIMEVALUES)
+            WRITE(TEMP, "(I0,I0,I0)") &
+                & TIMEVALUES(1), TIMEVALUES(2), TIMEVALUES(3)
+            !
+            OPTIONS%RSVAR_BASE_OUT = TRIM(ADJUSTL(TEMP))
+            !
+    END SELECT
+    !
+    END SUBROUTINE EXEC_RSVAR_BASE_OUT
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_HARD_TYPE(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN)  :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    CHARACTER(LEN=128) :: FIELD_NAME
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *) FIELD_NAME
+    !
+    S = 0
+    !
+    SELECT CASE (TRIM(ADJUSTL(FIELD_NAME)))
+        !
+        CASE('ISOTROPIC','Isotropic','isotropic')
+            !
+            OPTIONS%HARD_TYPE = 'isotropic'
+            !
+        CASE('LATENT','Latent','latent','ANISOTROPIC', &
+            & 'Anisotropic','anisotropic')
+            !
+            OPTIONS%HARD_TYPE = 'latent'
+            !
+        CASE('test','TEST','Test')
+            !
+            OPTIONS%HARD_TYPE = 'test'
+            !
+        CASE('cyclic_isotropic','Cyclic_Isotropic','CYCLIC_ISOTROPIC')
+            !
+            OPTIONS%HARD_TYPE = 'cyclic_isotropic'
+            !
+        CASE('cyclic_anisotropic','Cyclic_Anisotropic','CYCLIC_ANISOTROPIC')
+            !
+            OPTIONS%HARD_TYPE = 'cyclic_anisotropic'
+            !
+        CASE DEFAULT
+            !
+            S = 1
+            !
+        ! END CASE
+        !
+    END SELECT
+    !
+    END SUBROUTINE EXEC_HARD_TYPE
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_READ_ORI_FROM_FILE(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! The external file must be named 'simulation.ori'.
+    OPTIONS%READ_ORI_FROM_FILE = .TRUE.
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_READ_ORI_FROM_FILE
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_READ_PHASE_FROM_FILE(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! The external file must be named 'simulation.phase'.
+    OPTIONS%READ_PHASE_FROM_FILE = .TRUE.
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_READ_PHASE_FROM_FILE
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_PRINT(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN)  :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    CHARACTER(LEN=128) :: FIELD_NAME
+    INTEGER :: STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    S = 0
+    !
+    READ(A, *) FIELD_NAME
+    !
+    SELECT CASE (TRIM(ADJUSTL(FIELD_NAME)))
+        !
+        CASE ('coo')
+            !
+            PRINT_OPTIONS%PRINT_COORDINATES = .TRUE.
+            !
+        CASE ('vel')
+            !
+            PRINT_OPTIONS%PRINT_VELOCITIES = .TRUE.
+            !
+        CASE ('ori')
+            !
+            PRINT_OPTIONS%PRINT_ORIENTATIONS =.TRUE.
+            !
+        CASE ('crss')
+            !
+            PRINT_OPTIONS%PRINT_CRSS = .TRUE.
+            !
+        CASE ('strain-el')
+            !
+            PRINT_OPTIONS%PRINT_STRAIN = .TRUE.
+            !
+        CASE ('stress')
+            !
+            PRINT_OPTIONS%PRINT_STRESS = .TRUE.
+            !
+        CASE ('sliprate')
+            !
+            PRINT_OPTIONS%PRINT_GAMMADOT = .TRUE.
+            !
+        CASE ('defrate-eq')
+            !
+            PRINT_OPTIONS%PRINT_DEFF = .TRUE.
+            !
+        CASE ('defrate-pl-eq')
+            !
+            PRINT_OPTIONS%PRINT_DPEFF = .TRUE.
+            !
+        CASE ('elt-vol')
+            !
+            PRINT_OPTIONS%PRINT_ELVOL = .TRUE.
+            !
+        CASE ('stress-eq')
+            !
+            PRINT_OPTIONS%PRINT_EQSTRESS = .TRUE.
+            !
+        CASE ('strain-eq')
+            !
+            PRINT_OPTIONS%PRINT_EQSTRAIN = .TRUE.
+            !
+        CASE ('strain-pl-eq')
+            !
+            PRINT_OPTIONS%PRINT_EQPLSTRAIN = .TRUE.
+            !
+        CASE ('velgrad')
+            !
+            PRINT_OPTIONS%PRINT_VGRAD = .TRUE.
+            !
+        CASE ('defrate-pl')
+            !
+            PRINT_OPTIONS%PRINT_DPHAT = .TRUE.
+            !
+        CASE ('spinrate')
+            !
+            PRINT_OPTIONS%PRINT_WPHAT = .TRUE.
+            !
+        CASE ('slip')
+            !
+            PRINT_OPTIONS%PRINT_GAMMA = .TRUE.
+            !
+        CASE ('restart')
+            !
+            PRINT_OPTIONS%PRINT_RESTART = .TRUE.
+            !
+        CASE ('forces')
+            !
+            PRINT_OPTIONS%PRINT_FORCES = .TRUE.
+            !
+        CASE ('convergence')
+            !
+            PRINT_OPTIONS%PRINT_CONV = .TRUE.
+            !
+        CASE ('work')
+            !
+            PRINT_OPTIONS%PRINT_WORK = .TRUE.
+            !
+        CASE ('work-pl')
+            !
+            PRINT_OPTIONS%PRINT_WORKP = .TRUE.
+            !
+        CASE ('defrate')
+            !
+            PRINT_OPTIONS%PRINT_DEFRATE = .TRUE.
+            !
+        CASE DEFAULT
+            !
+            S = 1
+            !
+        ! END CASE
+        !
+    END SELECT
+    !
+    END SUBROUTINE EXEC_PRINT
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_SUPPRESS(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    CHARACTER(LEN=128) :: FIELD_NAME
+    INTEGER :: STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    S = 0
+    !
+    READ(A, *) FIELD_NAME
+    !
+    SELECT CASE (TRIM(ADJUSTL(FIELD_NAME)))
+        !
+        CASE ('coo')
+            !
+            PRINT_OPTIONS%PRINT_COORDINATES = .FALSE.
+            !
+        CASE ('vel')
+            !
+            PRINT_OPTIONS%PRINT_VELOCITIES = .FALSE.
+            !
+        CASE ('ori')
+            !
+            PRINT_OPTIONS%PRINT_ORIENTATIONS =.FALSE.
+            !
+        CASE ('crss')
+            !
+            PRINT_OPTIONS%PRINT_CRSS = .FALSE.
+            !
+        CASE ('strain-el')
+            !
+            PRINT_OPTIONS%PRINT_STRAIN = .FALSE.
+            !
+        CASE ('stress')
+            !
+            PRINT_OPTIONS%PRINT_STRESS = .FALSE.
+            !
+        CASE ('sliprate')
+            !
+            PRINT_OPTIONS%PRINT_GAMMADOT = .FALSE.
+            !
+        CASE ('defrate-eq')
+            !
+            PRINT_OPTIONS%PRINT_DEFF = .FALSE.
+            !
+        CASE ('defrate-pl-eq')
+            !
+            PRINT_OPTIONS%PRINT_DPEFF = .FALSE.
+            !
+        CASE ('stress-eq')
+            !
+            PRINT_OPTIONS%PRINT_EQSTRESS = .FALSE.
+            !
+        CASE ('strain-eq')
+            !
+            PRINT_OPTIONS%PRINT_EQSTRAIN = .FALSE.
+            !
+        CASE ('strain-pl-eq')
+            !
+            PRINT_OPTIONS%PRINT_EQPLSTRAIN = .FALSE.
+            !
+        CASE ('velgrad')
+            !
+            PRINT_OPTIONS%PRINT_VGRAD = .FALSE.
+            !
+        CASE ('defrate-pl')
+            !
+            PRINT_OPTIONS%PRINT_DPHAT = .FALSE.
+            !
+        CASE ('elt-vol')
+            !
+            PRINT_OPTIONS%PRINT_ELVOL = .FALSE.
+            !
+        CASE ('spinrate')
+            !
+            PRINT_OPTIONS%PRINT_WPHAT = .FALSE.
+            !
+        CASE ('slip')
+            !
+            PRINT_OPTIONS%PRINT_GAMMA = .FALSE.
+            !
+        CASE ('restart')
+            !
+            PRINT_OPTIONS%PRINT_RESTART = .FALSE.
+            !
+        CASE ('forces')
+            !
+            PRINT_OPTIONS%PRINT_FORCES = .FALSE.
+            !
+        CASE ('convergence')
+            !
+            PRINT_OPTIONS%PRINT_CONV = .FALSE.
+            !
+        CASE ('work')
+            !
+            PRINT_OPTIONS%PRINT_WORK = .FALSE.
+            !
+        CASE ('work-pl')
+            !
+            PRINT_OPTIONS%PRINT_WORKP = .FALSE.
+            !
+        CASE ('defrate')
+            !
+            PRINT_OPTIONS%PRINT_DEFRATE = .FALSE.
+            !
+        CASE DEFAULT
+            !
+            S = 1
+            !
+        ! END CASE
+        !
+    END SELECT
+    !
+    END SUBROUTINE EXEC_SUPPRESS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_READ_BCS_FROM_FILE(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! The external file must be named 'simulation.bcs'.
+    BCS_OPTIONS%READ_BCS_FROM_FILE = .TRUE.
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_READ_BCS_FROM_FILE
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_BOUNDARY_CONDITIONS(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    S = 0
+    !
+    SELECT CASE (TRIM(ADJUSTL(A)))
+        !
+        CASE ('uniaxial_grip','Uniaxial_Grip','UNIAXIAL_GRIP')
+            !
+            BCS_OPTIONS%BOUNDARY_CONDITIONS = 1
+            !
+        CASE ('uniaxial_symmetry','Uniaxial_Symmetry','UNIAXIAL_SYMMETRY')
+            !
+            BCS_OPTIONS%BOUNDARY_CONDITIONS = 2
+            !
+        CASE ('triaxial','Triaxial','TRIAXIAL')
+            !
+            BCS_OPTIONS%BOUNDARY_CONDITIONS = 3
+            !
+        CASE ('uniaxial_minimal','Uniaxial_Minimal','UNIAXIAL_MINIMAL')
+            ! Uniaxial grip, but with minimal constraints. Only constrains
+            ! normal directions on control faces and two nodes to prevent RBM.
+            !
+            BCS_OPTIONS%BOUNDARY_CONDITIONS = 4
+            !
+        CASE DEFAULT
+            !
+            S = 1
+            !
+        ! END CASE
+        !
+    END SELECT
+    !
+    END SUBROUTINE EXEC_BOUNDARY_CONDITIONS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_LOADING_FACE(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    S = 0
+    !
+    SELECT CASE (TRIM(ADJUSTL(A)))
+        !
+        CASE ('x_min','X_min','X_Min','X_MIN','x0','X0','1')
+            !
+            BCS_OPTIONS%LOADING_FACE = 1
+            !
+        CASE ('x_max','X_max','X_Max','X_MAX','x1','X1','2')
+            !
+            BCS_OPTIONS%LOADING_FACE = 2
+            !
+        CASE ('y_min','Y_min','Y_Min','Y_MIN','y0','Y0','3')
+            !
+            BCS_OPTIONS%LOADING_FACE = 3
+            !
+        CASE ('y_max','Y_max','Y_Max','Y_MAX','y1','Y1','4')
+            !
+            BCS_OPTIONS%LOADING_FACE = 4
+            !
+        CASE ('z_min','Z_min','Z_Min','Z_MIN','z0','Z0','5')
+            !
+            BCS_OPTIONS%LOADING_FACE = 5
+            !
+        CASE ('z_max','Z_max','Z_Max','Z_MAX','z1','Z1','6')
+            !
+            BCS_OPTIONS%LOADING_FACE = 6
+            !
+        CASE DEFAULT
+            !
+            S = 1
+            !
+        ! END CASE
+        !
+    END SELECT
+    !
+    END SUBROUTINE EXEC_LOADING_FACE
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_LOADING_DIRECTION(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    S = 0
+    !
+    SELECT CASE (TRIM(ADJUSTL(A)))
+        !
+        CASE ('X','x','+x','+X','0')
+            !
+            BCS_OPTIONS%LOADING_DIRECTION = 0
+            !
+        CASE ('Y','y','+y','+Y','1')
+            !
+            BCS_OPTIONS%LOADING_DIRECTION = 1
+            !
+        CASE ('Z','z','+z','+Z','2')
+            !
+            BCS_OPTIONS%LOADING_DIRECTION = 2
+            !
+        CASE DEFAULT
+            !
+            S = 1
+            !
+        ! END CASE
+        !
+    END SELECT
+    !
+    END SUBROUTINE EXEC_LOADING_DIRECTION
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_STRAIN_RATE(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) BCS_OPTIONS%STRAIN_RATE
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_STRAIN_RATE
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_LOAD_RATE(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) BCS_OPTIONS%LOAD_RATE
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_LOAD_RATE
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_NUMBER_OF_PHASES(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%NUMBER_OF_PHASES
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        RETURN
+        !
+    END IF
+    !
+    ! Allocate all material data arrays
+    ALLOCATE(CRYS_OPTIONS%CRYSTAL_TYPE(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%M(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%GAMMADOT_0(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%H_0(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%G_0(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%G_S0(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%M_PRIME(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%GAMMADOT_S0(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%N(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%C11(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%C12(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%C13(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%C44(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ! HCP specific arrays
+    ALLOCATE(CRYS_OPTIONS%C_OVER_A(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%PRISMATIC_TO_BASAL(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%PYRAMIDAL_TO_BASAL(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ! Hardening specific arrays
+    ALLOCATE(CRYS_OPTIONS%CYCLIC_PARAMETER_A(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%CYCLIC_PARAMETER_C(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%LATENT_PARAMETERS(1:CRYS_OPTIONS%NUMBER_OF_PHASES, &
+                & 1:8))
+    ! Rate dependence options for HCP materials
+    ALLOCATE(CRYS_OPTIONS%USE_ANISO_M(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%ANISO_M(1:CRYS_OPTIONS%NUMBER_OF_PHASES, 1:3))
+    !
+    CRYS_OPTIONS%CRYSTAL_TYPE = -1
+    CRYS_OPTIONS%M = -1.0_RK
+    CRYS_OPTIONS%GAMMADOT_0 = -1.0_RK
+    CRYS_OPTIONS%H_0 = -1.0_RK
+    CRYS_OPTIONS%G_0 = -1.0_RK
+    CRYS_OPTIONS%G_S0 = -1.0_RK
+    CRYS_OPTIONS%M_PRIME = -1.0_RK
+    CRYS_OPTIONS%GAMMADOT_S0 = -1.0_RK
+    CRYS_OPTIONS%N = -1.0_RK
+    CRYS_OPTIONS%C11 = -1.0_RK
+    CRYS_OPTIONS%C12 = -1.0_RK
+    CRYS_OPTIONS%C13 = -1.0_RK
+    CRYS_OPTIONS%C44 = -1.0_RK
+    !
+    CRYS_OPTIONS%C_OVER_A = -1.0_RK
+    CRYS_OPTIONS%PRISMATIC_TO_BASAL = -1.0_RK
+    CRYS_OPTIONS%PYRAMIDAL_TO_BASAL = -1.0_RK
+    !
+    CRYS_OPTIONS%CYCLIC_PARAMETER_A = -1.0_RK
+    CRYS_OPTIONS%CYCLIC_PARAMETER_C = -1.0_RK
+    CRYS_OPTIONS%LATENT_PARAMETERS = -1.0_RK
+    CRYS_OPTIONS%ANISO_M = -1.0_RK
+    CRYS_OPTIONS%USE_ANISO_M = .FALSE.
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_NUMBER_OF_PHASES
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_CRYSTAL_TYPE(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    S = 0
+    !
+    SELECT CASE (TRIM(ADJUSTL(A)))
+        !        
+        CASE ('FCC','Fcc','fcc')
+            !            
+            CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) = 1
+            !        
+        CASE ('BCC','Bcc','bcc')
+            !            
+            CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) = 2
+            !
+        CASE ('HCP','Hcp','hcp')
+            !            
+            CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) = 3
+            !
+        CASE DEFAULT
+            !        
+            S = 1
+            !
+        ! END CASE
+        !
+    END SELECT
+    !
+    END SUBROUTINE EXEC_CRYSTAL_TYPE
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_PHASE(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%PHASE
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_PHASE
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_M(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    INTEGER :: NSPACE, NVALS, II
+    REAL(RK) :: TEMP_M, TEMP_M1, TEMP_M2, TEMP_M3
+    CHARACTER(LEN=256) :: LINE
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! If current phase is FCC/BCC read in singular `m' value
+    IF ((CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 1) .OR. &
+        & (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 2)) THEN
+        !
+        ! Restructured input to be less ambiguous edge cases on input
+        !
+        ! Attempt to read the line as-is to determine the number of inputs
+        READ(A, '(A)') LINE
+        !
+        ! Trim the full string into `NVALS' number of inputs
+        II = 1
+        NSPACE = COUNT( (/ (LINE(II:II), II=1, LEN_TRIM(LINE)) /) == " ")
+        NVALS = NSPACE + 1
+        !
+        SELECT CASE(NVALS)
+            !
+            CASE(1)
+                !
+                ! If one value, read in the isotropic `m'
+                !
+                READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%M(CRYS_OPTIONS%PHASE)
+                !
+                IF (IOERR .NE. 0) THEN
+                    !
+                    S = 1
+                    RETURN
+                    !
+                ELSE
+                    !
+                    S = 0
+                    !
+                END IF
+                !
+            CASE DEFAULT
+                !
+                ! The input is not 1 value so exit!
+                !
+                CALL PAR_QUIT&
+                    &('Error  :     > One value expected for&
+                    & "m" in FCC or BCC phases.')
+                !
+        END SELECT
+        !
+    ! Else if current phase is HCP, attempt a few options for `m'
+    ELSE IF (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 3) THEN
+        !
+        ! Restructured input to be less ambiguous edge cases on input
+        !
+        ! Attempt to read the line as-is to determine the number of inputs
+        READ(A, '(A)') LINE
+        !
+        ! Trim the full string into `NVALS' number of inputs
+        II = 1
+        NSPACE = COUNT( (/ (LINE(II:II), II=1, LEN_TRIM(LINE)) /) == " ")
+        NVALS = NSPACE + 1
+        !
+        SELECT CASE(NVALS)
+            !
+            CASE(1)
+                !
+                ! If one value, read in the isotropic `m'
+                !
+                READ(A, *, IOSTAT=IOERR) TEMP_M
+                !
+                IF (IOERR .NE. 0) THEN
+                    !
+                    S = 1
+                    RETURN
+                    !
+                ELSE
+                    !
+                    S = 0
+                    !
+                    ! Assign singular value to appropriate array
+                    CRYS_OPTIONS%M(CRYS_OPTIONS%PHASE) = TEMP_M
+                    !
+                END IF
+                !
+            CASE(3)
+                !
+                ! If three values, read in the anisotropic `m'
+                !
+                READ(A, *, IOSTAT=IOERR) TEMP_M1, TEMP_M2, TEMP_M3
+                !
+                IF (IOERR .NE. 0) THEN
+                    !
+                    S = 1
+                    RETURN
+                    !
+                ELSE
+                    !
+                    S = 0
+                    !
+                    ! Enable logical and assign temp values into array for phase
+                    CRYS_OPTIONS%USE_ANISO_M(CRYS_OPTIONS%PHASE) = .TRUE.
+                    CRYS_OPTIONS%ANISO_M(CRYS_OPTIONS%PHASE,1) = TEMP_M1
+                    CRYS_OPTIONS%ANISO_M(CRYS_OPTIONS%PHASE,2) = TEMP_M2
+                    CRYS_OPTIONS%ANISO_M(CRYS_OPTIONS%PHASE,3) = TEMP_M3
+                    !
+                END IF
+                !            
+            CASE DEFAULT
+                !
+                ! The input is not 1 or 3 values so exit!
+                !
+                CALL PAR_QUIT&
+                    &('Error  :     > One or three values expected for&
+                    & "m" in HCP phases.')
+                !
+        END SELECT
+        !
+    ! Exception error handling for future proofing
+    ELSE
+        !
+        CALL PAR_QUIT&
+            &('Error  :     > Invalid "m" value(s) input for material phase.')
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_M
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_GAMMADOT_0(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN)  :: A ! command argument string
+    INTEGER,          INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%GAMMADOT_0(CRYS_OPTIONS%PHASE)
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_GAMMADOT_0
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_H_0(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%H_0(CRYS_OPTIONS%PHASE)
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_H_0
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_G_0(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    INTEGER :: NSPACE, NVALS, II
+    REAL(RK) :: PRISM_TEMP, PYRAM_TEMP
+    CHARACTER(LEN=256) :: LINE
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! If current phase is FCC/BCC read in singular `g_0' value
+    IF ((CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 1) .OR. &
+        & (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 2)) THEN
+        !
+        ! Restructured input to be less ambiguous edge cases on input
+        !
+        ! Attempt to read the line as-is to determine the number of inputs
+        READ(A, '(A)') LINE
+        !
+        ! Trim the full string into `NVALS' number of inputs
+        II = 1
+        NSPACE = COUNT( (/ (LINE(II:II), II=1, LEN_TRIM(LINE)) /) == " ")
+        NVALS = NSPACE + 1
+        !
+        SELECT CASE(NVALS)
+            !
+            CASE(1)
+                !
+                ! If one value, read in the isotropic `m'
+                !
+                READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%G_0(CRYS_OPTIONS%PHASE)
+                !
+                IF (IOERR .NE. 0) THEN
+                    !
+                    S = 1
+                    RETURN
+                    !
+                ELSE
+                    !
+                    S = 0
+                    !
+                END IF
+                !
+            CASE DEFAULT
+                !
+                ! The input is not 1 value so exit!
+                !
+                CALL PAR_QUIT&
+                    &('Error  :     > One value expected for&
+                    & "g_0" in FCC or BCC phases.')
+                !
+        END SELECT
+        !
+    ! Else if current phase is HCP, attempt to read in three values for `g_0'
+    ELSE IF (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 3) THEN
+        !
+        ! Restructured input to be less ambiguous edge cases on input
+        !
+        ! Attempt to read the line as-is to determine the number of inputs
+        READ(A, '(A)') LINE
+        !
+        ! Trim the full string into `NVALS' number of inputs
+        II = 1
+        NSPACE = COUNT( (/ (LINE(II:II), II=1, LEN_TRIM(LINE)) /) == " ")
+        NVALS = NSPACE + 1
+        !
+        SELECT CASE(NVALS)
+            !
+            CASE(3)
+                !
+                ! If three values, read in the anisotropic `g_0'
+                !
+                READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%G_0(CRYS_OPTIONS%PHASE), &
+                    & PRISM_TEMP, PYRAM_TEMP
+                !
+                IF (IOERR .NE. 0) THEN
+                    !
+                    S = 1
+                    ! Explicitly handle this error by the user since it acts on 
+                    ! a newly deprecated feature.
+                    CALL PAR_QUIT('Error  :     > Three values for `g_0` &
+                        &expected for HCP materials.')
+                    !
+                ELSE
+                    !
+                    S = 0
+                    !
+                    ! Scale the temporary variables by read-in `g_0' 
+                    ! (basal strength) in order to retrieve the internal 
+                    ! slip family strength ratios
+                    !
+                    CRYS_OPTIONS%PRISMATIC_TO_BASAL(CRYS_OPTIONS%PHASE) = &
+                        & PRISM_TEMP / CRYS_OPTIONS%G_0(CRYS_OPTIONS%PHASE)
+                    CRYS_OPTIONS%PYRAMIDAL_TO_BASAL(CRYS_OPTIONS%PHASE) = &
+                        & PYRAM_TEMP / CRYS_OPTIONS%G_0(CRYS_OPTIONS%PHASE)
+                    !
+                END IF
+                !            
+            CASE DEFAULT
+                !
+                ! The input is not 3 values so exit!
+                !
+                CALL PAR_QUIT&
+                    &('Error  :     > Three values expected for&
+                    & "g_0" in HCP phases.')
+                !
+        END SELECT
+        !
+    ! Exception error handling for future proofing
+    ELSE
+        !
+        CALL PAR_QUIT&
+            &('Error  :     > Invalid "g_0" value(s) input for material phase.')
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_G_0
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_G_S0(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%G_S0(CRYS_OPTIONS%PHASE)
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_G_S0
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_M_PRIME(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%M_PRIME(CRYS_OPTIONS%PHASE)
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_M_PRIME
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_GAMMADOT_S0(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%GAMMADOT_S0(CRYS_OPTIONS%PHASE)
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_GAMMADOT_S0
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_N(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%N(CRYS_OPTIONS%PHASE)
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_N
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_C11(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%C11(CRYS_OPTIONS%PHASE)
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_C11
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_C12(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%C12(CRYS_OPTIONS%PHASE)
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        RETURN
+        !
+    END IF
+    !
+    ! Handle dupulicate assignments here since C12 MUST be read in for FCC/BCC.
+    IF (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 1) THEN
+        !
+        CRYS_OPTIONS%C13(CRYS_OPTIONS%PHASE) = &
+                & CRYS_OPTIONS%C12(CRYS_OPTIONS%PHASE)
+        !
+    ELSE IF (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 2) THEN
+        !
+        CRYS_OPTIONS%C13(CRYS_OPTIONS%PHASE) = &
+                & CRYS_OPTIONS%C12(CRYS_OPTIONS%PHASE)
+        !
+    END IF 
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_C12
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_C13(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Read in data and store to allocated array in proper phase location.
+    ! Do not allow for non-HCP phase to read c13 in!
+    IF (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 3) THEN
+        !
+        READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%C13(CRYS_OPTIONS%PHASE)
+        !
+        IF (IOERR .NE. 0) THEN
+            !
+            S = 1
+            RETURN
+            !
+        END IF
+        !
+    ELSE
+        !
+        CALL PAR_QUIT&
+            &('Error  :     > C13 input for FCC or BCC crystals invalid.')
+        !
+    END IF
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_C13
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_C44(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Read in data and store to allocated array in proper phase location
+    READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%C44(CRYS_OPTIONS%PHASE)
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_C44
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_C_OVER_A(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Read in data and store to allocated array in proper phase location
+    IF (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 3) THEN
+        !
+        READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%C_OVER_A(CRYS_OPTIONS%PHASE)
+        !
+        IF (IOERR .NE. 0) THEN
+            !
+            S = 1
+            RETURN
+            !
+        END IF
+        !
+    ELSE
+        !
+        CALL PAR_QUIT&
+            &('Error  :     > c_over_a input for FCC or BCC crystals invalid.')
+        !
+    END IF
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_C_OVER_A
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_CYCLIC_PARAMETER_A(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    IF (OPTIONS%HARD_TYPE .EQ. 'cyclic') THEN
+        !
+        READ(A, *, IOSTAT=IOERR) &
+            &CRYS_OPTIONS%CYCLIC_PARAMETER_A(CRYS_OPTIONS%PHASE)
+        !
+        IF (IOERR .NE. 0) THEN
+            !
+            S = 1
+            RETURN
+            !
+        END IF
+        !
+    END IF
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_CYCLIC_PARAMETER_A
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_CYCLIC_PARAMETER_C(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    IF (OPTIONS%HARD_TYPE .EQ. 'cyclic') THEN
+        !
+        READ(A, *, IOSTAT=IOERR) &
+            &CRYS_OPTIONS%CYCLIC_PARAMETER_C(CRYS_OPTIONS%PHASE)
+        !
+        IF (IOERR .NE. 0) THEN
+            !
+            S = 1
+            RETURN
+            !
+        END IF
+        !
+    END IF
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_CYCLIC_PARAMETER_C
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_LATENT_PARAMETERS(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    IF (OPTIONS%HARD_TYPE .EQ. 'latent') THEN
+        !
+        SELECT CASE (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE))
+            !
+            CASE (1) ! FCC
+            !
+            READ(A, *, IOSTAT=IOERR) &
+                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE,1), &
+                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE,2), &
+                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE,3), &
+                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE,4), &
+                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE,5)
+            !
+            IF (IOERR .NE. 0) THEN
+                !
+                S = 1
+                RETURN
+                !
+            END IF
+            !
+            CASE (2) ! BCC
+            !
+            READ(A, *, IOSTAT=IOERR) &
+                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE,1), &
+                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE,2), &
+                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE,3), &
+                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE,4), &
+                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE,5), &
+                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE,6), &
+                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE,7)
+            !
+            IF (IOERR .NE. 0) THEN
+                !
+                S = 1
+                RETURN
+                !
+            END IF
+            !
+            CASE (3) ! HCP
+            !
+            READ(A, *, IOSTAT=IOERR) &
+                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE,1), &
+                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE,2), &
+                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE,3), &
+                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE,4), &
+                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE,5), &
+                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE,6), &
+                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE,7), &
+                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE,8)
+            !
+            IF (IOERR .NE. 0) THEN
+                !
+                S = 1
+                RETURN
+                !
+            END IF
+            !
+            CASE DEFAULT
+            !    
+            CALL PAR_QUIT('Error  :     > Invalid latent hardening parameters &
+                &provided.')
+            !        
+        END SELECT
+        !  
+    END IF
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_LATENT_PARAMETERS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_NUMBER_OF_STRAIN_STEPS(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_STEPS
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        RETURN
+        !
+    END IF
+    !
+    IF (UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_STEPS .LT. 1) THEN
+        !
+        CALL PAR_QUIT('Error  :     > Invalid number of strain steps defined.')
+        !
+    END IF
+    !
+    ! Allocate all target arrays
+    ALLOCATE(UNIAXIAL_OPTIONS%TARGET_STRAIN(1:UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_STEPS, &
+                & 1:3))
+    !
+    UNIAXIAL_OPTIONS%TARGET_STRAIN = -1.0_RK
+    UNIAXIAL_OPTIONS%CURRENT_STRAIN_TARGET = 1
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_NUMBER_OF_STRAIN_STEPS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_NUMBER_OF_STRAIN_RATE_JUMPS(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_RATE_JUMPS
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        RETURN
+        !
+    END IF
+    !
+    IF (UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_RATE_JUMPS .LT. 0) THEN
+        !
+        CALL PAR_QUIT('Error  :     > Invalid number of strain rate jumps &
+            &defined.')
+        S = 1
+        !
+    ELSE IF (UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_RATE_JUMPS .EQ. 0) THEN
+        !
+        S = 0
+        RETURN
+        !
+    ELSE
+        !
+        ! Allocate all target arrays
+        ALLOCATE(UNIAXIAL_OPTIONS%STRAIN_RATE_JUMP&
+            & (1:UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_RATE_JUMPS, 1:2))
+        !
+        UNIAXIAL_OPTIONS%STRAIN_RATE_JUMP = -1.0_RK
+        UNIAXIAL_OPTIONS%CURRENT_STRAIN_JUMP = 1
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_NUMBER_OF_STRAIN_RATE_JUMPS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_TARGET_STRAIN(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    IF ((UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_STEPS .EQ. 0) .OR. &
+        & (UNIAXIAL_OPTIONS%CURRENT_STRAIN_TARGET .GT. & 
+        & UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_STEPS)) THEN
+        !
+        CALL PAR_QUIT('Error  :     > Input "number_of_strain_steps" is invalid.')
+        !   
+    ELSE
+        !
+        READ(A, *, IOSTAT=IOERR) &
+            & UNIAXIAL_OPTIONS%TARGET_STRAIN(UNIAXIAL_OPTIONS%CURRENT_STRAIN_TARGET,1), &
+            & UNIAXIAL_OPTIONS%TARGET_STRAIN(UNIAXIAL_OPTIONS%CURRENT_STRAIN_TARGET,2), &
+            & UNIAXIAL_OPTIONS%TEMP
+        !
+        IF (IOERR .NE. 0) THEN
+            !
+            S = 1
+            RETURN
+            !
+        END IF
+        !
+        IF (UNIAXIAL_OPTIONS%TEMP .EQ. 'print_data') THEN
+            !
+            UNIAXIAL_OPTIONS%TARGET_STRAIN(UNIAXIAL_OPTIONS%CURRENT_STRAIN_TARGET,3) &
+            & = 0
+            !
+        ELSE IF (UNIAXIAL_OPTIONS%TEMP .EQ. 'suppress_data') THEN
+            !            
+            UNIAXIAL_OPTIONS%TARGET_STRAIN(UNIAXIAL_OPTIONS%CURRENT_STRAIN_TARGET,3) &
+            & = 1
+            !
+        ELSE
+            !
+            CALL PAR_QUIT('Fatal error: String for print control is invalid in *.config file.') 
+            !
+        END IF
+        !
+        UNIAXIAL_OPTIONS%CURRENT_STRAIN_TARGET = UNIAXIAL_OPTIONS%CURRENT_STRAIN_TARGET + 1
+        !  
+    END IF
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_TARGET_STRAIN
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_STRAIN_RATE_JUMP(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    IF ((UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_RATE_JUMPS .GT. 0) .AND. &      
+        & (UNIAXIAL_OPTIONS%CURRENT_STRAIN_JUMP .LE. &
+        & UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_RATE_JUMPS)) THEN
+        !
+        READ(A, *, IOSTAT=IOERR) &
+            &UNIAXIAL_OPTIONS%STRAIN_RATE_JUMP(UNIAXIAL_OPTIONS%CURRENT_STRAIN_JUMP,1), &
+            & UNIAXIAL_OPTIONS%STRAIN_RATE_JUMP(UNIAXIAL_OPTIONS%CURRENT_STRAIN_JUMP,2)
+        !
+        IF (IOERR .NE. 0) THEN
+            !
+            S = 1
+            RETURN
+            !
+        END IF
+        !
+        UNIAXIAL_OPTIONS%CURRENT_STRAIN_JUMP = UNIAXIAL_OPTIONS%CURRENT_STRAIN_JUMP + 1
+        !
+    ELSE IF (UNIAXIAL_OPTIONS%CURRENT_STRAIN_JUMP .GT. &
+        & UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_RATE_JUMPS) THEN
+        !
+        CALL PAR_QUIT('Error  :     > Invalid number of strain jumps defined.')
+        S = 1
+        !
+    ELSE IF (UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_RATE_JUMPS .EQ. 0) THEN
+        !
+        RETURN
+        S = 0
+        !
+    END IF
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_STRAIN_RATE_JUMP
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_NUMBER_OF_LOAD_STEPS(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) UNIAXIAL_OPTIONS%NUMBER_OF_LOAD_STEPS
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        RETURN
+        !
+    END IF
+    !
+    IF (UNIAXIAL_OPTIONS%NUMBER_OF_LOAD_STEPS .LT. 1) THEN
+        !
+        CALL PAR_QUIT('Error  :     > Invalid number of load steps defined.')
+        !
+    END IF
+    !
+    ! Allocate all target arrays
+    ALLOCATE(UNIAXIAL_OPTIONS%TARGET_LOAD(1:UNIAXIAL_OPTIONS%NUMBER_OF_LOAD_STEPS, &
+                & 1:4))
+    !
+    UNIAXIAL_OPTIONS%TARGET_LOAD = -1.0_RK
+    UNIAXIAL_OPTIONS%CURRENT_LOAD_TARGET = 1
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_NUMBER_OF_LOAD_STEPS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_TARGET_LOAD(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    IF ((UNIAXIAL_OPTIONS%NUMBER_OF_LOAD_STEPS .EQ. 0) .OR. &
+        & (UNIAXIAL_OPTIONS%CURRENT_LOAD_TARGET .GT. & 
+        & UNIAXIAL_OPTIONS%NUMBER_OF_LOAD_STEPS)) THEN
+        !
+        CALL PAR_QUIT('Error  :     > Input "number_of_load_steps" is invalid.')
+        !   
+    ELSE
+        !
+        READ(A, *, IOSTAT=IOERR) &
+            & UNIAXIAL_OPTIONS%TARGET_LOAD(UNIAXIAL_OPTIONS%CURRENT_LOAD_TARGET,1), &
+            & UNIAXIAL_OPTIONS%TARGET_LOAD(UNIAXIAL_OPTIONS%CURRENT_LOAD_TARGET,2), &
+            & UNIAXIAL_OPTIONS%TARGET_LOAD(UNIAXIAL_OPTIONS%CURRENT_LOAD_TARGET,3), &
+            & UNIAXIAL_OPTIONS%TEMP
+        !
+        IF (IOERR .NE. 0) THEN
+            !
+            S = 1
+            RETURN
+            !
+        END IF
+        !
+        IF (UNIAXIAL_OPTIONS%TEMP .EQ. 'print_data') THEN
+            !
+            UNIAXIAL_OPTIONS%TARGET_LOAD(UNIAXIAL_OPTIONS%CURRENT_LOAD_TARGET,4) &
+            & = 0
+            !
+        ELSE IF (UNIAXIAL_OPTIONS%TEMP .EQ. 'suppress_data') THEN
+            !            
+            UNIAXIAL_OPTIONS%TARGET_LOAD(UNIAXIAL_OPTIONS%CURRENT_LOAD_TARGET,4) &
+            & = 1
+            !
+        ELSE
+            !
+            CALL PAR_QUIT('Error  :     > Invalid printing options in simulation.cfg.')
+            !
+        END IF
+        !
+        UNIAXIAL_OPTIONS%CURRENT_LOAD_TARGET = UNIAXIAL_OPTIONS%CURRENT_LOAD_TARGET + 1
+        !  
+    END IF
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_TARGET_LOAD
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_MAX_BC_ITER(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    INTEGER :: TEMP
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) TEMP
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        RETURN
+        !
+    END IF
+    !
+    TRIAXCSR_OPTIONS%MAX_BC_ITER = TEMP
+    TRIAXCLR_OPTIONS%MAX_BC_ITER = TEMP
+    !
+    s = 0
+    !
+    END SUBROUTINE EXEC_MAX_BC_ITER
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_MIN_PERT_FRAC(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) TRIAXCSR_OPTIONS%MIN_PERT_FRAC
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_MIN_PERT_FRAC
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_LOAD_TOL_ABS(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    REAL(RK) :: TEMP
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) TEMP
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        RETURN
+        !
+    END IF
+    !
+    TRIAXCSR_OPTIONS%LOAD_TOL_ABS = TEMP
+    TRIAXCLR_OPTIONS%LOAD_TOL_ABS = TEMP
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_LOAD_TOL_ABS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_LOAD_TOL_REL(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) TRIAXCSR_OPTIONS%LOAD_TOL_REL
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_LOAD_TOL_REL
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_NUMBER_OF_CSR_LOAD_STEPS(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) TRIAXCSR_OPTIONS%NUMBER_OF_CSR_LOAD_STEPS
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        RETURN
+        !
+    END IF
+    !
+    IF (TRIAXCSR_OPTIONS%NUMBER_OF_CSR_LOAD_STEPS .LT. 1) THEN
+        !
+        CALL PAR_QUIT('Error  :     > Invalid number of load steps defined.')
+        !
+    END IF
+    !
+    ! Allocate all target arrays
+    ALLOCATE(TRIAXCSR_OPTIONS%TARGET_CSR_LOAD&
+        & (1:TRIAXCSR_OPTIONS%NUMBER_OF_CSR_LOAD_STEPS, 1:6))
+    !
+    TRIAXCSR_OPTIONS%TARGET_CSR_LOAD = -1.0_RK
+    TRIAXCSR_OPTIONS%CURRENT_CSR_LOAD_TARGET = 1
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_NUMBER_OF_CSR_LOAD_STEPS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_TARGET_CSR_LOAD(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    IF ((TRIAXCSR_OPTIONS%NUMBER_OF_CSR_LOAD_STEPS .EQ. 0) .OR. &
+        & (TRIAXCSR_OPTIONS%CURRENT_CSR_LOAD_TARGET .GT. & 
+        & TRIAXCSR_OPTIONS%NUMBER_OF_CSR_LOAD_STEPS)) THEN
+        !
+        CALL PAR_QUIT&
+            & ('Error  :     > Input "number_of_csr_load_steps" is invalid.')
+        !
+        !   
+    ELSE
+        !
+        READ(A, *, IOSTAT=IOERR) &
+            & TRIAXCSR_OPTIONS%TARGET_CSR_LOAD(TRIAXCSR_OPTIONS%CURRENT_CSR_LOAD_TARGET,1), &
+            & TRIAXCSR_OPTIONS%TARGET_CSR_LOAD(TRIAXCSR_OPTIONS%CURRENT_CSR_LOAD_TARGET,2), &
+            & TRIAXCSR_OPTIONS%TARGET_CSR_LOAD(TRIAXCSR_OPTIONS%CURRENT_CSR_LOAD_TARGET,3), &
+            & TRIAXCSR_OPTIONS%TARGET_CSR_LOAD(TRIAXCSR_OPTIONS%CURRENT_CSR_LOAD_TARGET,4), &
+            & TRIAXCSR_OPTIONS%TARGET_CSR_LOAD(TRIAXCSR_OPTIONS%CURRENT_CSR_LOAD_TARGET,5), &
+            & TRIAXCSR_OPTIONS%TEMP_CSR
+        !
+        IF (IOERR .NE. 0) THEN
+            !
+            S = 1
+            RETURN
+            !
+        END IF
+        !
+        IF (TRIAXCSR_OPTIONS%TEMP_CSR .EQ. 'print_data') THEN
+            !
+            TRIAXCSR_OPTIONS%TARGET_CSR_LOAD(TRIAXCSR_OPTIONS%CURRENT_CSR_LOAD_TARGET,6) &
+            & = 0
+            !
+        ELSE IF (TRIAXCSR_OPTIONS%TEMP_CSR .EQ. 'suppress_data') THEN
+            !            
+            TRIAXCSR_OPTIONS%TARGET_CSR_LOAD(TRIAXCSR_OPTIONS%CURRENT_CSR_LOAD_TARGET,6) &
+            & = 1
+            !
+        ELSE
+            !
+            CALL PAR_QUIT('Error  :     > Invalid printing options in simulation.cfg.')
+            !
+        END IF
+        !
+        TRIAXCSR_OPTIONS%CURRENT_CSR_LOAD_TARGET = TRIAXCSR_OPTIONS%CURRENT_CSR_LOAD_TARGET + 1
+        !  
+    END IF
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_TARGET_CSR_LOAD
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_MAX_STRAIN_INCR(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN)  :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) TRIAXCLR_OPTIONS%MAX_STRAIN_INCR
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_MAX_STRAIN_INCR
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_MAX_STRAIN(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN)  :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    REAL(RK) :: TEMP
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) TEMP
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        RETURN
+        !
+    END IF
+    !
+    TRIAXCSR_OPTIONS%MAX_STRAIN = TEMP
+    TRIAXCLR_OPTIONS%MAX_STRAIN = TEMP
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_MAX_STRAIN
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_MAX_EQSTRAIN(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN)  :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    REAL(RK) :: TEMP
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) TEMP
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        RETURN
+        !
+    END IF
+    !
+    TRIAXCSR_OPTIONS%MAX_EQSTRAIN = TEMP
+    TRIAXCLR_OPTIONS%MAX_EQSTRAIN = TEMP
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_MAX_EQSTRAIN
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_NUMBER_OF_CLR_LOAD_STEPS(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) TRIAXCLR_OPTIONS%NUMBER_OF_CLR_LOAD_STEPS
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        RETURN
+        !
+    END IF
+    !
+    IF (TRIAXCLR_OPTIONS%NUMBER_OF_CLR_LOAD_STEPS .LT. 1) THEN
+        !
+        CALL PAR_QUIT('Error  :     > Invalid number of load steps defined.')
+        !
+    END IF
+    !
+    ! Allocate all target arrays
+    ALLOCATE(TRIAXCLR_OPTIONS%TARGET_CLR_LOAD&
+        & (1:TRIAXCLR_OPTIONS%NUMBER_OF_CLR_LOAD_STEPS, 1:5))
+    ! Note that allocation for step that are dwell episodes is handled in 
+    ! driver_triaxclr_mod to avoid overhead here.
+    !
+    TRIAXCLR_OPTIONS%TARGET_CLR_LOAD = -1.0_RK
+    TRIAXCLR_OPTIONS%CURRENT_CLR_LOAD_TARGET = 1
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_NUMBER_OF_CLR_LOAD_STEPS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_TARGET_CLR_LOAD(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    IF ((TRIAXCLR_OPTIONS%NUMBER_OF_CLR_LOAD_STEPS .EQ. 0) .OR. &
+        & (TRIAXCLR_OPTIONS%CURRENT_CLR_LOAD_TARGET .GT. & 
+        & TRIAXCLR_OPTIONS%NUMBER_OF_CLR_LOAD_STEPS)) THEN
+        !
+        CALL PAR_QUIT&
+            & ('Error  :     > Input "number_of_clr_load_steps" is invalid.')
+        !
+        !   
+    ELSE
+        !
+        READ(A, *, IOSTAT=IOERR) &
+            & TRIAXCLR_OPTIONS%TARGET_CLR_LOAD(TRIAXCLR_OPTIONS%CURRENT_CLR_LOAD_TARGET,1), &
+            & TRIAXCLR_OPTIONS%TARGET_CLR_LOAD(TRIAXCLR_OPTIONS%CURRENT_CLR_LOAD_TARGET,2), &
+            & TRIAXCLR_OPTIONS%TARGET_CLR_LOAD(TRIAXCLR_OPTIONS%CURRENT_CLR_LOAD_TARGET,3), &
+            & TRIAXCLR_OPTIONS%TARGET_CLR_LOAD(TRIAXCLR_OPTIONS%CURRENT_CLR_LOAD_TARGET,4), &
+            & TRIAXCLR_OPTIONS%TEMP_CLR
+        !
+        IF (IOERR .NE. 0) THEN
+            !
+            S = 1
+            RETURN
+            !
+        END IF
+        !
+        IF (TRIAXCLR_OPTIONS%TEMP_CLR .EQ. 'print_data') THEN
+            !
+            TRIAXCLR_OPTIONS%TARGET_CLR_LOAD(TRIAXCLR_OPTIONS%CURRENT_CLR_LOAD_TARGET,5) &
+            & = 0
+            !
+        ELSE IF (TRIAXCLR_OPTIONS%TEMP_CLR .EQ. 'suppress_data') THEN
+            !            
+            TRIAXCLR_OPTIONS%TARGET_CLR_LOAD(TRIAXCLR_OPTIONS%CURRENT_CLR_LOAD_TARGET,5) &
+            & = 1
+            !
+        ELSE
+            !
+            CALL PAR_QUIT('Error  :     > Invalid printing options in simulation.cfg')
+            !
+        END IF
+        !
+        TRIAXCLR_OPTIONS%CURRENT_CLR_LOAD_TARGET = TRIAXCLR_OPTIONS%CURRENT_CLR_LOAD_TARGET + 1
+        !  
+    END IF
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_TARGET_CLR_LOAD
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_NUMBER_OF_LOAD_RATE_JUMPS(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) TRIAXCLR_OPTIONS%NUMBER_OF_LOAD_RATE_JUMPS
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        RETURN
+        !
+    END IF
+    !
+    IF (TRIAXCLR_OPTIONS%NUMBER_OF_LOAD_RATE_JUMPS .LT. 0) THEN
+        !
+        CALL PAR_QUIT('Error  :     > Invalid number of load rate jumps defined.')
+        S = 1
+        !
+    ELSE IF (TRIAXCLR_OPTIONS%NUMBER_OF_LOAD_RATE_JUMPS .EQ. 0) THEN
+        !
+        S = 0
+        RETURN
+        !
+    ELSE
+        !
+        ! Allocate all target arrays
+        ALLOCATE(TRIAXCLR_OPTIONS%LOAD_RATE_JUMP&
+            & (1:TRIAXCLR_OPTIONS%NUMBER_OF_LOAD_RATE_JUMPS, 1:2))
+        !
+        TRIAXCLR_OPTIONS%LOAD_RATE_JUMP = -1.0_RK
+        TRIAXCLR_OPTIONS%CURRENT_LOAD_RATE_JUMP = 1
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_NUMBER_OF_LOAD_RATE_JUMPS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_LOAD_RATE_JUMP(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    IF ((TRIAXCLR_OPTIONS%NUMBER_OF_LOAD_RATE_JUMPS .GT. 0) .AND. &      
+        & (TRIAXCLR_OPTIONS%CURRENT_LOAD_RATE_JUMP .LE. &
+        & TRIAXCLR_OPTIONS%NUMBER_OF_LOAD_RATE_JUMPS)) THEN
+        !
+        READ(A, *, IOSTAT=IOERR) &
+            & TRIAXCLR_OPTIONS%LOAD_RATE_JUMP(TRIAXCLR_OPTIONS%CURRENT_LOAD_RATE_JUMP,1), &
+            & TRIAXCLR_OPTIONS%LOAD_RATE_JUMP(TRIAXCLR_OPTIONS%CURRENT_LOAD_RATE_JUMP,2)
+        !
+        IF (IOERR .NE. 0) THEN
+            !
+            S = 1
+            RETURN
+            !
+        END IF
+        ! 
+        TRIAXCLR_OPTIONS%CURRENT_LOAD_RATE_JUMP = TRIAXCLR_OPTIONS%CURRENT_LOAD_RATE_JUMP + 1
+        !
+    ELSE IF (TRIAXCLR_OPTIONS%CURRENT_LOAD_RATE_JUMP .GT. &
+        & TRIAXCLR_OPTIONS%NUMBER_OF_LOAD_RATE_JUMPS) THEN
+        !
+        CALL PAR_QUIT('Error  :     > Invalid number of load rate jumps defined.')
+        S = 1
+        !
+    ELSE IF (TRIAXCLR_OPTIONS%NUMBER_OF_LOAD_RATE_JUMPS .EQ. 0) THEN
+        !
+        RETURN
+        S = 0
+        !
+    END IF
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_LOAD_RATE_JUMP
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_NUMBER_OF_DWELL_EPISODES(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) TRIAXCLR_OPTIONS%NUMBER_OF_DWELL_EPISODES
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        RETURN
+        !
+    END IF
+    !
+    IF (TRIAXCLR_OPTIONS%NUMBER_OF_DWELL_EPISODES .LT. 0) THEN
+        !
+        CALL PAR_QUIT('Error  :     > Invalid number of dwell episodes defined.')
+        S = 1
+        !
+    ELSE IF (TRIAXCLR_OPTIONS%NUMBER_OF_DWELL_EPISODES .EQ. 0) THEN
+        !
+        S = 0
+        RETURN
+        !
+    ELSE
+        !
+        ! Allocate all target arrays
+        ALLOCATE(TRIAXCLR_OPTIONS%DWELL_EPISODE&
+            & (1:TRIAXCLR_OPTIONS%NUMBER_OF_DWELL_EPISODES, 1:4))
+        !
+        TRIAXCLR_OPTIONS%DWELL_EPISODE = -1.0_RK
+        TRIAXCLR_OPTIONS%CURRENT_DWELL_EPISODE = 1
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_NUMBER_OF_DWELL_EPISODES
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_DWELL_EPISODE(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    IF ((TRIAXCLR_OPTIONS%NUMBER_OF_DWELL_EPISODES .GT. 0) .AND. &      
+        & (TRIAXCLR_OPTIONS%CURRENT_DWELL_EPISODE .LE. &
+        & TRIAXCLR_OPTIONS%NUMBER_OF_DWELL_EPISODES)) THEN
+        !
+        READ(A, *, IOSTAT=IOERR) & 
+            & TRIAXCLR_OPTIONS%DWELL_EPISODE(TRIAXCLR_OPTIONS%CURRENT_DWELL_EPISODE,1), &
+            & TRIAXCLR_OPTIONS%DWELL_EPISODE(TRIAXCLR_OPTIONS%CURRENT_DWELL_EPISODE,2), &
+            & TRIAXCLR_OPTIONS%DWELL_EPISODE(TRIAXCLR_OPTIONS%CURRENT_DWELL_EPISODE,3), &
+            & TRIAXCLR_OPTIONS%TEMP_CLR
+        !
+        IF (IOERR .NE. 0) THEN
+            !
+            S = 1
+            RETURN
+            !
+        END IF
+        !
+        IF (TRIAXCLR_OPTIONS%TEMP_CLR .EQ. 'print_data') THEN
+            !
+            TRIAXCLR_OPTIONS%DWELL_EPISODE(TRIAXCLR_OPTIONS%CURRENT_DWELL_EPISODE,4) &
+            & = 0
+            !
+        ELSE IF (TRIAXCLR_OPTIONS%TEMP_CLR .EQ. 'suppress_data') THEN
+            !            
+            TRIAXCLR_OPTIONS%DWELL_EPISODE(TRIAXCLR_OPTIONS%CURRENT_DWELL_EPISODE,4) &
+            & = 1
+            !
+        ELSE
+            !
+            CALL PAR_QUIT('Error  :     > Invalid printing options in simulation.cfg.')
+            !
+        END IF
+        !
+        TRIAXCLR_OPTIONS%CURRENT_DWELL_EPISODE = TRIAXCLR_OPTIONS%CURRENT_DWELL_EPISODE + 1
+        !
+    ELSE IF (TRIAXCLR_OPTIONS%CURRENT_DWELL_EPISODE .GT. &
+        & TRIAXCLR_OPTIONS%NUMBER_OF_DWELL_EPISODES) THEN
+        !
+        CALL PAR_QUIT('Error  :     > Invalid number of dwell episodes defined.')
+        S = 1
+        !
+    ELSE IF (TRIAXCLR_OPTIONS%NUMBER_OF_DWELL_EPISODES .EQ. 0) THEN
+        !
+        RETURN
+        S = 0
+        !
+    END IF
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_DWELL_EPISODE
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_RUN_FIBER_AVERAGE(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! The external file must be named 'simulation.fib'.
+    FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE = .TRUE.
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_RUN_FIBER_AVERAGE
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_READ_VOLUME(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! The external file must be named 'simulation.vol'.
+    FIBER_AVERAGE_OPTIONS%READ_VOLUME = .TRUE.
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_READ_VOLUME
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_READ_INTERIOR(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN)  :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! The external file must be named 'simulation.int'.
+    FIBER_AVERAGE_OPTIONS%READ_INTERIOR = .TRUE.
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_READ_INTERIOR
     !
 END MODULE READ_INPUT_MOD

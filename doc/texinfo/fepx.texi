@@ -98,9 +98,10 @@ This is the @cite{FEPX Reference Manual} for FEPX
 @menu
 * Conditions of Use::
 * Introduction::
-* Setting up a job::
-* Defining a virtual specimen::
-@c * Option Index::
+* Simulation Input::
+* Simulation Output::
+* Running a Simulation::
+* Example Simulations::
 * Development History::
 * References::
 * GNU General Public License::
@@ -151,11 +152,30 @@ $ \a\
 @end macro
 
 @macro inputfilehead
+@iftex
 @sp 0.8
+@end iftex
+@ifinfo
+@sp 1
+@end ifinfo
 @end macro
 
 @macro inputfilefoot
+@iftex
 @sp 0.6
+@end iftex
+@ifinfo
+@sp 1
+@end ifinfo
+@end macro
+
+@macro verbatimsep
+@iftex
+@sp 0.5
+@end iftex
+@ifinfo
+@sp 1
+@end ifinfo
 @end macro
 
 @c @macro comx{a}

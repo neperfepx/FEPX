@@ -14,9 +14,8 @@ MODULE ItMethodEvpsModule
   USE READ_INPUT_MOD
   USE microstructure_mod
   USE StiffnessEvpsModule
-  USE UtilsCrystalModule
+  USE MATRIX_OPERATIONS_MOD
   USE ConvergenceModule, ONLY: cv_options
-  USE SIMULATION_CONFIGURATION_MOD
   USE WRITE_OUTPUT_MOD
 
   IMPLICIT NONE

@@ -141,7 +141,7 @@ CONTAINS
         !  Matched:  check status
         !
         IF (status /= 0) THEN
-          CALL writeMessage(STANDARD_ERROR, '*** Error executing command:' // cmdLine)
+          CALL writeMessage(STANDARD_ERROR, 'Error  :     > No match on command: '// cmdLine)
           mystatus = LOOPSTAT_NZ; EXIT
         ELSE
           !CALL writeMessage(STANDARD_OUTPUT, 'processed command:  ' // cmdLine)
@@ -153,7 +153,7 @@ CONTAINS
         !
         !  No match:  exit
         !
-        CALL writeMessage(STANDARD_ERROR, '*** No match on command:' // cmdLine)
+        CALL writeMessage(STANDARD_ERROR, 'Error  :     > No match on command: '// cmdLine)
         mystatus = LOOPSTAT_NOMATCH; EXIT
         !
       END IF

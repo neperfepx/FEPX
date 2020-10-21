@@ -5,11 +5,9 @@
 @node Simulation Output
 @chapter Simulation Output
 
-In this section the output files are described. In general, the output can be broken down into four types: nodal output (variables that are calculated and printed at the finite element nodes), elemental output (variables that are calculated and printed at the finite elements), restart output (which contains all variables necessary to restart a simulation at a specific load step),
-@c fiber averaged output (fiber averaged values of certain variables and other statistics associated with the fiber average output option),
-and miscellaneous output (macroscopic forces and various simulation statistics).
+In this section the output files are described. In general, the output can be broken down into five types: nodal output (variables that are calculated and printed at the finite element nodes), elemental output (variables that are calculated and printed at the finite elements), restart output (which contains all variables necessary to restart a simulation at a specific load step), miscellaneous output (macroscopic forces and various simulation statistics), and fiber averaged output (fiber averaged values of certain variables and other statistics associated with the fiber average output option).
 
-All desired output must be defined in the @file{simulation.config} file (@pxref{Printing Results} for a description of the print options). A (small) @file{post.report} file is systematically printed, which contains information necessary for post-processing with Neper. All output described in this section is @emph{raw} simulation output and can be post-processed into a more human-readable format with Neper's @samp{-S} module. Refer to the Neper reference manual, @url{https://rquey.github.io/neper/docs/neper.pdf}, for a more complete description of the @samp{-S} module.
+All desired output must be defined in the @file{simulation.config} file (@pxref{Printing Results} for a description of the print options). A (small) @file{post.report} file is systematically printed, which contains information necessary for post-processing with Neper. All output described in this section is @emph{raw} simulation output and can be post-processed into a more human-readable format with Neper's @samp{-S} module. Refer to the Neper reference manual, @url{https://neper.info/docs/neper.pdf}, for a more complete description of the @samp{-S} module.
 
 @section Nodal Output
 
@@ -122,6 +120,13 @@ In this file, the deviatoric plastic deformation rate tensor is printed. Each te
 In this file, the equivalent plastic deformation rate is printed. One scalar value is printed per element. The equivalent plastic deformation rate, @math{D^p}, is calculated based on the plastic deformation rate tensor, @math{{\bf D}^p}, via the tensor inner product:
 
 @math{D^p = \sqrt{ {3 \over 2} {\bf D}^p : {\bf D}^p }}
+
+
+@item @file{post.elt-vol.core*} : Elemental Volume
+
+In this file, the elemental volume is printed. One scalar value is printed per element. The elemental volume is calculated as the Gaussian integration of the determinant of the Jacobian matrix:
+
+@math{V_{el} = \sum_{i=1}^{n_{qp}}{det(J_i) w_i }}
 
 
 @item @file{post.ori.core*} : Crystallographic Orientation
@@ -362,47 +367,13 @@ All loading modes also write field data on a per-core basis to @file{post.restar
 @option{eqstrain} @code{[real]}
 @option{eqplstrain} @code{[real]}
 @option{gamma} @code{[real]}
+
+@option{el_work_n} @code{[real]}
+@option{el_workp_n} @code{[real]}
+@option{el_work_rate_n} @code{[real]}
+@option{el_workp_rate_n} @code{[real]}
 @end example
 @inputfilefoot
-
-@ignore
-
-@section Fiber Averaged Output
-
-Fiber averaging summary...
-
-@ftable @asis
-@item @file{post.fib.crss-avg} : Critical Resolved Shear Stress - Average
-
-@item @file{post.fib.crss-std} : Critical Resolved Shear Stress - Standard Deviation
-
-@item @file{post.fib.defrate-pl-eq-avg} : equivalent Plastic Deformation Rate - Average
-
-@item @file{post.fib.defrate-pl-eq-std} : equivalent Plastic Deformation Rate - Standard Deviation
-
-@item @file{post.fib.elt.core*} : Fiber Elements
-
-List of elements that satisfy the fiber condition, on a per-core basis. May be used to get more statistics for other variables, knowing which elements belong to that fiber.
-
-@item @file{post.fib.elt-num} : Number of Fiber Elements
-
-Number of elements that satisfy the fiber condition.
-
-@item @file{post.fib.elt-vol} : Volume of Fiber Elements
-
-Volume of elements that satisfy the fiber condition.
-
-@item @file{post.fib.sliprate-sum-avg} : Sum of Shear Rates - Average
-
-@item @file{post.fib.sliprate-sum-std} : Sum of Shear Rates - Standard Deviation
-
-@item @file{post.fib.strain-el-avg} : Elastic Lattice Strain - Average
-
-@item @file{post.fib.strain-el-std} : Elastic Lattice Strain - Standard Deviation
-
-@end ftable
-
-@end ignore
 
 @node Miscellaneous Output
 @section Miscellaneous Output
@@ -455,4 +426,121 @@ The @file{post.report} file is always printed for a simulation. The report file 
 @inputfilefoot
 
 @c DEBUG: Do we need a where here? I feel like this is self explanatory enough, but we can add one.
+
+@node Fiber Averaging Output
+@section Fiber Averaging Output
+
+The optional fiber averaging routine (@pxref{The Fiber Averaging File (Optional)}) has the ability to gather the average and standard deviation of certain simulation output variables for elements which belong to the user-defined crystallographic fibers. Currently, the output available from the fiber averaging routine is (note that all output is printed by default if fiber averaging is activated):
+
+@ftable @asis
+@item @file{post.fib.crss} : Critical Resolved Shear Stress
+
+In this file, the fiber averaged critical resolved shear stress is printed. For either an isotropic or anisotropic hardening assumption, the output file is structured as follows:
+
+@verbatimsep
+@verbatim
+step_number num_fibers
+crss1_fib1_avg crss2_fib1_avg ... crss1_fib1_std crss2_fib1_std ...
+crss1_fib2_avg crss2_fib2_avg ... crss1_fib2_std crss2_fib2_std ...
+...
+@end verbatim
+@verbatimsep
+
+where @code{@var{crss*_fib*_avg}} refers to the average critical resolved shear stress over all of the elements that belong to that specific crystallographic fiber on a given slip system, and @code{@var{crss*_fib*_std}} refers to the standard deviation of the critical resolved shear stress over all of the elements that belong to that specific crystallographic fiber on a given slip system. One set of values is printed per fiber, one fiber per line. Each block is printed per @samp{step}. If a multiphase material is fiber-averaged, the number of @code{@var{fib*}} columns printed for a given fiber is determined by the maximal number of slip systems for the considered material phase. As such, the number of columns in this file may not necessarily be fixed throughout.
+
+
+For body centered cubic crystal symmetry, values are printed in the order:
+
+@math{ (0 1 \bar 1)[1 1 1],\,(1 0 \bar 1)[1 1 1],\,(1 \bar 1 0)[1 1 1],\,(0 1 1)[1 1 \bar 1],\,(1 0 1)[1 1 \bar 1],\,(1 \bar 1 0)[1 1 \bar 1],}
+@math{ (0 1 1)[1 \bar 1 1],\,(1 0 \bar 1)[1 \bar 1 1],\,(1 1 0)[1 \bar 1 1],\,(0 1 \bar 1)[1 \bar 1 \bar 1],\,(1 0 1)[1 \bar 1 \bar 1],\,(1 1 0)[1 \bar 1 \bar 1] }.
+
+
+For face centered cubic crystal symmetry, values are printed in the order:
+
+@math{ (1 1 1)[0 1 \bar 1],\,(1 1 1)[1 0 \bar 1],\,(1 1 1)[1 \bar 1 0],\,(1 1 \bar 1)[0 1 1],\,(1 1 \bar 1)[1 0 1],\,(1 1 \bar 1)[1 \bar 1 0],\,}
+@math{ (1 \bar 1 1)[0 1 1],\,(1 \bar 1 1)[1 0 \bar 1],\,(1 \bar 1 1)[1 1 0],\,(1 \bar 1 \bar 1)[0 1 \bar 1],\,(1 \bar 1 \bar 1)[1 0 1],\,(1 \bar 1 \bar 1)[1 1 0] }.
+
+
+For hexagonal close packed crystal symmetry, values are printed in the order (corresponding to the 3 basal, 3 prismatic, and 12 pyramidal slip systems):
+
+@math{ (0 0 0 1)[2 \bar 1 \bar 1 0],\,(0 0 0 1)[\bar 1 2 \bar 1 0],\,(0 0 0 1)[\bar 1 \bar 1 2 0],\,(0 1 \bar 1 0)[2 \bar 1 \bar 1 0],\,(\bar 1 0 1 0)[\bar 1 2 \bar 1 0],\,(1 \bar 1 0 0)[\bar 1 \bar 1 2 0],\,}
+@math{ (1 0 \bar 1 1)[\bar 2 1 1 3],\,(1 0 \bar 1 1)[\bar 1 \bar 1 2 3],\,(0 1 \bar 1 1)[\bar 1 \bar 1 2 3],\,(0 1 \bar 1 1)[1 \bar 2 1 3],\,(\bar 1 1 0 1)[1 \bar 2 1 3],\,(\bar 1 1 0 1)[2 \bar 1 \bar 1 3],\,}
+@math{ (\bar 1 0 1 1)[2 \bar 1 \bar 1 3],\,(\bar 1 0 1 1)[1 1 \bar 2 3],\,(0 \bar 1 1 1)[1 1 \bar 2 3],\,(0 \bar 1 1 1)[\bar 1 2 \bar 1 3],\,(1 \bar 1 0 1)[\bar 1 2 \bar 1 3],\,(1 \bar 1 0 1)[\bar 2 1 1 3] }.
+
+@item @file{post.fib.defrate-pl-eq}:  Equivalent Plastic Deformation Rate
+
+In this file, the fiber averaged equivalent plastic deformation rate is printed. The output file is structured as follows:
+
+@verbatimsep
+@verbatim
+step_number num_fibers
+defrate-pl-eq_fib1_avg defrate-pl-eq_fib1_std
+defrate-pl-eq_fib2_avg defrate-pl-eq_fib2_std
+...
+@end verbatim
+@verbatimsep
+
+where @code{@var{defrate-pl-eq_fib*_avg}} refers to the average equivalent plastic deformation rate over all of the elements that belong to that specific crystallographic fiber, and @code{@var{defrate-pl-eq_fib*_std}} refers to the standard deviation of the equivalent plastic deformation rate over all of the elements that belong to that specific crystallographic fiber. One set of values is printed per fiber, one fiber per line. Each block is printed per @samp{step}.
+
+@item @file{post.fib.sliprate-sum}: Sum of the Slip System Shear Rates
+
+In this file, the fiber averaged sum of the slip system shear rates rate is printed. The output file is structured as follows:
+
+@verbatimsep
+@verbatim    
+step_number num_fibers
+sliprate-sum_fib1_avg sliprate-sum_fib1_std
+sliprate-sum_fib2_avg sliprate-sum_fib2_std
+...
+@end verbatim
+@verbatimsep
+
+where @code{@var{sliprate-sum_fib*_avg}} refers to the average sum of the slip system shear rates over all of the elements that belong to that specific crystallographic fiber, and @code{@var{sliprate-sum_fib*_std}} refers to the standard deviation of the sum of the slip system shear rates over all of the elements that belong to that specific crystallographic fiber. One set of values is printed per fiber, one fiber per line. Each block is printed per @samp{step}.
+
+@item @file{post.fib.strain-el-lat}: Elastic Lattice Strains
+
+In this file, the fiber averaged elastic lattice strain is printed. The output file is structured as follows:
+
+@verbatimsep
+@verbatim  
+step_number num_fibers
+strain-el-lat_fib1_avg strain-el-lat_fib1_std
+strain-el-lat_fib2_avg strain-el-lat_fib2_std
+...
+@end verbatim
+@verbatimsep
+
+where @code{@var{strain-el-lat_fib*_avg}} refers to the average elastic lattice strain over all of the elements that belong to that specific crystallographic fiber, and @code{@var{strain-el-lat_fib*_std}} refers to the standard deviation of the elastic lattice strain over all of the elements that belong to that specific crystallographic fiber. One set of values is printed per fiber, one fiber per line. Each block is printed per @samp{step}.
+
+@item @file{post.fib.elt-stats}: Element Statistics
+
+In this file, the element statistics for each fiber are printed. The output file is structured as follows:
+
+@verbatimsep
+@verbatim
+step_number num_fibers
+num_elt_fib1 vol_elt_fib1
+num_elt_fib2 vol_elt_fib2
+...
+@end verbatim
+@verbatimsep
+
+where @code{@var{num_elt_fib*}} refers to the number of elements that belong to that specific crystallographic fiber, and @code{@var{vol_elt_fib*}} refers to the total volume of all of the elements that belong to that specific crystallographic fiber. One set of values is printed per fiber, one fiber per line. Each block is printed per @samp{step}.
+
+@item @file{post.fib.elt.core*}: Lists of Elements Belonging to Crystallographic Fibers
+
+In this file, the list of local elements (that is, elements on a particular core) belonging to each crystallographic fiber are printed. The output file is structured as follows:
+
+@verbatimsep
+@verbatim
+step_number fib_id num_fib_elts core_start_elt core_end_elt
+elt_id_1
+elt_id_2
+...
+@end verbatim
+@verbatimsep
+
+where @code{@var{fib_id}} refers to the current fiber whose elements are being printed, @code{@var{num_fib_elts}} refers to the number of elements on the local core that meet the diffraction conditions, and @code{@var{elt_id_*}} refer to 1-indexed element IDs of elements that belong to the current fiber. One list of values is printed per fiber, @code{@var{num_fiber}} lists are printed per block. Each block is printed per @samp{step}.
+
+@end ftable
 @c end of output.texi

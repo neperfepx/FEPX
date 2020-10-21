@@ -10,10 +10,10 @@ MODULE PolycrystalResponseEvpsModule
 
   USE READ_INPUT_MOD
   USE microstructure_mod
-  USE UtilsCrystalModule
+  USE MATRIX_OPERATIONS_MOD
   USE rstarn_solve_lag_mod
   USE StressSolveVpModule
-  USE StressSolveEvpsModule, ONLY: stress_solve_evps
+  USE STRESS_SOLVE_EVPS_MOD, ONLY: STRESS_SOLVE_EVPS
   USE ConvergenceModule, ONLY: cv_options
 
   IMPLICIT NONE

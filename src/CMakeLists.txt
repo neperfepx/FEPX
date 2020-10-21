@@ -5,7 +5,7 @@
 # Top-level CMakeLists.txt for building FEPX
 cmake_minimum_required(VERSION 2.8)
 project(fepx Fortran)
-set(FEPX_VERSION \"1.0.0\")
+set(FEPX_VERSION \"1.1.0\")
 
 # Prepare CMake for Fortran and locate MPI package
 enable_language(Fortran)
@@ -23,6 +23,13 @@ else(VERBOSE)
     set(CMAKE_VERBOSE_MAKEFILE OFF)
 endif(VERBOSE)
 
+option(IEEE_SUPPRESS "Suppress IEEE signals on program exit" OFF)
+if(IEEE_SUPPRESS)
+    set(CMAKE_Fortran_FLAGS "-ffpe-summary='none'")
+else(IEEE_SUPPRESS)
+    set(CMAKE_Fortran_FLAGS "")
+endif(IEEE_SUPPRESS)
+
 # Check that this machine supports F90 compilation
 if(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
     message(FATAL_ERROR "Fortran compiler does not support F90")
@@ -37,7 +44,7 @@ endif()
 # Set compiler flag options depending on the compiler located
 if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
     set(CMAKE_Fortran_MODDIR_FLAG   "-J")
-    set(CMAKE_Fortran_FLAGS         "")
+#    set(CMAKE_Fortran_FLAGS         "")
     set(CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g -fcheck=all -fbacktrace -fbounds-check -Wall")
     set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -ftree-vectorize -funroll-loops")
 # IFORT is currently not supported, but will be in the future

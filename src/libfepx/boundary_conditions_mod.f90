@@ -12,9 +12,9 @@ MODULE BOUNDARY_CONDITIONS_MOD
 !
 USE INTRINSICTYPESMODULE, ONLY: RK=>REAL_KIND
 !
-USE READ_INPUT_MOD, ONLY: COORDS, DOF_SUB1, DOF_SUP1, NP_SUB1, NP_SUP1
+USE READ_INPUT_MOD, ONLY: COORDS, DOF_SUB1, DOF_SUP1, NP_SUB1, NP_SUP1,&
+    & BCS_OPTIONS, OPTIONS
 USE PARALLEL_MOD, ONLY: PAR_MAX, PAR_MIN, PAR_QUIT, PAR_MESSAGE, MYID
-USE SIMULATION_CONFIGURATION_MOD, ONLY: BCS_OPTIONS, OPTIONS
 USE UNITS_MOD
 !
 IMPLICIT NONE
@@ -520,7 +520,7 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    CASE (4) ! Begin Case (MINIMAL)
+    CASE (4) ! Begin Case (UNIAXIAL_MINIMAL)
         !
         ! Note: This boundary condition is another implementation of uniaxial
         ! grip however it has `minimal` nodal constraints. The loading and 
@@ -734,7 +734,7 @@ CONTAINS
             !
         END DO
         !
-    ! End Case (MINIMAL)
+    ! End Case (UNIAXIAL_MINIMAL)
     !
     !---------------------------------------------------------------------------
     !
@@ -789,7 +789,7 @@ CONTAINS
     CHARACTER(LEN=256) :: IOFILE, MESSAGE
     CHARACTER(LEN=256) :: LINE
     CHARACTER(LEN=5) :: DIR
-    CHARACTER(LEN=8) :: IARRAY(5)
+    CHARACTER(LEN=8) :: IARRAY(4)
     !
     !---------------------------------------------------------------------------
     !
@@ -798,40 +798,20 @@ CONTAINS
     VELOCITY = 0.0_RK
     FORCE = 0.0_RK
     !
-    ! If user does not provide a specific file name to read in check default.
-    IF (BCS_OPTIONS%BCS_FILE .EQ. '') THEN
-        !
-        IF (MYID .EQ. 0) THEN
-            !
-            WRITE(DFLT_U, '(A)') 'Info   :   [i] Parsing bcs file `simulation.bcs`...'
-            IOFILE = 'simulation.bcs'
-            !
-        END IF
-        !
-    ELSE IF (LEN_TRIM(BCS_OPTIONS%BCS_FILE) .GT. 0) THEN
-        !
-        IOFILE = BCS_OPTIONS%BCS_FILE
-        !
-    ELSE
-        !
-        CALL PAR_QUIT('Error  :     > Failure to locate boundary conditions (*.bcs) file.')
-        !    
-    END IF
+    IOFILE = 'simulation.bcs'
     !
-    ! Look into usage of STANDARD_INPUT from LIBF95 OR UNITS MOD
-    OPEN(IUNITS(BCS_U), FILE = IOFILE, STATUS='OLD', ACTION='READ', IOSTAT=IOSTATUS)
+    OPEN(IUNITS(BCS_U), FILE = IOFILE, STATUS='OLD', ACTION='READ', &
+        & IOSTAT=IOSTATUS)
     !
     IF (IOSTATUS .NE. 0) THEN
         !
-        CALL PAR_QUIT('Error  :     > Failure to open boundary conditions (*.bcs) file.')
+        CALL PAR_QUIT("Error  :     > Failure to open `simulation.bcs' file.")
         !
-    ELSE
+    END IF
+    !
+    IF (MYID .EQ. 0) THEN
         !
-        IF (MYID .EQ. 0) THEN
-            !
-            WRITE(DFLT_U, '(A,A,A)') 'Info   :   [i] Parsing bcs file `', TRIM(ADJUSTL(IOFILE)),'`...'
-            !
-        END IF
+        WRITE(DFLT_U, '(A,A,A)') 'Info   :   [i] Parsing file `', TRIM(ADJUSTL(IOFILE)), "'..."
         !
     END IF
     !
@@ -857,6 +837,7 @@ CONTAINS
         READ(IUNITS(BCS_U), '(A)') LINE
         !
         ! Trim the full string into NVALS number of substrings to parse
+        II = 1
         NSPACE = COUNT( (/ (LINE(II:II), II=1, LEN_TRIM(LINE)) /) == " ")
         NCOMMA = COUNT( (/ (LINE(II:II), II=1, LEN_TRIM(LINE)) /) == ",")
         NVALS = (NSPACE + NCOMMA) + 1
@@ -910,7 +891,7 @@ CONTAINS
                     !
                 END IF
                 !
-            ENDIF
+            END IF
             !
         END DO
         !
@@ -919,7 +900,7 @@ CONTAINS
     !
     IF (MYID .EQ. 0) THEN
         !
-        WRITE(DFLT_U, '(A,A,A)') 'Info   :   [i] Parsed file `', TRIM(ADJUSTL(IOFILE)),'`.'
+        WRITE(DFLT_U, '(A,A,A)') 'Info   :   [i] Parsed file `', TRIM(ADJUSTL(IOFILE)), "'."
         !
     END IF
     !

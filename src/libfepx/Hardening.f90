@@ -11,10 +11,9 @@ MODULE HardeningModule
   USE LibF95, ONLY: RK => REAL_KIND, RK_ONE, RK_ZERO
   USE parallel_mod, ONLY: Quit => par_quit
   USE DimsModule
-  USE SIMULATION_CONFIGURATION_MOD
   USE READ_INPUT_MOD
   USE microstructure_mod
-  USE UtilsCrystalModule
+  USE MATRIX_OPERATIONS_MOD
 
   IMPLICIT NONE
   !
@@ -92,12 +91,16 @@ CONTAINS ! ============================================= MODULE PROCEDURES
     enddo
     !
     !Options for which hardening model to use
-    IF((options%hard_type.EQ.'isotropic') .OR. (options%cyclic .EQ. 'isotropic')) THEN
+    IF(options%hard_type.EQ.'isotropic') THEN
         call isotropic_hardening(func, dfunc, crss, crss_sat, shrate, icode, ihard, n, m, mysign, my_phase)
-    ELSEIF(options%hard_type .EQ. 'cyclic' .AND. (options%cyclic .EQ. 'cyclic')) THEN
+    ELSEIF(options%hard_type .EQ. 'cyclic_isotropic') THEN
         call cyclic_hardening(func, dfunc, crss, crss_sat, shear, shrate, epseff, icode, ihard, n, m, mysign, my_phase)
-    ELSE
+    ELSEIF(options%hard_type .EQ. 'cyclic_anisotropic') THEN
+        CALL PAR_QUIT('Error  :     > Anisotropic cyclic hardening is not currently supported.')   
+    ELSEIF(options%hard_type .EQ. 'latent') THEN
         call anisotropic_hardening(func, dfunc, crss, crss_sat,icode, ihard, n, m, mysign, my_phase)
+    ELSE
+        CALL PAR_QUIT('Error  :     > Invalid hardening model option input.')   
     ENDIF
 
     END SUBROUTINE hard_law

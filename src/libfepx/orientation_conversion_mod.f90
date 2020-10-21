@@ -364,7 +364,17 @@ CONTAINS
                 ! Convert to axis-angle representation
                 !
                 ANGLE = 2.0_RK * ATAN(NORM2(RODS(:, I, J)))
-                AXIS = RODS(:, I, J) / NORM2(RODS(:, I, J))
+		        !
+                IF (ANGLE .GT. VTINY) THEN
+                    !
+                    AXIS = RODS(:, I, J) / NORM2(RODS(:, I, J))
+                    !
+                ELSE
+                    !
+                    AXIS(0) = 1.0_RK
+                    !
+                END IF
+                !
                 COM = COS(ANGLE)
                 SOM = SIN(ANGLE)
                 !
@@ -681,14 +691,15 @@ CONTAINS
                 Q2 = 0.0_RK
                 Q3 = 0.0_RK
                 !
-                Q0 = 0.5_RK * SQRT(1 + R(0, 0, I, J) + R(1, 1, I, J) + &
-                    & R(2, 2, I, J))
-                Q1 = (-0.5_RK) * SQRT(1 + R(0, 0, I, J) - R(1, 1, I, J) - &
-                    & R(2, 2, I, J))
-                Q2 = (-0.5_RK) * SQRT(1 - R(0, 0, I, J) + R(1, 1, I, J) - &
-                    & R(2, 2, I, J))
-                Q3 = (-0.5_RK) * SQRT(1 - R(0, 0, I, J) - R(1, 1, I, J) + &
-                    & R(2, 2, I, J))
+                ! Take ABS() of quantity within SQRT() to avoid NaNs
+                Q0 = 0.5_RK * SQRT(ABS(1 + R(0, 0, I, J) + R(1, 1, I, J) + &
+                    & R(2, 2, I, J)))
+                Q1 = (-0.5_RK) * SQRT(ABS(1 + R(0, 0, I, J) - R(1, 1, I, J) - &
+                    & R(2, 2, I, J)))        
+                Q2 = (-0.5_RK) * SQRT(ABS(1 - R(0, 0, I, J) + R(1, 1, I, J) - &
+                    & R(2, 2, I, J)))
+                Q3 = (-0.5_RK) * SQRT(ABS(1 - R(0, 0, I, J) - R(1, 1, I, J) + &
+                    & R(2, 2, I, J)))
                 !
                 IF (R(2, 1, I, J) .LT. R(1, 2, I, J)) THEN
                     !
@@ -713,9 +724,18 @@ CONTAINS
                 S = SQRT((Q1 ** 2) + (Q2 ** 2) + (Q3 ** 2))
                 T = TAN(ACOS(Q0))
                 !
-                RODS(0, I, J) = (Q1 / S) * T
-                RODS(1, I, J) = (Q2 / S) * T
-                RODS(2, I, J) = (Q3 / S) * T
+                IF (S .LE. VTINY) THEN
+                    !
+                    RODS(0, I, J) = 0.0_RK
+                    RODS(1, I, J) = 0.0_RK
+                    RODS(2, I, J) = 0.0_RK
+                    !
+                ELSE                  
+                    RODS(0, I, J) = (Q1 / S) * T
+                    RODS(1, I, J) = (Q2 / S) * T
+                    RODS(2, I, J) = (Q3 / S) * T
+                    !
+                END IF
                 !
             ENDDO
             !

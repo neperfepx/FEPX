@@ -15,8 +15,7 @@ MODULE StiffnessEvpsModule
     USE READ_INPUT_MOD
     USE shape_3d_mod
     use microstructure_mod
-    use stress_strain_mod
-    USE UtilsCrystalModule
+    USE MATRIX_OPERATIONS_MOD
     USE MaterialMatrixEvpsModule
     use StiffnessVpModule
 

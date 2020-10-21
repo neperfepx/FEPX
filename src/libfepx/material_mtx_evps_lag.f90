@@ -11,9 +11,9 @@ MODULE MaterialMatrixEvpsModule
   use KinematicsModule
   USE READ_INPUT_MOD
   USE microstructure_mod
-  USE UtilsCrystalModule
+  USE MATRIX_OPERATIONS_MOD
   USE PolycrystalResponseEvpsModule
-  USE AnisoEvpsModule
+  USE ANISO_EVPS_MOD
 
   IMPLICIT NONE
 

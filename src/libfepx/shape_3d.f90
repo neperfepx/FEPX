@@ -562,7 +562,7 @@ CONTAINS
 !----------------------------------------------------------------------
 !     
       USE READ_INPUT_MOD, ONLY : el_sub1, el_sup1, kdim1, nnpe
-      use units_mod
+!      use units_mod
 !
       IMPLICIT NONE
 !     

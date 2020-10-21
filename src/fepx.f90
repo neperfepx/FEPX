@@ -19,32 +19,28 @@ USE PARALLEL_MOD
 USE GATHER_SCATTER
 !
 ! Driver modules
-USE DRIVERVPMODULE
+USE DRIVER_ISO_VP_MOD
 USE DRIVER_TRIAXCSR_MOD
 USE DRIVER_TRIAXCLR_MOD
 USE DRIVER_UNIAXIAL_CONTROL_MOD
 !
 ! Other FEPX modules
-USE SIMULATION_CONFIGURATION_MOD
-USE RESTARTMODULE
+USE READ_INPUT_MOD
 USE BOUNDARY_CONDITIONS_MOD
 USE MICROSTRUCTURE_MOD
-USE STRESS_STRAIN_MOD
-USE POST_UPDATE_N_MOD
-USE POWDER_DIFFRACTION_MOD
+USE FIBER_AVERAGE_MOD
 USE WRITE_OUTPUT_MOD
 USE DIMSMODULE
 USE UNITS_MOD
 USE SURFACE_MOD
 USE SURF_INFO_MOD
 USE QUADRATURE_MOD
-USE READ_INPUT_MOD
 !
 IMPLICIT NONE
 !
 ! Local variables:
 !
-CHARACTER(LEN = 80) :: INFILE
+CHARACTER(LEN = 80) :: IOFILE
 INTEGER :: NARGS, IOSTATUS
 INTEGER :: AVG_NP_PER_PROC
 INTEGER, DIMENSION(8) :: TIMEVALUES
@@ -74,6 +70,7 @@ INTEGER :: AUTO_TIME
 INTEGER :: M_EL, I
 INTEGER :: ALSTATUS, NUM_ELM_PART, NUM_NODE_PART
 INTEGER, ALLOCATABLE :: PART_INFO(:,:)
+INTEGER, ALLOCATABLE :: GLOBAL_INFO(:,:)
 !
 !-------------------------------------------------------------------------------
 !
@@ -88,9 +85,9 @@ IF (MYID .EQ. 0) THEN
     CALL DATE_AND_TIME(VALUES = TIMEVALUES)
     WRITE(DFLT_U,'(A)')'==========================    F   E   P   X   =========================='
     WRITE(DFLT_U,'(A)')'Info   : A finite element software package for polycrystal plasticity.'
-    WRITE(DFLT_U,'(A)')'Info   : Version 1.0.0'
-    WRITE(DFLT_U,'(A,I0,A)')'Info   : Running on ', NUMPROCS, ' processors.'
-    WRITE(DFLT_U,'(A)')'Info   : <http://fepx.info>'
+    WRITE(DFLT_U,'(A)')'Info   : Version 1.1.0'
+    WRITE(DFLT_U,'(A,I0,A)')'Info   : Running on ', NUMPROCS, ' cores.'
+    WRITE(DFLT_U,'(A)')'Info   : <https://fepx.info>'
     WRITE(DFLT_U,'(A)')'Info   : Copyright (C) 1996-2020, DPLab, ACME Lab.'
     WRITE(DFLT_U,'(A)')'Info   : ---------------------------------------------------------------'
     WRITE(DFLT_U,'(A,I0,A,I0,A,I0,A,I0,A,I2.2)')'Info   : Start time: ',&
@@ -110,13 +107,13 @@ IF (MYID .EQ. 0) THEN
     !
 END IF
 !
-INFILE = 'simulation.config'
+IOFILE = 'simulation.config'
 !
 ! Open options file.
 !
-IF (INFILE .NE. '0') THEN
+IF (IOFILE .NE. '0') THEN
     !
-    OPEN(UNIT = IUNITS(TMPI1_U), FILE = INFILE, STATUS = 'old', &
+    OPEN(UNIT = IUNITS(TMPI1_U), FILE = IOFILE, STATUS = 'old', &
         & ACTION = 'READ', IOSTAT = IOSTATUS)
     !
     ! Read optional input
@@ -145,9 +142,9 @@ ENDIF
 !
 ! Read mesh size parameters, keeping file open to read rest of mesh later.
 !
-INFILE = 'simulation.msh'
+IOFILE = 'simulation.msh'
 !
-OPEN(UNIT = IUNITS(MSH_U), FILE = INFILE, STATUS = 'old', ACTION = 'READ', &
+OPEN(UNIT = IUNITS(MSH_U), FILE = IOFILE, STATUS = 'old', ACTION = 'READ', &
     & IOSTAT = IOSTATUS)
 !
 IF (IOSTATUS .NE. 0) THEN
@@ -208,6 +205,16 @@ M_EL = EL_SUP1 - EL_SUB1 + 1
 AUTO_TIME = 0   ! (0)=No, (1):Yes
 DEF_CONTROL_BY = OPTIONS%DEF_CONTROL_BY
 !
+! Extract crystal parameters from configuration file.
+!
+CALL READ_MATERIAL_PARAMETERS(KELAS, KEINV)
+!
+IF (MYID .EQ. 0) THEN
+    !
+    WRITE(DFLT_U, '(A)') "Info   :   [i] Parsed file `simulation.config'."
+    !
+END IF
+!
 ! Allocate memory for spatial mesh and prepare to parse.
 !
 CALL ALLOCATE_MSH(ALSTATUS)
@@ -229,21 +236,11 @@ END IF
 !
 ! Read in the spatial mesh via helper routines in READ_INPUT_MOD
 !
-CALL READ_SPATIAL_MSH(IUNITS(MSH_U))
+CALL READ_SPATIAL_MSH(IUNITS(MSH_U), DFLT_U)
 !
 IF (MYID .EQ. 0) THEN
     !
     WRITE(DFLT_U, '(A)') "Info   :   [i] Parsed file `simulation.msh'."
-    !
-END IF
-!
-! Extract crystal parameters from configuration file.
-!
-CALL READ_MATERIAL_PARAMETERS(KELAS, KEINV)
-!
-IF (MYID .EQ. 0) THEN
-    !
-    WRITE(DFLT_U, '(A)') "Info   :   [i] Parsed file `simulation.config'."
     !
 END IF
 !
@@ -259,9 +256,9 @@ CALL OPEN_OUTPUT_FILES(MYID)
 !
 IF (OPTIONS%READ_ORI_FROM_FILE .EQV. .TRUE.) THEN
     !
-    INFILE = 'simulation.ori'
+    IOFILE = 'simulation.ori'
     !
-    OPEN(UNIT = IUNITS(ORI_U), FILE = INFILE, STATUS = 'OLD', ACTION = 'READ', &
+    OPEN(UNIT = IUNITS(ORI_U), FILE = IOFILE, STATUS = 'OLD', ACTION = 'READ', &
         & IOSTAT = IOSTATUS)
     !
     IF (IOSTATUS .NE. 0) THEN
@@ -278,7 +275,7 @@ IF (OPTIONS%READ_ORI_FROM_FILE .EQV. .TRUE.) THEN
     !
     ! Use the mesh parsing parent subroutine to parse the external .ori file.
     ELEMENT_ORIS = .FALSE.
-    CALL READ_SPATIAL_MSH(IUNITS(ORI_U))
+    CALL READ_SPATIAL_MSH(IUNITS(ORI_U), DFLT_U)
     !
     IF (MYID .EQ. 0) THEN
         !
@@ -292,9 +289,9 @@ END IF
 !
 IF (OPTIONS%READ_PHASE_FROM_FILE .EQV. .TRUE.) THEN
     !
-    INFILE = 'simulation.phase'
+    IOFILE = 'simulation.phase'
     !
-    OPEN(UNIT = IUNITS(PHASE_U), FILE = INFILE, STATUS = 'old', ACTION = 'READ', &
+    OPEN(UNIT = IUNITS(PHASE_U), FILE = IOFILE, STATUS = 'old', ACTION = 'READ', &
         & IOSTAT = IOSTATUS)
     !
     IF (IOSTATUS .NE. 0) THEN
@@ -309,7 +306,7 @@ IF (OPTIONS%READ_PHASE_FROM_FILE .EQV. .TRUE.) THEN
         !   
     END IF
     !
-    CALL READ_GROUPS(IUNITS(PHASE_U))
+    CALL READ_GROUPS(IUNITS(PHASE_U), DFLT_U)
     !
     IF (MYID .EQ. 0) THEN
         !
@@ -320,35 +317,6 @@ IF (OPTIONS%READ_PHASE_FROM_FILE .EQV. .TRUE.) THEN
     CLOSE(IUNITS(PHASE_U))
     !
 END IF
-!
-! Allocate slip arrays and assign element orientations as rotation matrices.
-!
-CALL ALLOCATE_CRSS_N(CRSS_N, NGRAIN1)
-CALL ASSIGN_ANGLES_PHASES(C0_ANGS, CRSS_N, RSTAR_N, WTS)
-CALL ALLOCATE_GAMMADOT(NGRAIN1)
-CALL ALLOCATE_GACCUMSHEAR(NGRAIN1, NQPT1)
-!
-! Gather partition information for the post.report file.
-!
-ALLOCATE(PART_INFO(0:1, 0:NUMPROCS-1))
-PART_INFO = 0
-!
-NUM_ELM_PART  = (EL_SUP1 - EL_SUB1) + 1
-NUM_NODE_PART = (NP_SUP1 - NP_SUB1) + 1
-PART_INFO(0, MYID) = NUM_ELM_PART
-PART_INFO(1, MYID) = NUM_NODE_PART
-!
-CALL PAR_GATHER(PART_INFO(0:1,MYID), PART_INFO, 2)
-!
-IF (MYID .EQ. 0) THEN
-    !
-    CALL WRITE_REPORT_FILE_HEADER(PART_INFO)
-    !
-    WRITE(DFLT_U, '(A)') 'Info   : Initializing simulation...'
-    !
-END IF
-!
-DEALLOCATE(PART_INFO)
 !
 ! Read-in or automatically calculated boundary conditions.
 !
@@ -365,6 +333,72 @@ ELSE
     CALL PAR_QUIT('Error  :     > Failure to initialize boundary conditions.')
     !
 END IF
+!
+! Allocate slip arrays and assign element orientations as rotation matrices.
+!
+CALL ALLOCATE_CRSS_N(CRSS_N, NGRAIN1)
+CALL ASSIGN_ANGLES_PHASES(C0_ANGS, CRSS_N, RSTAR_N, WTS)
+CALL ALLOCATE_GAMMADOT(NGRAIN1)
+CALL ALLOCATE_GACCUMSHEAR(NGRAIN1, NQPT1)
+!
+! Allocate memory to work related variables if requested or restart is enabled
+!
+IF ((PRINT_OPTIONS%PRINT_WORK) .OR. (PRINT_OPTIONS%PRINT_DEFRATE) &
+    & .OR. (PRINT_OPTIONS%PRINT_RESTART)) THEN
+    !
+    ALLOCATE(D_TOT(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1))
+    D_TOT = 0.0_RK
+    !
+END IF
+!
+IF ((PRINT_OPTIONS%PRINT_WORK) .OR. (PRINT_OPTIONS%PRINT_RESTART)) THEN
+    !
+    ALLOCATE(EL_WORK_N(EL_SUB1:EL_SUP1))
+    ALLOCATE(EL_WORK_RATE_N(EL_SUB1:EL_SUP1))
+    ALLOCATE(EL_WORK(EL_SUB1:EL_SUP1))
+    !
+    EL_WORK_N = 0.0_RK
+    EL_WORK_RATE_N = 0.0_RK
+    EL_WORK = 0.0_RK
+    !
+END IF
+!
+IF ((PRINT_OPTIONS%PRINT_WORKP) .OR. (PRINT_OPTIONS%PRINT_RESTART)) THEN
+    !
+    ALLOCATE(EL_WORKP_N(EL_SUB1:EL_SUP1))
+    ALLOCATE(EL_WORKP_RATE_N(EL_SUB1:EL_SUP1))
+    ALLOCATE(EL_WORKP(EL_SUB1:EL_SUP1))
+    !
+    EL_WORKP_N = 0.0_RK
+    EL_WORKP_RATE_N = 0.0_RK
+    EL_WORKP = 0.0_RK
+    !
+END IF
+!
+! Gather partition information for the post.report file.
+!
+ALLOCATE(PART_INFO(0:1, 0:NUMPROCS-1))
+ALLOCATE(GLOBAL_INFO(0:1, 0:NUMPROCS-1))
+PART_INFO = 0
+GLOBAL_INFO = 0
+!
+NUM_ELM_PART  = (EL_SUP1 - EL_SUB1) + 1
+NUM_NODE_PART = (NP_SUP1 - NP_SUB1) + 1
+PART_INFO(0, MYID) = NUM_ELM_PART
+PART_INFO(1, MYID) = NUM_NODE_PART
+!
+CALL PAR_GATHER(PART_INFO(0:1,MYID), GLOBAL_INFO, 2)
+!
+IF (MYID .EQ. 0) THEN
+    !
+    CALL WRITE_REPORT_FILE_HEADER(GLOBAL_INFO)
+    !
+    WRITE(DFLT_U, '(A)') 'Info   : Initializing simulation...'
+    !
+END IF
+!
+DEALLOCATE(PART_INFO)
+DEALLOCATE(GLOBAL_INFO)
 !
 ! Read load history.
 !
@@ -386,7 +420,14 @@ END SELECT
 !
 ! Allocate memory for elastic stress/strain state variables.
 !
-CALL ALLOCATE_STRESS_STRAIN(ALSTATUS)
+!CALL ALLOCATE_STRESS_STRAIN(ALSTATUS)
+!
+ALLOCATE(GELA_KK_BAR(0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1), &
+    & GSIG_VEC_N(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1), &
+    & STAT=ALSTATUS)
+!
+GELA_KK_BAR = 0.0_RK
+GSIG_VEC_N  = 0.0_RK
 !
 IF (ALSTATUS .NE. 0) THEN
     !
@@ -396,7 +437,14 @@ ENDIF
 !
 ! Allocate memory for POST_UPDATE_N state variables.
 !
-CALL ALLOCATE_POST_UPDATE_N(ALSTATUS)
+!CALL ALLOCATE_POST_UPDATE_N(ALSTATUS)
+!
+ALLOCATE(PELA_KK_BAR(EL_SUB1:EL_SUP1), &
+     & PSIG_VEC_N(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1), &
+     & STAT=ALSTATUS)
+!
+PELA_KK_BAR = 0.0_RK
+PSIG_VEC_N  = 0.0_RK
 !
 IF (ALSTATUS .NE. 0) THEN
     !
@@ -420,17 +468,17 @@ END IF
 CALL PART_SCATTER_SETUP(0, KDIM1, DOF_SUB1, DOF_SUP1, EL_SUB1, EL_SUP1, NODES, DOF_TRACE)
 CALL PART_SCATTER_SETUP(0, NNPE, NP_SUB1, NP_SUP1, EL_SUB1, EL_SUP1, NP, NP_TRACE)
 !
-! Initialize powder diffraction routines.
+! Initialize fiber average routines.
 !
-IF (POWDER_DIFFRACTION_OPTIONS%RUN_POWDER_DIFFRACTION) THEN
+IF (FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE) THEN
     !
     IF (MYID .EQ. 0) THEN
         !
-        WRITE(DFLT_U, '(A)') 'Info   :   - Initializing powder diffraction routines...'
+        WRITE(DFLT_U, '(A)') 'Info   :   - Initializing fiber averaging processing...'
         !
     END IF
     !
-    CALL INITIALIZE_POWDER_DIFFRACTION(IUNITS(TMPI1_U), DOF_TRACE)
+    CALL INITIALIZE_FIBER_AVERAGE(IUNITS(TMPI1_U), DOF_TRACE)
     !
 ENDIF
 !
@@ -448,7 +496,7 @@ IF (((DEF_CONTROL_BY .EQ. UNIAXIAL_LOAD_TARGET) .OR. (DEF_CONTROL_BY .EQ. &
     !
 ENDIF
 !
-! Solve the anisotropic elastoviscoplastic problem with the selected driver.
+! Solve the anisotropic elasto-viscoplastic problem with the selected driver.
 !
 SELECT CASE (DEF_CONTROL_BY)
     !

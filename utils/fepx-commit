@@ -42,12 +42,12 @@ then
   exit $status
 fi
 
-sed -i "1s/.*/New in $version ($date):/g" $FEPXROOT/VERSIONS
+sed -i'' -e "1s/.*/New in $version ($date):/g" $FEPXROOT/VERSIONS
 $EDITOR $FEPXROOT/VERSIONS
 version2=`echo $version | sed -e "s/_/@&/g"`
-sed -i "1,100s/@set FEPX_VERSION.*/@set FEPX_VERSION $version2/g" $FEPXROOT/doc/texinfo/version.texi
+sed -i'' -e "1,100s/@set FEPX_VERSION.*/@set FEPX_VERSION $version2/g" $FEPXROOT/doc/texinfo/version.texi
 
-sed -i "1,100s/Version.*/Version $version'/g" $FEPXROOT/src//fepx.f90
+sed -i'' -e "1,100s/Version.*/Version $version'/g" $FEPXROOT/src//fepx.f90
 git add $FEPXROOT/VERSIONS $FEPXROOT/doc/texinfo/version.texi $FEPXROOT/src/CMakeLists.txt $FEPXROOT/src/fepx.f90
 git commit --amend --no-edit > /dev/null
 status="$?"
@@ -62,3 +62,4 @@ else
 fi
 
 exit 0
+

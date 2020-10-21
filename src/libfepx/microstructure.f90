@@ -9,7 +9,6 @@ MODULE MICROSTRUCTURE_MOD
 !
 ! Contains subroutines:
 !
-!
 USE LIBF95, ONLY: RK => REAL_KIND, STANDARD_OUTPUT, RK_ONE, PI => RK_PI, &
     & GETLINE, GETWORD
 !
@@ -18,9 +17,8 @@ USE DIMSMODULE
 USE READ_INPUT_MOD
 USE ORIENTATION_CONVERSION_MOD
 USE PARALLEL_MOD
-USE SIMULATION_CONFIGURATION_MOD
 USE UNITS_MOD
-USE UTILSCRYSTALMODULE
+USE MATRIX_OPERATIONS_MOD
 !
 IMPLICIT NONE
 !
@@ -96,8 +94,6 @@ REAL(RK) :: HCP_H1(0:2, 0:2), HCP_H2(0:1, 0:1), HCP_H3(0:1, 0:1), &
 CHARACTER(LEN = 128) :: MESSAGE
 !
 CONTAINS
-    !
-    !===========================================================================
     !
     SUBROUTINE ASSIGN_ANGLES_PHASES(C0_ANGS, CRSS_N, RSTAR_N, WTS)
     !
@@ -741,9 +737,12 @@ CONTAINS
         CRYSTAL_PARM(10, IPHASE) = 0.0_RK
         !
         ! Check if any values in this phase are invalid and if so quit.
+        ! DEBUG: This check needs to be reconciled better - JC
         !
-        IF (ANY(CRYSTAL_PARM(:, IPHASE) .LT. 0.0_RK)) THEN
-            CALL PAR_QUIT('Error  :     > Number of phases &
+        IF ((ANY(CRYSTAL_PARM(:, IPHASE) .LT. 0.0_RK)) .AND. &
+            & (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .FALSE.)) THEN
+            !
+            CALL PAR_QUIT('Error  :     > Number of phases&
                     & does not match input data.')
         END IF
         !
@@ -896,52 +895,75 @@ CONTAINS
         !
         IF (MYID .EQ. 0) THEN
             !
-            ! Need logic for crystal type
+            ! Need logic for crystal type - should be SELECT CASE
             IF (CRYS_OPTIONS%CRYSTAL_TYPE(IPHASE) .EQ. 1) THEN
                 !
-                WRITE(DFLT_U, '(A,I0,A)') 'Info   :     > phase ', IPHASE, ' - crystal type: FCC'
+                WRITE(DFLT_U, '(A,I0,A)') 'Info   :     > phase ', &
+                    & IPHASE, ' - crystal type: FCC'
                 !
             ELSE IF (CRYS_OPTIONS%CRYSTAL_TYPE(IPHASE) .EQ. 2) THEN
                 !
-                WRITE(DFLT_U, '(A,I0,A)') 'Info   :     > phase ', IPHASE, ' - crystal type: BCC'
+                WRITE(DFLT_U, '(A,I0,A)') 'Info   :     > phase ', &
+                    & IPHASE, ' - crystal type: BCC'
                 !
             ELSE
                 !
-                WRITE(DFLT_U, '(A,I0,A)') 'Info   :     > phase ', IPHASE, ' - crystal type: HCP'
+                WRITE(DFLT_U, '(A,I0,A)') 'Info   :     > phase ', &
+                    & IPHASE, ' - crystal type: HCP'
                 !
             END IF
             !
-            WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > m               ', CRYSTAL_PARM(0, IPHASE)
-            WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > gammadot_0      ', CRYSTAL_PARM(1, IPHASE)
-            WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > h_0             ', CRYSTAL_PARM(2, IPHASE)
-            WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > g_0             ', CRYSTAL_PARM(3, IPHASE)
-            WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > g_s0            ', CRYSTAL_PARM(4, IPHASE)
-            WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > m_prime         ', CRYSTAL_PARM(5, IPHASE)
-            WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > gammadot_s0     ', CRYSTAL_PARM(6, IPHASE)
-            WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > n               ', N_VOCE(IPHASE)
-            WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > c11             ', C11
-            WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > c12             ', C12
-            WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > c13             ', C13
-            WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > c44             ', C44
-            !
-            !
-            ! Print out HCP specific data - if available.
-            !
-            IF (CRYS_OPTIONS%CRYSTAL_TYPE(IPHASE) .EQ. 3) THEN
+            IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .FALSE.) THEN
                 !
-                WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > c_over_a        ', HCP_RATIOS(0)
-                WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > prismatic/basal ', HCP_RATIOS(1)
-                WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > pyramidal/basal ', HCP_RATIOS(2)
+                WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > m           ', &
+                    & CRYSTAL_PARM(0, IPHASE)
+                !
+            ELSE IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .TRUE.) THEN
+                !
+                WRITE(DFLT_U, '(A,3(E14.6))') 'Info   :     > m           ', &
+                    & CRYS_OPTIONS%ANISO_M(IPHASE,1:3)
                 !
             END IF
+            !
+            WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > gammadot_0  ', CRYSTAL_PARM(1, IPHASE)
+            WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > h_0         ', CRYSTAL_PARM(2, IPHASE)
+            !
+            IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .FALSE.) THEN
+                !
+                WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > g_0         ', &
+                    & CRYSTAL_PARM(3, IPHASE)
+                !
+            ELSE IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .TRUE.) THEN
+                !
+                WRITE(DFLT_U, '(A,3(E14.6))') 'Info   :     > g_0         ', &
+                    & CRYSTAL_PARM(3, IPHASE), &
+                    & HCP_RATIOS(2) * CRYSTAL_PARM(3, IPHASE), &
+                    & HCP_RATIOS(1) * CRYSTAL_PARM(3, IPHASE)
+                !
+            END IF
+            !
+            WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > g_s0        ', CRYSTAL_PARM(4, IPHASE)
+            WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > m_prime     ', CRYSTAL_PARM(5, IPHASE)
+            WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > gammadot_s0 ', CRYSTAL_PARM(6, IPHASE)
+            WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > n           ', N_VOCE(IPHASE)
+            WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > c11         ', C11
+            WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > c12         ', C12
+            !
+            IF (CRYS_OPTIONS%CRYSTAL_TYPE(IPHASE) .EQ. 3) THEN            
+                !
+                WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > c13         ', C13
+                !
+            ENDIF
+            !            
+            WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > c44         ', C44
             !
             ! Print out cyclic hardening parameters - if available.
             !
             IF (OPTIONS%HARD_TYPE .EQ. 'cyclic') THEN
                 !
-                WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > cyclic_param_a  ',&
+                WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > cyclic_param_a ',&
                     & CYCLIC_PARM(0, IPHASE)
-                WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > cyclic_param_c  ',&
+                WRITE(DFLT_U, '(A,E14.6)') 'Info   :     > cyclic_param_c ',&
                     &CYCLIC_PARM(1, IPHASE)
                 !
             END IF
@@ -954,41 +976,36 @@ CONTAINS
                     !
                     CASE (1) ! FCC 
                         !
-                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > diag            ', DIAG
-                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h1              ', H1
-                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h2              ', H2
-                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h3              ', H3
-                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h4              ', H4
+                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > diag        ', DIAG
+                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h1          ', H1
+                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h2          ', H2
+                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h3          ', H3
+                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h4          ', H4
                         !
                     CASE (2) ! BCC
                         !
-                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > diag            ', DIAG
-                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h1              ', H1
-                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h2              ', H2
-                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h3              ', H3
-                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h4              ', H4
-                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h5              ', H5 
-                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h6              ', H6
+                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > diag        ', DIAG
+                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h1          ', H1
+                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h2          ', H2
+                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h3          ', H3
+                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h4          ', H4
+                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h5          ', H5 
+                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h6          ', H6
                         !
                     CASE (3) ! HCP
                         !
-                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > diag            ', DIAG
-                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h1              ', H1
-                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h2              ', H2
-                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h3              ', H3
-                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h4              ', H4
-                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h5              ', H5 
-                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h6              ', H6 
-                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h7              ', H7
+                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > diag        ', DIAG
+                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h1          ', H1
+                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h2          ', H2
+                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h3          ', H3
+                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h4          ', H4
+                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h5          ', H5 
+                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h6          ', H6 
+                        WRITE(DFLT_U,'(A,E14.6,A)') 'Info   :     > h7          ', H7
                         !
                 END SELECT
                 !
             END IF
-            !
-            ! Buffer phase data prints with a line break. Still doing this?
-            !
-            !WRITE(MESSAGE, *) ' '
-            !CALL PAR_MESSAGE(0, TRIM(MESSAGE))
             !
         END IF
         ! 

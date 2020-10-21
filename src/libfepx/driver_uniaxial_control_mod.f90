@@ -10,7 +10,6 @@ MODULE DRIVER_UNIAXIAL_CONTROL_MOD
 ! DRIVER_UNIAXIAL_CONTROL: Primary driver for uniaxial control simulations.
 ! READ_CTRL_DATA: Read data for load control and modify initial velocity field.
 ! READ_UNIAXIAL_RESTART: Read uniaxial control restart information.
-! WRITE_UNIAXIAL_RESTART: Write uniaxial control restart information.
 !
 ! Contains functions:
 ! CHECK_LIMIT: Check if specimen time or increment limit is tripped.
@@ -31,25 +30,26 @@ USE INTRINSICTYPESMODULE, ONLY: RK=>REAL_KIND
 !
 USE DIMSMODULE, ONLY: DIMS1, TVEC, TVEC1, MAXSLIP1, NGRAIN1, ANISOTROPIC_EVPS
 USE DRIVER_UTILITIES_MOD, ONLY: UPDATE_STATE_EVPS, CALC_STRESS_STRAIN
-USE GATHER_SCATTER, ONLY: TRACE
+USE GATHER_SCATTER, ONLY: TRACE, PART_GATHER
 USE ITMETHODEVPSMODULE, ONLY: ITMETHOD_EVPS
-USE POWDER_DIFFRACTION_MOD, ONLY: RUN_POWDER_DIFFRACTION
-USE READ_INPUT_MOD, ONLY: KDIM1, EL_SUB1, EL_SUP1, DOF_SUB1, DOF_SUP1, COORDS
+USE FIBER_AVERAGE_MOD, ONLY: RUN_FIBER_AVERAGE
+USE READ_INPUT_MOD, ONLY: KDIM1, EL_SUB1, EL_SUP1, DOF_SUB1, DOF_SUP1, COORDS,&
+    & OPTIONS, BCS_OPTIONS, UNIAXIAL_OPTIONS, FIBER_AVERAGE_OPTIONS, &
+    & UNIAXIAL_LOAD_TARGET, UNIAXIAL_STRAIN_TARGET, PRINT_OPTIONS, NODES, &
+    & READ_RESTART_FIELD, D_TOT, EL_WORK_N, EL_WORKP_N, EL_WORK_RATE_N, &
+    & EL_WORKP_RATE_N, EL_WORK, EL_WORKP
 USE MICROSTRUCTURE_MOD, ONLY: NUMPHASES, GAMMADOT, GACCUMSHEAR, ACCUMSHEAR_CEN
 USE PARALLEL_MOD, ONLY: MYID, PAR_MESSAGE, PAR_QUIT
 USE QUADRATURE_MOD, ONLY: NQPT1
-USE RESTARTMODULE, ONLY: RESTARTWRITEFIELD, RESTARTREADFIELD
-USE SIMULATION_CONFIGURATION_MOD, ONLY: OPTIONS, BCS_OPTIONS, UNIAXIAL_OPTIONS,&
-    & POWDER_DIFFRACTION_OPTIONS, UNIAXIAL_LOAD_TARGET, UNIAXIAL_STRAIN_TARGET,&
-    & PRINT_OPTIONS
 USE SURF_INFO_MOD, ONLY: NSURFACES, COMPUTE_AREA
 USE UNITS_MOD, ONLY: DFLT_U, FORCE_U1, FORCE_U2, FORCE_U3, FORCE_U4, FORCE_U5,&
     & FORCE_U6, CONV_U, OUNITS, REPORT_U
 USE WRITE_OUTPUT_MOD, ONLY: PRINT_STEP, WRITE_REPORT_FILE_COMPLETE_STEPS, &
     & WRITE_FORCE_FILE_HEADERS, WRITE_FORCE_FILE_DATA, WRITE_CONV_FILE_HEADERS,&
-    & WRITE_UNIAXIAL_RESTART
+    & WRITE_UNIAXIAL_RESTART, WRITE_RESTART_FIELD
 USE ELEMENTAL_VARIABLES_UTILS_MOD, ONLY: PLASTICVELGRADSYMSKW, CALC_TOTAL_WORK,&
     & CALC_PLASTIC_WORK
+USE MATRIX_OPERATIONS_MOD, ONLY: CALC_ELVOL
 !
 IMPLICIT NONE
 !
@@ -95,8 +95,8 @@ CONTAINS
     LOGICAL  :: BCS(DOF_SUB1:DOF_SUP1)
     REAL(RK) :: VELOCITY(DOF_SUB1:DOF_SUP1)
     REAL(RK) :: PFORCE(DOF_SUB1:DOF_SUP1)
-    TYPE(TRACE) DTRACE
-    TYPE(TRACE) NTRACE
+    TYPE(TRACE) :: DTRACE
+    TYPE(TRACE) :: NTRACE
     REAL(RK) :: C0_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: CRSS_N(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: RSTAR_N(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
@@ -162,13 +162,8 @@ CONTAINS
     INTEGER  :: RINCR
     REAL(RK) :: DKK_STEP
     !
-    REAL(RK), ALLOCATABLE :: EL_WORK_N(:)
-    REAL(RK), ALLOCATABLE :: EL_WORKP_N(:)
-    REAL(RK), ALLOCATABLE :: EL_WORK_RATE_N(:)
-    REAL(RK), ALLOCATABLE :: EL_WORKP_RATE_N(:)
-    REAL(RK), ALLOCATABLE :: EL_WORK(:)
-    REAL(RK), ALLOCATABLE :: EL_WORKP(:)
-    REAL(RK), ALLOCATABLE :: D_TOT(:, :, :)
+    REAL(RK), ALLOCATABLE :: ECOORDS(:, :)
+    REAL(RK), ALLOCATABLE :: ELVOL(:)
     !
     !----------------------------------------------------------------------
     !
@@ -181,9 +176,10 @@ CONTAINS
     !
     IF (OPTIONS%RESTART) THEN
         !
-        CALL RESTARTREADFIELD(VELOCITY, C0_ANGS, C_ANGS, RSTAR, RSTAR_N, WTS, &
-            & CRSS, CRSS_N, E_ELAS_KK_BAR, SIG_VEC_N, EQSTRAIN, EQPLSTRAIN, &
-            & GAMMA)
+        CALL READ_RESTART_FIELD(VELOCITY, C0_ANGS, C_ANGS, &
+            & RSTAR, RSTAR_N, WTS, CRSS, CRSS_N, &
+            & E_ELAS_KK_BAR, SIG_VEC_N, EQSTRAIN, EQPLSTRAIN, GAMMA, &
+            & EL_WORK_N, EL_WORKP_N, EL_WORK_RATE_N, EL_WORKP_RATE_N)
         !
         CALL READ_UNIAXIAL_RESTART(INCR, TIME, LOAD, PREV_LOAD, AREA, AREA0)
         RINCR = INCR
@@ -225,46 +221,22 @@ CONTAINS
         SIG_VEC_N = 0.0_RK
         C_ANGS = C0_ANGS
         !
-        ! Initialize total deformation rate tensor (optional)
+        ! Initialize elvol array (and associated) iff it needs to be printed
         !
-        IF ((PRINT_OPTIONS%PRINT_WORK) .OR. (PRINT_OPTIONS%PRINT_DEFRATE)) THEN
+        IF ((PRINT_OPTIONS%PRINT_ELVOL) .OR. &
+            & (FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE)) THEN
             !
-            ALLOCATE(D_TOT(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1))
-            D_TOT = 0.0_RK
+            ALLOCATE(ELVOL(EL_SUB1:EL_SUP1))
+            ALLOCATE(ECOORDS(0:KDIM1, EL_SUB1:EL_SUP1))
             !
-        END IF
-        !
-        ! Initialize work arrays iff it needs to be printed
-        !
-        IF (PRINT_OPTIONS%PRINT_WORK) THEN
-            !
-            ALLOCATE(EL_WORK_N(EL_SUB1:EL_SUP1))
-            ALLOCATE(EL_WORK_RATE_N(EL_SUB1:EL_SUP1))
-            ALLOCATE(EL_WORK(EL_SUB1:EL_SUP1))
-            !
-            EL_WORK_N = 0.0_RK
-            EL_WORK_RATE_N = 0.0_RK
-            EL_WORK = 0.0_RK
-            !
-        END IF
-        !
-        ! Initialize work-pl arrays iff it needs to be printed
-        !
-        IF (PRINT_OPTIONS%PRINT_WORKP) THEN
-            !
-            ALLOCATE(EL_WORKP_N(EL_SUB1:EL_SUP1))
-            ALLOCATE(EL_WORKP_RATE_N(EL_SUB1:EL_SUP1))
-            ALLOCATE(EL_WORKP(EL_SUB1:EL_SUP1))
-            !
-            EL_WORKP_N = 0.0_RK
-            EL_WORKP_RATE_N = 0.0_RK
-            EL_WORKP = 0.0_RK
+            ELVOL = 0.0_RK
             !
         END IF
         !
         ! Initialize integrated quantities
         !
         EQSTRAIN = 0.0_RK
+        EQPLSTRAIN = 0.0_RK
         GAMMA = 0.0_RK
         !
         ! Initialize deformation control
@@ -290,6 +262,14 @@ CONTAINS
             CALL WRITE_CONV_FILE_HEADERS()
             !
         END IF        
+        !
+    END IF
+    !
+    ISTEP = GET_CURRENT_STEP()
+    !
+    IF ((ISTEP .EQ. 1) .AND. (MYID .EQ. 0)) THEN
+        !
+        WRITE(DFLT_U,'(A,I0,A)') 'Info   : Running step ', ISTEP, '...'
         !
     END IF
     !
@@ -381,7 +361,6 @@ CONTAINS
             !
             GACCUMSHEAR = 0.0_RK
             ACCUMSHEAR_CEN = 0.0_RK
-            OPTIONS%CYCLIC = 'CYCLIC'
             !
         END IF
         !
@@ -462,8 +441,8 @@ CONTAINS
                 !
             END IF
             !
-            WRITE(DFLT_U, '(A)', ADVANCE='NO') 'Info   :       . Load on &
-                &target surface:  '
+            WRITE(DFLT_U, '(A)', ADVANCE='NO') 'Info   :       . Loads on &
+                &control surface:  '
             !
             DO I = 1, 3
                 !
@@ -497,7 +476,8 @@ CONTAINS
         !
         ! Reconstruct total deformation rate tensor if requested
         !
-        IF ((PRINT_OPTIONS%PRINT_WORK) .OR. (PRINT_OPTIONS%PRINT_DEFRATE)) THEN
+        IF ((PRINT_OPTIONS%PRINT_WORK) .OR. (PRINT_OPTIONS%PRINT_DEFRATE) .OR. &
+            & (PRINT_OPTIONS%PRINT_RESTART)) THEN
             !
             ! Copy current deviatoric portion to new array
             !
@@ -518,17 +498,25 @@ CONTAINS
         !
         ! Calculate work, plastic work
         !
-        IF (PRINT_OPTIONS%PRINT_WORK) THEN
+        IF ((PRINT_OPTIONS%PRINT_WORK) .OR. (PRINT_OPTIONS%PRINT_RESTART)) THEN
             !
             CALL CALC_TOTAL_WORK(DTIME, D_TOT, S_AVG_3X3, EL_WORK_N, &
                 & EL_WORK_RATE_N, EL_WORK)
             !
         END IF
         !
-        IF (PRINT_OPTIONS%PRINT_WORKP) THEN
+        IF ((PRINT_OPTIONS%PRINT_WORKP) .OR. (PRINT_OPTIONS%PRINT_RESTART)) THEN
             !
             CALL CALC_PLASTIC_WORK(DTIME, DP_HAT, C_ANGS, S_AVG_3X3, &
                 & EL_WORKP_N, EL_WORKP_RATE_N, EL_WORKP)
+            !
+        END IF
+        !
+        IF ((PRINT_OPTIONS%PRINT_ELVOL) .OR. &
+            & (FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE)) THEN
+            !
+            CALL PART_GATHER(ECOORDS, COORDS, NODES, DTRACE)
+            CALL CALC_ELVOL(ELVOL, ECOORDS)
             !
         END IF
         !
@@ -567,25 +555,26 @@ CONTAINS
             IF (GET_PRINT_FLAG() .EQ. 0) THEN
                 !
                 CALL PRINT_STEP(ISTEP, ANISOTROPIC_EVPS, COORDS, VELOCITY, &
-                    & C_ANGS, WTS, CRSS, ELAS_TOT6, S_AVG_3X3, DEFF, EQSTRAIN, &
-                    & DPEFF, EQPLSTRAIN, VGRAD, DP_HAT, WP_HAT, GAMMA, &
-                    & GAMMADOT, EL_WORK, EL_WORKP, D_TOT)
+                    & C_ANGS, WTS, CRSS, ELVOL, ELAS_TOT6, S_AVG_3X3, DEFF, &
+                    & EQSTRAIN, DPEFF, EQPLSTRAIN, VGRAD, DP_HAT, WP_HAT, &
+                    & GAMMA, GAMMADOT, EL_WORK, EL_WORKP, D_TOT)
                 !
                 IF (PRINT_OPTIONS%PRINT_RESTART) THEN
                     !
-                    CALL RESTARTWRITEFIELD(VELOCITY, C0_ANGS, C_ANGS, RSTAR, &
+                    CALL WRITE_RESTART_FIELD(VELOCITY, C0_ANGS, C_ANGS, RSTAR, &
                         & RSTAR_N, WTS, CRSS, CRSS_N, E_ELAS_KK_BAR, SIG_VEC_N,&
-                        & EQSTRAIN, EQPLSTRAIN, GAMMA)
+                        & EQSTRAIN, EQPLSTRAIN, GAMMA, EL_WORK_N, EL_WORKP_N, &
+                        & EL_WORK_RATE_N, EL_WORKP_RATE_N)
                     CALL WRITE_UNIAXIAL_RESTART(INCR, TIME, LOAD, PREV_LOAD, &
                         & AREA, AREA0, CURRENT_STEP, PREVIOUS_LOAD, & 
                         & STEP_COMPLETE, DTIME_OLD)
                     !
                 END IF
                 !
-                IF (POWDER_DIFFRACTION_OPTIONS%RUN_POWDER_DIFFRACTION) THEN
+                IF (FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE) THEN
                     !
-                    CALL RUN_POWDER_DIFFRACTION(ISTEP, C_ANGS, ELAS_TOT6, &
-                        & DPEFF, CRSS)
+                    CALL RUN_FIBER_AVERAGE(ISTEP, C_ANGS, ELAS_TOT6, DPEFF, &
+                        & CRSS, ELVOL)
                     !
                 END IF
                 !
@@ -593,7 +582,7 @@ CONTAINS
             !
             IF (IS_NECKING) THEN
                 !
-                CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP)
+                CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP, PRINT_FLAG)
                 !
                 CALL PAR_QUIT('Error  :     > Specimen is necking.')
                 !
@@ -601,7 +590,7 @@ CONTAINS
             !
             IF (IS_LIMIT_TRIPPED) THEN
                 !
-                CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP)
+                CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP, PRINT_FLAG)
                 !
                 CALL PAR_QUIT('Error  :     > Maximum time or maximum &
                     &increments exceeded.')
@@ -610,7 +599,7 @@ CONTAINS
             !
             IF (GET_ALL_STEPS_COMPLETE()) THEN
                 !
-                CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP)
+                CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP, PRINT_FLAG)
                 !
                 CALL PAR_QUIT('Info   : Final step terminated. Simulation&
                     & completed successfully.')
@@ -705,7 +694,7 @@ CONTAINS
                     IF (II.EQ.UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_RATE_JUMPS) THEN
                         !
                         II = II
-                        !           
+                        !
                     ELSE
                         !
                         II = II + 1
@@ -1119,33 +1108,11 @@ CONTAINS
         !
         WRITE(DFLT_U,'(A)') 'Info   : Reading restart control information...'
         WRITE(DFLT_U,'(A)') 'Info   :   - Restart parameters:'
-        WRITE(DFLT_U,'(A,I0)') 'Info   :     > Current step:  ', CURRENT_STEP
-        WRITE(DFLT_U,'(A,I0)') 'Info   :     > Previous incr: ', INCR
-        WRITE(DFLT_U,'(A,F10.6)') 'Info   :     > Previous time: ', TIME
-        WRITE(DFLT_U,'(A,3(F12.6))') 'Info   :     > Loads on X0: ', LOAD(1,:)
-        WRITE(DFLT_U,'(A,3(F12.6))') 'Info   :       Loads on X1: ', LOAD(2,:)
-        WRITE(DFLT_U,'(A,3(F12.6))') 'Info   :       Loads on Y0: ', LOAD(3,:)
-        WRITE(DFLT_U,'(A,3(F12.6))') 'Info   :       Loads on Y1: ', LOAD(4,:)
-        WRITE(DFLT_U,'(A,3(F12.6))') 'Info   :       Loads on Z0: ', LOAD(5,:)
-        WRITE(DFLT_U,'(A,3(F12.6))') 'Info   :       Loads on Z1: ', LOAD(6,:)
-        !
-!
-!        WRITE(DFLT_U,'(A, 3(E14.6))') 'Info   :     > Current load:  ', LOAD(2,:)
-!        WRITE(DFLT_U,'(A, 3(E14.6))') 'Info   :     > Previous load: ', CURRENT_LOAD
-!        WRITE(DFLT_U,'(A, E14.6)')    'Info   :     > Previous dt:   ', DTIME_OLD
-!        WRITE(DFLT_U,'(A, E14.6)')    'Info   :     > Total time:    ', TIME
-!        WRITE(DFLT_U,'(A, 3(E14.6))') 'Info   :     > Surface loads: ', LOAD(1,:)
-        !
-!        DO ISURF = 2, NSURFACES
-            !
-!            WRITE(DFLT_U,'(A, 3(E14.6))')  'Info   :                      ', LOAD(ISURF,:)
-            !
-!        ENDDO
-        !
-!        WRITE(DFLT_U,'(A, 3(E14.6))')  'Info   :    > Initial area:  ', AREA(1:3)
-!        WRITE(DFLT_U,'(A, 3(E14.6))')  'Info   :                     ', AREA(4:6)
-!        WRITE(DFLT_U,'(A, 3(E14.6))')  'Info   :    > Current area:  ', AREA0(1:3)
-!        WRITE(DFLT_U,'(A, 3(E14.6))')  'Info   :                     ', AREA0(4:6)
+        WRITE(DFLT_U,'(A, I0)')       'Info   :     > Increment:     ', INCR
+        WRITE(DFLT_U,'(A, I0)')       'Info   :     > Current Step:  ', CURRENT_STEP
+        WRITE(DFLT_U,'(A, E14.6)')    'Info   :     > Current Time:  ', TIME
+        WRITE(DFLT_U,'(A, 3(E14.6))') 'Info   :     > Current Load:  ', CURRENT_LOAD
+        WRITE(DFLT_U,'(A, 3(E14.6))') 'Info   :     > Previous Load: ', PREV_LOAD
         !
     ENDIF
     !

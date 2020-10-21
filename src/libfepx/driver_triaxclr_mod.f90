@@ -9,18 +9,15 @@ MODULE DRIVER_TRIAXCLR_MOD
 ! Contains subroutines:
 ! DRIVER_TRIAX_CLR: Driver for triaxial CLR simulation
 ! READ_CTRL_DATA_CLR: Read input data for load control at constant load rate
-! WRITE_TRIAXCLR_RESTART: Write restart files for triaxial CLR simulations
 ! READ_TRIAXCLR_RESTART: Read restart files for triaxial CLR simulations
-! PRINT_HEADERS: print headers to output files
+! PRINT_HEADERS: Print headers to output files
 !
 USE INTRINSICTYPESMODULE, RK=>REAL_KIND
 USE GATHER_SCATTER
 USE PARALLEL_MOD
 !
 USE DIMSMODULE
-USE POWDER_DIFFRACTION_MOD, ONLY: RUN_POWDER_DIFFRACTION
-USE SIMULATION_CONFIGURATION_MOD
-USE RESTARTMODULE
+USE FIBER_AVERAGE_MOD, ONLY: RUN_FIBER_AVERAGE
 USE DRIVER_UTILITIES_MOD
 USE TIMERMODULE
 USE READ_INPUT_MOD
@@ -29,6 +26,7 @@ USE UNITS_MOD
 USE WRITE_OUTPUT_MOD
 USE MICROSTRUCTURE_MOD
 USE ELEMENTAL_VARIABLES_UTILS_MOD
+USE MATRIX_OPERATIONS_MOD, ONLY: CALC_ELVOL
 !
 IMPLICIT NONE
 !
@@ -161,13 +159,9 @@ CONTAINS
     !
     TYPE(TIMERTYPE) :: DRIVER_TIMER, LIGHTUP_TIMER
     !
-    REAL(RK), ALLOCATABLE :: EL_WORK_N(:)
-    REAL(RK), ALLOCATABLE :: EL_WORKP_N(:)
-    REAL(RK), ALLOCATABLE :: EL_WORK_RATE_N(:)
-    REAL(RK), ALLOCATABLE :: EL_WORKP_RATE_N(:)
-    REAL(RK), ALLOCATABLE :: EL_WORK(:)
-    REAL(RK), ALLOCATABLE :: EL_WORKP(:)
-    REAL(RK), ALLOCATABLE :: D_TOT(:, :, :)
+    REAL(RK), ALLOCATABLE :: ECOORDS(:, :)
+    REAL(RK), ALLOCATABLE :: ELVOL(:)
+    REAL(RK), ALLOCATABLE :: ELVOL_0(:)
     !
     !---------------------------------------------------------------------------
     !
@@ -196,9 +190,10 @@ CONTAINS
     !
     IF (OPTIONS%RESTART) THEN
         !
-        CALL RESTARTREADFIELD(VELOCITY, C0_ANGS, C_ANGS, RSTAR, RSTAR_N, WTS, &
-            & CRSS, CRSS_N, E_ELAS_KK_BAR, SIG_VEC_N, EQSTRAIN, EQPLSTRAIN, &
-            & GAMMA)
+        CALL READ_RESTART_FIELD(VELOCITY, C0_ANGS, C_ANGS, &
+            & RSTAR, RSTAR_N, WTS, CRSS, CRSS_N, &
+            & E_ELAS_KK_BAR, SIG_VEC_N, EQSTRAIN, EQPLSTRAIN, GAMMA, &
+            & EL_WORK_N, EL_WORKP_N, EL_WORK_RATE_N, EL_WORKP_RATE_N)
         !
         CALL READ_TRIAXCLR_RESTART(ISTEP, CURR_LOAD, PREV_LOAD, &
             & FIRST_INCR_IN_STEP, INCR, TIME, SURF_LOAD_ARRAY, AREA, AREA0, &
@@ -232,40 +227,19 @@ CONTAINS
         SIG_VEC_N = 0.0_RK
         C_ANGS = C0_ANGS
         !
-        ! Initialize total deformation rate tensor (optional)
+        ! Initialize elvol arrays (and associated) iff it needs to be printed
         !
-        IF ((PRINT_OPTIONS%PRINT_WORK) .OR. (PRINT_OPTIONS%PRINT_DEFRATE)) THEN
+        IF ((PRINT_OPTIONS%PRINT_ELVOL) .OR. &
+            & (FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE)) THEN
             !
-            ALLOCATE(D_TOT(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1))
-            D_TOT = 0.0_RK
+            ALLOCATE(ELVOL(EL_SUB1:EL_SUP1))
+            ALLOCATE(ELVOL_0(EL_SUB1:EL_SUP1))
+            ALLOCATE(ECOORDS(0:KDIM1, EL_SUB1:EL_SUP1))
             !
-        END IF
-        !
-        ! Initialize work arrays iff it needs to be printed
-        !
-        IF (PRINT_OPTIONS%PRINT_WORK) THEN
-            !
-            ALLOCATE(EL_WORK_N(EL_SUB1:EL_SUP1))
-            ALLOCATE(EL_WORK_RATE_N(EL_SUB1:EL_SUP1))
-            ALLOCATE(EL_WORK(EL_SUB1:EL_SUP1))
-            !
-            EL_WORK_N = 0.0_RK
-            EL_WORK_RATE_N = 0.0_RK
-            EL_WORK = 0.0_RK
-            !
-        END IF
-        !
-        ! Initialize work-pl arrays iff it needs to be printed
-        !
-        IF (PRINT_OPTIONS%PRINT_WORKP) THEN
-            !
-            ALLOCATE(EL_WORKP_N(EL_SUB1:EL_SUP1))
-            ALLOCATE(EL_WORKP_RATE_N(EL_SUB1:EL_SUP1))
-            ALLOCATE(EL_WORKP(EL_SUB1:EL_SUP1))
-            !
-            EL_WORKP_N = 0.0_RK
-            EL_WORKP_RATE_N = 0.0_RK
-            EL_WORKP = 0.0_RK
+            ELVOL = 0.0_RK
+            ELVOL_0 = 0.0_RK
+            CALL PART_GATHER(ECOORDS, COORDS, NODES, DTRACE)
+            CALL CALC_ELVOL(ELVOL_0, ECOORDS)
             !
         END IF
         !
@@ -289,7 +263,18 @@ CONTAINS
         !
         ! Print initial values
         !
-        CALL PRINT_STEP(0, 0, COORDS, VELOCITY, C0_ANGS, WTS, CRSS_N)
+        IF (PRINT_OPTIONS%PRINT_ELVOL) THEN
+            !
+            CALL PRINT_STEP(0, 0, COORDS, VELOCITY, C0_ANGS, WTS, CRSS_N, &
+                & ELVOL_0)
+            !
+            DEALLOCATE(ELVOL_0)
+            !
+        ELSE
+            !
+            CALL PRINT_STEP(0, 0, COORDS, VELOCITY, C0_ANGS, WTS, CRSS_N)
+            !
+        END IF
         !
     ENDIF
     !
@@ -1007,7 +992,8 @@ CONTAINS
         !
         ! Reconstruct total deformation rate tensor if requested
         !
-        IF ((PRINT_OPTIONS%PRINT_WORK) .OR. (PRINT_OPTIONS%PRINT_DEFRATE)) THEN
+        IF ((PRINT_OPTIONS%PRINT_WORK) .OR. (PRINT_OPTIONS%PRINT_DEFRATE) .OR. &
+            & (PRINT_OPTIONS%PRINT_RESTART)) THEN
             !
             ! Copy current deviatoric portion to new array
             !
@@ -1028,17 +1014,25 @@ CONTAINS
         !
         ! Calculate work, plastic work
         !
-        IF (PRINT_OPTIONS%PRINT_WORK) THEN
+        IF ((PRINT_OPTIONS%PRINT_WORK) .OR. (PRINT_OPTIONS%PRINT_RESTART)) THEN
             !
             CALL CALC_TOTAL_WORK(DTIME, D_TOT, S_AVG_3X3, EL_WORK_N, &
                 & EL_WORK_RATE_N, EL_WORK)
             !
         END IF
         !
-        IF (PRINT_OPTIONS%PRINT_WORKP) THEN
+        IF ((PRINT_OPTIONS%PRINT_WORKP) .OR. (PRINT_OPTIONS%PRINT_RESTART)) THEN
             !
             CALL CALC_PLASTIC_WORK(DTIME, DP_HAT, C_ANGS, S_AVG_3X3, &
                 & EL_WORKP_N, EL_WORKP_RATE_N, EL_WORKP)
+            !
+        END IF
+        !
+        IF ((PRINT_OPTIONS%PRINT_ELVOL) .OR. &
+            & (FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE)) THEN
+            !
+            CALL PART_GATHER(ECOORDS, COORDS, NODES, DTRACE)
+            CALL CALC_ELVOL(ELVOL, ECOORDS)
             !
         END IF
         !
@@ -1046,7 +1040,7 @@ CONTAINS
         !
         GAMMA = GAMMA + GAMMADOT * DTIME
         !
-        ! Store velocity if at begining of dwell episode
+        ! Store velocity if at beginning of dwell episode
         !
         IF (START_DWELL) THEN
             !
@@ -1083,15 +1077,16 @@ CONTAINS
             IF (PRINT_FLAG(ISTEP) .EQ. 0) THEN
                 !
                 CALL PRINT_STEP(ISTEP, ANISOTROPIC_EVPS, COORDS, VELOCITY, &
-                    & C_ANGS, WTS, CRSS, ELAS_TOT6, S_AVG_3X3, DEFF, EQSTRAIN, &
-                    & DPEFF, EQPLSTRAIN, VGRAD, DP_HAT, WP_HAT, GAMMA, &
-                    & GAMMADOT, EL_WORK, EL_WORKP, D_TOT)
+                    & C_ANGS, WTS, CRSS, ELVOL, ELAS_TOT6, S_AVG_3X3, DEFF, &
+                    & EQSTRAIN, DPEFF, EQPLSTRAIN, VGRAD, DP_HAT, WP_HAT, &
+                    & GAMMA, GAMMADOT, EL_WORK, EL_WORKP, D_TOT)
                 !
                 IF (PRINT_OPTIONS%PRINT_RESTART) THEN
                     !
-                    CALL RESTARTWRITEFIELD(VELOCITY, C0_ANGS, C_ANGS, RSTAR, &
+                    CALL WRITE_RESTART_FIELD(VELOCITY, C0_ANGS, C_ANGS, RSTAR, &
                         & RSTAR_N, WTS, CRSS, CRSS_N, E_ELAS_KK_BAR, &
-                        & SIG_VEC_N, EQSTRAIN, EQPLSTRAIN, GAMMA)
+                        & SIG_VEC_N, EQSTRAIN, EQPLSTRAIN, GAMMA, EL_WORK_N, &
+                        & EL_WORKP_N, EL_WORK_RATE_N, EL_WORKP_RATE_N)
                     !
                     CALL WRITE_TRIAXCLR_RESTART(ISTEP + 1, CURR_LOAD, &
                         & PREV_LOAD, .TRUE., INCR + 1, TIME, SURF_LOAD_ARRAY, &
@@ -1101,10 +1096,11 @@ CONTAINS
                     !
                 ENDIF
                 !
-                IF (POWDER_DIFFRACTION_OPTIONS%RUN_POWDER_DIFFRACTION) THEN
+                IF (FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE) THEN
                     !
                     ! CALL TIMERSTART(LIGHTUP_TIMER)
-                    CALL RUN_POWDER_DIFFRACTION(ISTEP, C_ANGS, ELAS_TOT6, DPEFF, CRSS)
+                    CALL RUN_FIBER_AVERAGE(ISTEP, C_ANGS, ELAS_TOT6, DPEFF, &
+                        & CRSS, ELVOL)
                     ! CALL TIMERSTOP(LIGHTUP_TIMER)
                     !
                 ENDIF
@@ -1124,7 +1120,7 @@ CONTAINS
                     !
                 !ENDIF
                 !
-                CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP)
+                CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP, PRINT_FLAG)
                 !
                 CALL PAR_QUIT('Info   : Final step terminated. Simulation&
                     & completed successfully.')
@@ -1144,7 +1140,7 @@ CONTAINS
             !
             IF (CURR_ACTION .EQ. DWELLING) THEN
                 !
-                DTIME = MIN(MAX_STRAIN_INCR * LENGTH(IDIR) / CURR_VEL(IDIR), &
+                DTIME = MIN(MAX_STRAIN_INCR*LENGTH(IDIR)/ABS(CURR_VEL(IDIR)), &
                     &TARGET_TIME_INCR(ISTEP), DWELL_TIME_REMAINING)
                 NINCR_STEP = NINCR_STEP + 1
                 !
@@ -1154,9 +1150,9 @@ CONTAINS
         !
         ! Check that maximum strain has not been exceeded
         !
-        IF (MAXVAL(abs(MACRO_ENG_STRAIN)) .GE. MAX_STRAIN) THEN
+        IF (MAXVAL(ABS(MACRO_ENG_STRAIN)) .GE. MAX_STRAIN) THEN
             !
-            CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP)
+            CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP, PRINT_FLAG)
             !
             CALL PAR_QUIT('Error  :     > Maximum eng. strain exceeded.')
             !
@@ -1166,7 +1162,7 @@ CONTAINS
         !
         IF (CURR_EQSTRAIN .GE. MAX_EQSTRAIN) THEN
             !
-            CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP)
+            CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP, PRINT_FLAG)
             !
             CALL PAR_QUIT('Error  :     > Maximum eqv. strain exceeded.')
             !
@@ -1467,33 +1463,11 @@ CONTAINS
         !
         WRITE(DFLT_U,'(A)') 'Info   : Reading restart control information...'
         WRITE(DFLT_U,'(A)') 'Info   :   - Restart parameters:'
-        WRITE(DFLT_U,'(A,I0)') 'Info   :     > Current  step: ', ISTEP
-        WRITE(DFLT_U,'(A,I0)') 'Info   :     > Previous incr: ', INCR
-        WRITE(DFLT_U,'(A,F12.6)') 'Info   :     > Previous time: ', TIME
-        WRITE(DFLT_U,'(A,3(F12.6))') 'Info   :     > Previous load: ', PREV_LOAD
-        WRITE(DFLT_U,'(A,3(F12.6))') 'Info   :     > Loads on X0:   ', SURF_LOAD_ARRAY(1,:)
-        WRITE(DFLT_U,'(A,3(F12.6))') 'Info   :       Loads on X1:   ', SURF_LOAD_ARRAY(2,:)
-        WRITE(DFLT_U,'(A,3(F12.6))') 'Info   :       Loads on Y0:   ', SURF_LOAD_ARRAY(3,:)
-        WRITE(DFLT_U,'(A,3(F12.6))') 'Info   :       Loads on Y1:   ', SURF_LOAD_ARRAY(4,:)
-        WRITE(DFLT_U,'(A,3(F12.6))') 'Info   :       Loads on Z0:   ', SURF_LOAD_ARRAY(5,:)
-        WRITE(DFLT_U,'(A,3(F12.6))') 'Info   :       Loads on Z1:   ', SURF_LOAD_ARRAY(6,:)
-!
-!        WRITE(DFLT_U,'(a36)') 'Reading restart control information'
-!        WRITE(DFLT_U,'(a16, i8)')       'current_step  : ', ISTEP
-!        WRITE(DFLT_U,'(a16, 3(e14.6))') 'current_load  : ', CURR_LOAD
-!        WRITE(DFLT_U,'(a16, 3(e14.6))') 'previous_load : ', PREV_LOAD
-!        WRITE(DFLT_U,'(a8, i8)')        'incr     : ', INCR
-!        WRITE(DFLT_U,'(a8, e14.6)')     'time     : ', TIME
-!        WRITE(DFLT_U,'(a8, 3(e14.6))')  'load     : ', SURF_LOAD_ARRAY(1,:)
-!        DO ISURF = 2,NSURFACES
-!        WRITE(DFLT_U,'(a8, 3(e14.6))')  '        ', SURF_LOAD_ARRAY(ISURF,:)
-!        ENDDO
-!        WRITE(DFLT_U,'(a8, 3(e14.6))')  'area     : ', AREA
-!        WRITE(DFLT_U,'(a8, 3(e14.6))')  'area0    : ', AREA0
-!        WRITE(DFLT_U,'(a8, 3(e14.6))')  'length   : ', LENGTH
-!        WRITE(DFLT_U,'(a8, 3(e14.6))')  'length0  : ', LENGTH0
-!        WRITE(DFLT_U,'(a8, 3(e14.6))')  'curr_vel : ', CURR_VEL
-!        WRITE(DFLT_U,*) ' '
+        WRITE(DFLT_U,'(A, I0)')       'Info   :     > Increment:     ', INCR
+        WRITE(DFLT_U,'(A, I0)')       'Info   :     > Current Step:  ', ISTEP
+        WRITE(DFLT_U,'(A, E14.6)')    'Info   :     > Current Time:  ', TIME
+        WRITE(DFLT_U,'(A, 3(E14.6))') 'Info   :     > Current Load:  ', CURR_LOAD
+        WRITE(DFLT_U,'(A, 3(E14.6))') 'Info   :     > Previous Load: ', PREV_LOAD
         !
     ENDIF
     !

@@ -22,7 +22,7 @@ FEPX is a finite element software package for polycrystal plasticity. It is well
 
 @end itemize
 
-FEPX strives to be a user-friendly, efficient, and robust tool. All of the input data are prescribed non-interactively, using ASCII files. FEPX works hand in hand with Neper (@url{http://neper.info}), which can be used for both generating the input polycrystal mesh and post-processing the simulation results.
+FEPX strives to be a user-friendly, efficient, and robust tool. All of the input data are prescribed non-interactively, using ASCII files. FEPX works hand in hand with Neper (@url{http://neper.info}), which can be used for both generating the input polycrystal mesh and post-processing the simulation results. Currently, FEPX is designed to provide solutions on rectangular prismatic domains (or right cuboids).
 
 @node Resources and Support
 @section Resources and Support
@@ -35,7 +35,7 @@ Several complementary resources describing FEPX are available:
 
 @item The FEPX theory manual, written by Paul Dawson and Donald Boyce, provides in depth details on the underlying mechanical theory and finite element methods utilized in FEPX. It is available at @url{https://arxiv.org/abs/1504.03296}.@footnote{Please note that the descriptions of simulation input and output provided in the FEPX theory manual are no longer up-to-date and the user is instead recommended to utilize the descriptions provided in the FEPX reference manual.}
 
-@item The FEPX website, @url{http://fepx.info}, gives a general introduction to FEPX with illustrative examples.
+@item The FEPX website, @url{https://fepx.info}, gives a general introduction to FEPX with illustrative examples.
 
 @end itemize
 

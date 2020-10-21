@@ -19,7 +19,7 @@ mpirun -np 2 fepx
 # Now, enter the directory of the second cycle
 cd ../cycle2
 
-# First, copy over simulation data needed to restart the simulation
+# First, copy over simulation data needed to restart the simulation with new files
 cp ../cycle1/cycle1.control .
 cp ../cycle1/cycle1.field.* .
 cp ../cycle1/simulation.msh .

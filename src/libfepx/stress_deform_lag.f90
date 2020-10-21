@@ -15,7 +15,7 @@
       USE READ_INPUT_MOD
       USE DimsModule
       USE IntrinsicTypesModule, RK=>REAL_KIND
-      USE UtilsCrystalModule
+      USE MATRIX_OPERATIONS_MOD
       use KinematicsModule
       USE microstructure_mod
 !
@@ -154,7 +154,7 @@
 !
       USE READ_INPUT_MOD
       use microstructure_mod
-      USE UtilsCrystalModule
+      USE MATRIX_OPERATIONS_MOD
       USE IntrinsicTypesModule, RK=>REAL_KIND
       !
       IMPLICIT  NONE
@@ -280,7 +280,7 @@
       USE shape_3d_mod
       USE DimsModule
       USE IntrinsicTypesModule, RK=>REAL_KIND
-      USE UtilsCrystalModule
+      USE MATRIX_OPERATIONS_MOD
 !
       IMPLICIT  NONE
 !

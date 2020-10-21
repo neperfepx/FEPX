@@ -12,7 +12,7 @@ neper -T -n 100 -reg 1 -rsel 1.25 -mloop 4 \
     -o simulation
 
 # Then, generate a coarse finite element mesh for the domain with `Neper -M':
-neper -M simulation.tess -order 2 -rcl 1.25
+neper -M simulation.tess -order 2 -rcl 1.25 -part 2
 
 exit 0
 

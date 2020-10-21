@@ -2,617 +2,712 @@
 ! Copyright (C) 1996-2020, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
-MODULE rstarn_solve_lag_mod
-
-! This module is concerned with updating the orientations (rstar).
+MODULE RSTARN_SOLVE_LAG_MOD
 !
-! TO DO
+! Module to update the orientations (rstar).
 !
-! * Handle masks (e.g. done/converged array) in helper subroutines, e.g. get_c
-! * Make use of MATMUL in get_c
-
-USE LibF95, ONLY: RK => REAL_KIND, RK_ZERO, RK_ONE, &
-   &            STDERR => STANDARD_ERROR
-USE parallel_mod, ONLY: par_message
-USE units_mod, ONLY: ounits, LOG_U, DFLT_U
-
-USE StressSolveVpModule
-USE StressSolveEvpsModule
-USE HardeningModule
-
+! Contains subroutines:
+! RSTARN_SOLVE: Add descriptions to these.
+! SLIP_QNT:
+! UPD_HARD:
+! UPD_ROTN:
+! GET_C: 
+!
+! To do:
+! - Handle masks (e.g. done/converged array) in helper subroutines, e.g. get_c
+! - Make use of MATMUL in get_c
+!
+USE LIBF95, ONLY: RK => REAL_KIND, RK_ZERO, RK_ONE, STDERR => STANDARD_ERROR
+USE PARALLEL_MOD, ONLY: PAR_MESSAGE
+!
+USE DIMSMODULE
+USE HARDENINGMODULE
+USE MICROSTRUCTURE_MOD
+USE READ_INPUT_MOD
+USE STRESS_SOLVE_EVPS_MOD
+USE STRESSSOLVEVPMODULE
+USE MATRIX_OPERATIONS_MOD
+USE UNITS_MOD, ONLY: OUNITS, LOG_U, DFLT_U
+!
 IMPLICIT NONE
 !
-! MODULE DATA
-!
 PRIVATE
-
-PUBLIC :: rstarn_solve, slip_qnt
+!
+PUBLIC :: RSTARN_SOLVE, SLIP_QNT
 PUBLIC :: UPD_EULER_FWD, UPD_EULER_BWD
 !
-! * Flags and Identifiers
+! Flags and Identifiers
 !
-INTEGER, PARAMETER :: UPD_EULER_FWD=1, UPD_EULER_BWD=2
+INTEGER, PARAMETER :: UPD_EULER_FWD = 1, UPD_EULER_BWD = 2
 !
-! * Temporary storage
+! Temporary storage
 !
-CHARACTER(LEN=128) :: message
+CHARACTER(LEN=128) :: MESSAGE
 !
-! * Hardening model iteration
+! Hardening model iteration limits
 !
-!   The equation should be quadratic for the usual hardening model,
+! Note: The equation should be quadratic for the usual hardening model,
 !   and so it should only require one iteration.
 !
-REAL(RK), PARAMETER :: TOLER_HARD=1.0e-4_RK, LS_CUTOFF=0.001_RK
-INTEGER, PARAMETER :: MAX_ITER_HARD=10
-
+REAL(RK), PARAMETER :: TOLER_HARD = 1.0e-4_RK, LS_CUTOFF = 0.001_RK
+INTEGER, PARAMETER  :: MAX_ITER_HARD = 10
+!
 CONTAINS
-!
-!**********************************************************************
-!
-      SUBROUTINE rstarn_solve(&
-  &       crss_n, crss, rstar_n, rstar, c_0, c, sig_lat,&
-  &       wp_hat, dtime, epseff, done, d_rstar, iflag )
-!
-!----------------------------------------------------------------------
-!
-      USE READ_INPUT_MOD
-      USE microstructure_mod
-      USE DimsModule
-!
-      IMPLICIT  NONE
-!
-!     Arguments:
-!
-
-      INTEGER n_slip, iflag
-      REAL(RK) :: dtime
-      
-      LOGICAL, INTENT(IN)    ::  done(0:ngrain1, el_sub1:el_sup1)
-      REAL(RK), INTENT(IN)     ::  rstar_n(0:DIMS1, 0:DIMS1, 0:ngrain1, el_sub1:el_sup1)
-      REAL(RK), INTENT(INOUT)  ::  rstar  (0:DIMS1, 0:DIMS1, 0:ngrain1, el_sub1:el_sup1)      
-      REAL(RK), INTENT(INOUT)  ::  d_rstar(0:DIMS1, 0:DIMS1, 0:ngrain1, el_sub1:el_sup1)
-      REAL(RK), INTENT(INOUT)  ::  crss  (0:MAXSLIP1, 0:ngrain1, el_sub1:el_sup1)
-      REAL(RK), INTENT(IN)     ::  crss_n(0:MAXSLIP1, 0:ngrain1, el_sub1:el_sup1)
-      REAL(RK), INTENT(OUT)    ::  c  (0:DIMS1, 0:DIMS1, 0:ngrain1, el_sub1:el_sup1)
-      REAL(RK), INTENT(IN)     ::  c_0(0:DIMS1, 0:DIMS1, 0:ngrain1, el_sub1:el_sup1)
-      REAL(RK), INTENT(IN)     ::  sig_lat(0:TVEC1, 0:ngrain1, el_sub1:el_sup1)
-      REAL(RK), INTENT(IN)     ::  wp_hat (0:DIMS1, 0:ngrain1, el_sub1:el_sup1)
-      REAL(RK), INTENT(IN)     ::  epseff(0:ngrain1, el_sub1:el_sup1)      
-!
-!     Locals:
-!
-      REAL(RK)  ::  shrate(0:ngrain1, el_sub1:el_sup1)
-      REAL(RK)  ::  wp_ss(0:DIMS1, 0:ngrain1, el_sub1:el_sup1)
-      REAL(RK)  ::  shear(0:MAXSLIP1, 0:ngrain1, el_sub1:el_sup1)
-!
-      INTEGER   ::  m_el,i
-!
-!----------------------------------------------------------------------
-!
-      m_el = el_sup1 - el_sub1 + 1
-
-      ! compute gammadots (shrate) and wp_ss
-      call slip_qnt(wp_ss, shear, shrate, sig_lat, crss, epseff, ngrain, m_el)
-      ! update crss     
-      call upd_hard(crss, crss_n, shear, shrate, epseff, dtime, iflag, done, ngrain, m_el)
-      ! update rstar (R*) and d_rstar(dR*)
-      call upd_rotn(rstar, rstar_n, d_rstar, dtime, wp_hat, wp_ss, done, ngrain, m_el)
-      ! compute c = c_0 * R*
-      call get_c(c, rstar, c_0, done, ngrain, m_el)
-
-      RETURN
-      END SUBROUTINE
-!
-!**********************************************************************
-!
-      SUBROUTINE slip_qnt(&
-  &      wp_ss, shear, shrate, sig_lat, crss, epseff, n, m )
-!
-!----------------------------------------------------------------------
-!
-      USE UtilsCrystalModule
-      USE READ_INPUT_MOD
-      use microstructure_mod
-!
-      IMPLICIT  NONE
-!
-!
-!     Arguments:
-!
-      INTEGER   ::  n_slip, n, m
-      REAL(RK), INTENT(OUT)  ::    wp_ss(0:DIMS1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(OUT)  ::    shrate(0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(OUT)  ::  shear(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)   ::    sig_lat(0:TVEC1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)   ::    crss(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)   ::    epseff(0:(n - 1), 0:(m - 1))
-!
-!
-!     Locals:
-!
-      INTEGER  ::  islip, i, iphase, is, numind,j
-! 
-!
-!
-      REAL(RK), POINTER :: plocal(:,:) => NULL()
-      REAL(RK), POINTER :: qlocal(:,:) => NULL()
-      INTEGER,  POINTER :: indices(:) => NULL()
-      REAL(RK)  ::  rss(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      REAL(RK)  ::  shr_min(0:(n - 1), 0:(m - 1))
-      REAL(RK)  ::  shr_max(0:(n - 1), 0:(m - 1))
-
-  
-      INTEGER  ::  my_phase(0:(m - 1))
-
-!----------------------------------------------------------------------
-
-! tsh, 1/27/03
-      ! crystal_type of the elements (on this node)
-      my_phase(:) = phase(el_sub1:el_sup1)
-
-      ! initialize the outputs
-      shrate(:,:) = 0.0_RK
-      wp_ss(:,:,:) = 0.0_RK
-      shear(:,:,:) = 0.0_RK
-
-      ! for each phase
-      do iphase = 1,numphases
-        
-         call CrystalTypeGet(ctype(iphase), DEV=plocal, SKW=qlocal)
-         n_slip=ctype(iphase)%numslip
-          
-         ! Compute shear on each slip system.
-         call find_indices(numind, iphase, my_phase, indices)
-                  
-         do islip = 0, n_slip - 1
-
-            call ss_project(rss(islip,:,:), plocal(:,islip+1), sig_lat, n, m, numind, indices)            
-            rss(islip,:,indices)=rss(islip,:,indices)/crss(islip,:,indices)
-            where (abs(rss(islip,:,indices)) .lt. t_min(iphase)) 
-               rss(islip,:,indices) = 0.0d0
-            endwhere
-            call power_law(shear(islip, :, :), rss(islip, :, :),&
-  &              crystal_parm(0,iphase), crystal_parm(1,iphase),&
-  &              t_min(iphase), n, m, numind, indices)
-         enddo !n_slip
-
-         gammadot(0:n_slip-1,:,el_sub1+indices)=shear(0:n_slip-1,:,indices)     
-         where( abs(gammadot(0:n_slip-1,:,el_sub1+indices)) .le. 1d-30 )
-               gammadot(0:n_slip-1,:,el_sub1+indices)=0.0d0
-         endwhere
-    
-         ! Compute net shearing rate on all slip systems.
-         do is = 0, n_slip - 1
-            shrate(:, indices) = shrate(:, indices) + abs(shear(is, :, indices))
-         end do
- 
-         ! Compute Plastic Spin.
-         do is =  0, n_slip - 1
-            do i = 0, DIMS1
-               wp_ss(i, :, indices) = wp_ss(i, :, indices) + qlocal(i+1, is+1) * shear(is, :, indices)
+    !
+    SUBROUTINE RSTARN_SOLVE(CRSS_N, CRSS, RSTAR_N, RSTAR, C_0, C, SIG_LAT, &
+        & WP_HAT, DTIME, EPSEFF, DONE, D_RSTAR, IFLAG)
+    !
+    ! Add description here.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    !
+    INTEGER  :: N_SLIP, IFLAG
+    REAL(RK) :: DTIME
+    !
+    LOGICAL, INTENT(IN)     :: DONE(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN)    :: RSTAR_N(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(INOUT) :: RSTAR  (0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)      
+    REAL(RK), INTENT(INOUT) :: D_RSTAR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(INOUT) :: CRSS  (0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN)    :: CRSS_N(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT)   :: C  (0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN)    :: C_0(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN)    :: SIG_LAT(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN)    :: WP_HAT (0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN)    :: EPSEFF(0:NGRAIN1, EL_SUB1:EL_SUP1)      
+    !
+    ! Locals:
+    !
+    REAL(RK) :: SHRATE(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: WP_SS(0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: SHEAR(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    INTEGER  :: M_EL,I
+    !
+    !---------------------------------------------------------------------------
+    !
+    M_EL = EL_SUP1 - EL_SUB1 + 1
+    !
+    ! Compute gammadots (shrate) and wp_ss
+    !
+    CALL SLIP_QNT(WP_SS, SHEAR, SHRATE, SIG_LAT, CRSS, EPSEFF, NGRAIN, M_EL)
+    !
+    ! Update crss     
+    !    
+    CALL UPD_HARD(CRSS, CRSS_N, SHEAR, SHRATE, EPSEFF, DTIME, IFLAG, DONE, &
+        & NGRAIN, M_EL)
+    !    
+    ! Update rstar (R*) and d_rstar(dR*)
+    !    
+    CALL UPD_ROTN(RSTAR, RSTAR_N, D_RSTAR, DTIME, WP_HAT, WP_SS, DONE, &
+        & NGRAIN, M_EL)
+    !    
+    ! Compute c = c_0 * R*
+    !    
+    CALL GET_C(C, RSTAR, C_0, DONE, NGRAIN, M_EL)
+    !
+    RETURN
+    !
+    END SUBROUTINE RSTARN_SOLVE
+    !
+    !===========================================================================
+    !
+    SUBROUTINE SLIP_QNT(WP_SS, SHEAR, SHRATE, SIG_LAT, CRSS, EPSEFF, N, M)
+    !
+    ! Add description here.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    !
+    INTEGER :: N_SLIP, N, M
+    REAL(RK), INTENT(OUT) :: WP_SS(0:DIMS1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(OUT) :: SHRATE(0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(OUT) :: SHEAR(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN)  :: SIG_LAT(0:TVEC1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN)  :: CRSS(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN)  :: EPSEFF(0:(N - 1), 0:(M - 1))
+    !
+    ! Locals:
+    !
+    INTEGER  :: ISLIP, I, IPHASE, IS, NUMIND,J
+    !
+    REAL(RK), POINTER :: PLOCAL(:,:) => NULL()
+    REAL(RK), POINTER :: QLOCAL(:,:) => NULL()
+    INTEGER,  POINTER :: INDICES(:) => NULL()
+    REAL(RK) :: RSS(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    REAL(RK) :: SHR_MIN(0:(N - 1), 0:(M - 1))
+    REAL(RK) :: SHR_MAX(0:(N - 1), 0:(M - 1))
+    REAL(RK) :: ANISO_M_TEMP(0:17)
+    INTEGER  :: MY_PHASE(0:(M - 1))
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Crystal_type of the elements (on this node)
+    !
+    MY_PHASE(:) = PHASE(EL_SUB1:EL_SUP1)
+    !
+    ! Initialize the outputs
+    !    
+    SHRATE(:,:)  = 0.0_RK
+    WP_SS(:,:,:) = 0.0_RK
+    SHEAR(:,:,:) = 0.0_RK
+    !
+    DO IPHASE = 1, NUMPHASES
+        !
+        CALL CRYSTALTYPEGET(CTYPE(IPHASE), DEV = PLOCAL, SKW = QLOCAL)
+        N_SLIP=CTYPE(IPHASE)%NUMSLIP
+        !  
+        ! Compute shear on each slip system
+        !
+        CALL FIND_INDICES(NUMIND, IPHASE, MY_PHASE, INDICES)
+        !          
+        DO ISLIP = 0, N_SLIP - 1
+            !
+            CALL SS_PROJECT(RSS(ISLIP,:,:), PLOCAL(:,ISLIP+1), SIG_LAT, &
+                & N, M, NUMIND, INDICES)           
+            RSS(ISLIP,:,INDICES)=RSS(ISLIP,:,INDICES)/CRSS(ISLIP,:,INDICES)
+            !
+            WHERE (ABS(RSS(ISLIP,:,INDICES)) .LT. T_MIN(IPHASE))
+                ! 
+                RSS(ISLIP,:,INDICES) = 0.0D0
+                !
+            ENDWHERE
+            !
+            IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .FALSE.) THEN
+                !
+                CALL POWER_LAW(SHEAR(ISLIP, :, :), RSS(ISLIP, :, :),&
+                    & CRYSTAL_PARM(0,IPHASE), CRYSTAL_PARM(1,IPHASE), &
+                    & T_MIN(IPHASE), N, M, NUMIND, INDICES)
+                !
+            ELSE IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .TRUE.) THEN
+                !
+                ANISO_M_TEMP(0:2)  = CRYS_OPTIONS%ANISO_M(IPHASE,1)
+                ANISO_M_TEMP(3:5)  = CRYS_OPTIONS%ANISO_M(IPHASE,2)
+                ANISO_M_TEMP(6:17) = CRYS_OPTIONS%ANISO_M(IPHASE,3)
+                !
+                CALL POWER_LAW(SHEAR(ISLIP, :, :), RSS(ISLIP, :, :), &
+                    & ANISO_M_TEMP(ISLIP), CRYSTAL_PARM(1,IPHASE), &
+                    & T_MIN(IPHASE), N, M, NUMIND, INDICES)
+                !
+            ENDIF
+            !
+        ENDDO !N_SLIP
+        !
+        GAMMADOT(0:N_SLIP-1,:,EL_SUB1+INDICES)=SHEAR(0:N_SLIP-1,:,INDICES)
+        !  
+        WHERE(ABS(GAMMADOT(0:N_SLIP-1,:,EL_SUB1+INDICES)) .LE. 1D-30)
+            !
+            GAMMADOT(0:N_SLIP-1,:,EL_SUB1+INDICES) = 0.0D0
+            !
+        ENDWHERE
+        !
+        ! Compute net shearing rate on all slip systems
+        !
+        DO IS = 0, N_SLIP - 1
+            !        
+            SHRATE(:, INDICES) = SHRATE(:, INDICES) + ABS(SHEAR(IS, :, INDICES))
+            !        
+        ENDDO
+        !
+        ! Compute plastic spin
+        !
+        DO IS = 0, N_SLIP - 1
+            !
+            DO I = 0, DIMS1
+                !
+                WP_SS(I, :, INDICES) = WP_SS(I, :, INDICES) + &
+                    & QLOCAL(I+1, IS+1) * SHEAR(IS, :, INDICES)
+                !
             enddo
-         enddo !n_slip
-         !
-         deallocate(indices)
-         deallocate(plocal)
-         deallocate(qlocal)
-         !
-      enddo !numphases
-      
-          
-      shr_min = 1.0d-6 * epseff
-      shr_max = 1.0d1 * epseff
-      
-      where (shrate .le. shr_min)   shrate = shr_min
-      where (shrate .ge. shr_max)   shrate = shr_max
-!
-      RETURN
-      END SUBROUTINE
-!
-!**********************************************************************
-!
-      SUBROUTINE upd_hard(crss, crss_0, shear, shrate, epseff, dtime, iflag, done, n, m )
-!
-!----------------------------------------------------------------------
-! 
-      USE READ_INPUT_MOD
-      use microstructure_mod
-      USE UtilsCrystalModule
-!
-      IMPLICIT  NONE
-!
-!     Arguments:
-!
-!     crss - update hardnesses [should it be in/out?]
-!     crss_0 - hardnesses before timestep
-!     shrate - shearing rates
-!     dtime - timestep 
-!     iflag - indicates whether to use forward or backward Euler
-!     done - mask of elements not to process
-!     n, m - number of grains and elements
-!
-      INTEGER, INTENT(IN)  ::  iflag, n, m
-      REAL(RK), INTENT(IN) ::  dtime
-      REAL(RK), INTENT(INOUT) ::  crss  (0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)    ::  crss_0(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)    ::  shrate(0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)    ::  shear(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)    ::  epseff(0:(n - 1), 0:(m - 1))
-      LOGICAL, INTENT(IN)     ::  done(0:(n - 1), 0:(m - 1))
-!
-!     Locals:
-!
-      INTEGER  ::  iter_hard, nm, inewton, ihard, iphase, islip
-      INTEGER  ::  numind, n_slip
-      INTEGER, pointer  ::  indices(:) => NULL()
-!
-      LOGICAL  ::  newton_ok(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      LOGICAL  ::  newton_ok_all(0:(n - 1), 0:(m - 1))
-      LOGICAL  ::  converged(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      LOGICAL  ::  converged_all(0:(n - 1), 0:(m - 1))
-!
-      REAL(RK)  ::  hard_rate(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      REAL(RK)  ::  dhard_rate(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      REAL(RK)  ::  crss_sat(0:(n - 1), 0:(m - 1))
-      REAL(RK)  ::  crss_tmp(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      REAL(RK)  ::  del_crss(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      REAL(RK)  ::  res_n(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      REAL(RK)  ::  res(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      REAL(RK)  ::  ratio_res(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      REAL(RK)  ::  fj31(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      REAL(RK)  ::  fjac(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      REAL(RK)  ::  xlam(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-
-
-      integer  :: my_phase(0:(n - 1), 0:(m - 1)), i
-!
-!----------------------------------------------------------------------
-!
-!      h_0    = crystal_parm(2)
-!      tausi  = crystal_parm(3)
-!      taus0  = crystal_parm(4) ->g_1 or g_s0
-!      xms    = crystal_parm(5) ->m'
-!      gamss0 = crystal_parm(6) ->gammadot_s0
-
-       my_phase(n-1,:) = phase(el_sub1:el_sup1)     
-
-      ! hardwired
-      ihard = 2
-      do iphase=1,numphases
-         !       
-        WHERE (my_phase.EQ.iphase)
-          WHERE(shrate .GT. RK_ZERO)
-            crss_sat = crystal_parm(4,iphase) &
-                 &   * ((shrate / crystal_parm(6,iphase)) &
-                 &   ** crystal_parm(5,iphase))
-          ELSEWHERE
-            crss_sat = crystal_parm(4,iphase)
-          END WHERE
+            !
+        enddo !N_SLIP
+        !
+        DEALLOCATE(INDICES)
+        DEALLOCATE(PLOCAL)
+        DEALLOCATE(QLOCAL)
+        !
+    ENDDO !NUMPHASES
+    !   
+    SHR_MIN = 1.0D-6 * EPSEFF
+    SHR_MAX = 1.0D1 * EPSEFF
+    !  
+    WHERE (SHRATE .LE. SHR_MIN) SHRATE = SHR_MIN
+    WHERE (SHRATE .GE. SHR_MAX) SHRATE = SHR_MAX
+    !
+    RETURN
+    !
+    END SUBROUTINE SLIP_QNT
+    !
+    !===========================================================================
+    !
+    SUBROUTINE UPD_HARD(CRSS, CRSS_0, SHEAR, SHRATE, EPSEFF, DTIME, &
+        & IFLAG, DONE, N, M )
+    !
+    ! Add description here.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    !
+    ! CRSS: Update hardnesses
+    ! CRSS_0: Hardnesses before timestep
+    ! SHRATE: Shearing rates
+    ! DTIME: Timestep 
+    ! IFLAG: Indicates whether to use forward or backward Euler
+    ! DONE: Mask of elements not to process
+    ! N, M: Number of grains and elements
+    !
+    INTEGER,  INTENT(IN) :: IFLAG, N, M
+    REAL(RK), INTENT(IN) :: DTIME
+    REAL(RK), INTENT(INOUT) :: CRSS(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN)    :: CRSS_0(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN)    :: SHRATE(0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN)    :: SHEAR(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN)    :: EPSEFF(0:(N - 1), 0:(M - 1))
+    LOGICAL,  INTENT(IN)    :: DONE(0:(N - 1), 0:(M - 1))
+    !
+    ! Locals:
+    !
+    INTEGER, POINTER :: INDICES(:) => NULL()
+    INTEGER  :: ITER_HARD, NM, INEWTON, IHARD, IPHASE, ISLIP
+    INTEGER  :: NUMIND, N_SLIP, I
+    !
+    LOGICAL  :: NEWTON_OK(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    LOGICAL  :: NEWTON_OK_ALL(0:(N - 1), 0:(M - 1))
+    LOGICAL  :: CONVERGED(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    LOGICAL  :: CONVERGED_ALL(0:(N - 1), 0:(M - 1))
+    !
+    REAL(RK) :: HARD_RATE(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    REAL(RK) :: DHARD_RATE(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    REAL(RK) :: CRSS_SAT(0:(N - 1), 0:(M - 1))
+    REAL(RK) :: CRSS_TMP(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    REAL(RK) :: DEL_CRSS(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    REAL(RK) :: RES_N(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    REAL(RK) :: RES(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    REAL(RK) :: RATIO_RES(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    REAL(RK) :: FJ31(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    REAL(RK) :: FJAC(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    REAL(RK) :: XLAM(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    INTEGER  :: MY_PHASE(0:(N - 1), 0:(M - 1))
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Reference list of certain useful crystal parameters:
+    ! h_0         = crystal_parm(2)
+    ! g_0         = crystal_parm(3)
+    ! g_s0        = crystal_parm(4)
+    ! m_prime     = crystal_parm(5)
+    ! gammadot_s0 = crystal_parm(6)
+    !
+    MY_PHASE(N-1,:) = PHASE(EL_SUB1:EL_SUP1)     
+    !
+    ! Hardwire the legacy flag passed to `hard_law' - is this still used?
+    !
+    IHARD = 2
+    !
+    DO IPHASE = 1, NUMPHASES
+        !       
+        WHERE (MY_PHASE.EQ.IPHASE)
+            !          
+            WHERE(SHRATE .GT. RK_ZERO)
+                !
+                CRSS_SAT = CRYSTAL_PARM(4,IPHASE) &
+                    & * ((SHRATE / CRYSTAL_PARM(6,IPHASE)) &
+                    & ** CRYSTAL_PARM(5,IPHASE))
+                !
+                ELSEWHERE
+                !
+                CRSS_SAT = CRYSTAL_PARM(4,IPHASE)
+                !
+            END WHERE
+            !
         END WHERE
-         !
-         call find_indices(numind, iphase, my_phase(n-1,:), indices)
-         if (crystal_parm(2,iphase) .eq. 0.d0)  then          
-            crss(:,:,indices) = crss_0(:,:,indices)
-         endif
-         !
-         DEALLOCATE(indices)
-         !         
-      enddo !numphases
-      
-      IF (iflag == UPD_EULER_FWD) THEN
-
-        !Initial guess - Forward Euler
-
-        CALL hard_law(hard_rate, dhard_rate, crss_0, crss_sat, shear, shrate, epseff, 1, ihard, n, m)
-    
-        crss = crss_0 + dtime * hard_rate
-
+        !
+        CALL FIND_INDICES(NUMIND, IPHASE, MY_PHASE(N-1,:), INDICES)
+        !
+        IF (CRYSTAL_PARM(2,IPHASE) .EQ. 0.D0)  THEN          
+            !
+            CRSS(:,:,INDICES) = CRSS_0(:,:,INDICES)
+            !        
+        ENDIF
+        !
+        DEALLOCATE(INDICES)
+        !         
+    ENDDO !NUMPHASES
+    !      
+    IF (IFLAG == UPD_EULER_FWD) THEN
+        !
+        ! Initial guess via Forward Euler
+        !
+        CALL HARD_LAW(HARD_RATE, DHARD_RATE, CRSS_0, CRSS_SAT, SHEAR, &
+            & SHRATE, EPSEFF, 1, IHARD, N, M)
+        !
+        CRSS = CRSS_0 + DTIME * HARD_RATE
+        !
         RETURN 
-
-      END IF
-!
-!     Start Newton iteration - Backward Euler approx. to hardening law
-!
-      !The newton_ok and converged variables are for each individual slip system
-      !The newton_ok_all and converged_all variables are for each individual element
-      !It was done this way to reduce the number of changes needed to be made to the legacy code.
-      newton_ok = .TRUE.
-      newton_ok_all= .TRUE.
-      converged = .TRUE.
-      converged_all= .TRUE.
-
-      !Initializing all the converged indices slip systems for each individual phase to false
-      !In a dual or more phase system where the different phases have different 
-      !number of slip systems this allows the following case where line 1 is a
-      !system with 3 slip systems and line 2 only has one for the converged variable
-      !FFF
-      !FTT
-      !So in the convergence variable only the indices that are within the range of that phases number of slip systems are false
-      do iphase=1,numphases
-           call CrystalTypeGet(ctype(iphase))
-           n_slip=ctype(iphase)%numslip
-           do islip=0,n_slip-1
-                where (my_phase .eq. iphase) converged(islip,:,:)=.FALSE.
-           enddo
-      enddo
-
-      !Finding where done is true across the element setting converged true for that entire element
-      do islip=0,MAXSLIP1
-        WHERE(done) converged(islip,:,:) = .TRUE.
-      enddo
-!
-!     This section is wrong for model with limiting hardness.
-!
-!      where ((crss_0 .eq. crss_sat) .and. (.not. done))
-!        crss = crss_0
-!        converged = .true.
-!      endwhere
-
-      nm = n * m
-
-      DO iter_hard = 1, MAX_ITER_HARD
+        !
+    END IF
+    !
+    ! Start Newton iteration - Backward Euler approx. to hardening law
+    !
+    ! The newton_ok and converged variables are for each individual slip system.
+    ! The newton_ok_all and converged_all variables are for each individual
+    ! element. It was done this way to reduce the number of changes needed to 
+    ! be made to the legacy code.
+    !
+    NEWTON_OK = .TRUE.
+    NEWTON_OK_ALL= .TRUE.
+    CONVERGED = .TRUE.
+    CONVERGED_ALL= .TRUE.
+    !
+    ! Initializing all the converged indices slip systems for each individual 
+    ! phase to false. In a multi-phase system where the different phases have 
+    ! different number of slip systems. This allows the following case where 
+    ! line 1 is a system with 3 slip systems and line 2 only has one for the 
+    ! converged variable:
+    !
+    ! Line 1: FFF
+    ! Line 2: FTT
+    !    
+    ! So, in the convergence variable, only the indices that are within the 
+    ! range of that phases number of slip systems are false.
+    !    
+    DO IPHASE = 1, NUMPHASES
+        !
+        CALL CRYSTALTYPEGET(CTYPE(IPHASE))
+        N_SLIP=CTYPE(IPHASE)%NUMSLIP
+        !        
+        DO ISLIP=0,N_SLIP-1
+            !                
+            WHERE (MY_PHASE .EQ. IPHASE) CONVERGED(ISLIP,:,:) = .FALSE.
+            !           
+        ENDDO
+        !
+    ENDDO
+    !
+    ! Finding where done is true across the element setting converged 
+    ! true for that entire element
+    !
+    DO ISLIP = 0, MAXSLIP1
+        !
+        WHERE(DONE) CONVERGED(ISLIP,:,:) = .TRUE.
+        !      
+    ENDDO
+    !
+    ! This section is wrong for model with limiting hardness. - Still true?
+    !
+    ! where ((crss_0 .eq. crss_sat) .and. (.not. done))
+    !  crss = crss_0
+    !  converged = .true.
+    ! endwhere
+    !
+    NM = N * M
+    !
+    DO ITER_HARD = 1, MAX_ITER_HARD
         !
         ! Should we add "where (.not. converged) clause here?
-        ! .   Yes, but we need to pass mask argument to hard_law
+        ! Yes, but we need to pass mask argument to hard_law
         !
-        crss_tmp = crss
-
-        call hard_law(hard_rate, dhard_rate, crss_tmp, crss_sat, shear, shrate, epseff, 1, ihard, n, m)
-          
-        res_n = - (crss_tmp - crss_0 - dtime * hard_rate)
-
-        ! next line to fix 0/0 FPE below
-        WHERE (ABS(res_n) == RK_ZERO)
-          converged = .TRUE.
-        END WHERE
-        
-        call hard_law(hard_rate, dhard_rate, crss_tmp, crss_sat, shear, shrate, epseff, 2, ihard, n, m)
-        fjac = 1.0 - dtime * dhard_rate
-        del_crss = res_n / fjac
-        !Find where the newton_ok criterion is not satisfied
-        WHERE ((fjac .LT. VTINY) .AND. (.NOT. converged))  newton_ok = .FALSE.
-  
-        xlam = crss_tmp + del_crss        
-
-        call hard_law(hard_rate, dhard_rate, xlam, crss_sat, shear, shrate, epseff, 1, ihard, n, m)
-        
-        res = - (xlam - crss_0 - dtime * hard_rate)
-
-        WHERE ((.NOT. converged)) 
-          ratio_res = ABS(res) / ABS(res_n)
+        CRSS_TMP = CRSS
+        !
+        CALL HARD_LAW(HARD_RATE, DHARD_RATE, CRSS_TMP, CRSS_SAT, SHEAR, &
+            & SHRATE, EPSEFF, 1, IHARD, N, M)
+        ! 
+        RES_N = - (CRSS_TMP - CRSS_0 - DTIME * HARD_RATE)
+        !
+        ! Patch to avoid divide-by-zero exception
+        !
+        WHERE (ABS(RES_N) == RK_ZERO)
+            !
+            CONVERGED = .TRUE.
+            !
+        ENDWHERE
+        !
+        CALL HARD_LAW(HARD_RATE, DHARD_RATE, CRSS_TMP, CRSS_SAT, SHEAR, &
+            & SHRATE, EPSEFF, 2, IHARD, N, M)
+        !
+        FJAC = 1.0 - DTIME * DHARD_RATE
+        DEL_CRSS = RES_N / FJAC
+        !        
+        ! Find where the newton_ok criterion is not satisfied
+        !
+        WHERE ((FJAC .LT. VTINY) .AND. (.NOT. CONVERGED))  NEWTON_OK = .FALSE.
+        !
+        XLAM = CRSS_TMP + DEL_CRSS        
+        !
+        CALL HARD_LAW(HARD_RATE, DHARD_RATE, XLAM, CRSS_SAT, SHEAR, &
+            & SHRATE, EPSEFF, 1, IHARD, N, M)
+        !
+        RES = - (XLAM - CRSS_0 - DTIME * HARD_RATE)
+        !
+        WHERE ((.NOT. CONVERGED))
+            ! 
+            RATIO_RES = ABS(RES) / ABS(RES_N)
+            !        
         ELSEWHERE
-          ratio_res = RK_ZERO
-        END WHERE
-!
-!       Line search
-!
-        fj31 = RK_ONE
-
-        DO WHILE(ANY(ratio_res .GT. RK_ONE .AND. newton_ok .AND. .NOT. converged))
-
-          WHERE (ratio_res .GT. RK_ONE .AND. newton_ok .AND. .NOT. converged) fj31 = fj31*0.5_RK
-          !Find where the newton_ok criterion is not satisfied
-          WHERE(fj31 .LT. LS_CUTOFF) newton_ok = .FALSE.
-
-          xlam = crss_tmp + fj31 * del_crss
-          
-          CALL hard_law(hard_rate, dhard_rate, xlam, crss_sat, shear, shrate, epseff, 1, ihard, n, m)
-          
-          WHERE (ratio_res .GT. RK_ONE .AND. newton_ok .AND. .NOT. converged)
-            res = - (xlam - crss_0 - dtime * hard_rate)
-            ratio_res = ABS(res) / ABS(res_n)
-          END WHERE
-
-        END DO
-
-        WHERE( (newton_ok) .AND. (.NOT.converged) ) crss = crss_tmp + fj31 * del_crss
-        !Find where
-        do iphase=1,numphases
-           call CrystalTypeGet(ctype(iphase))
-           n_slip=ctype(iphase)%numslip
-           do islip=0,n_slip-1
-             where (my_phase .eq. iphase)
-                WHERE ( (dabs(res(islip,:,:)) .LT. TOLER_HARD * crystal_parm(3,iphase)) .AND.&
-                    & (newton_ok(islip,:,:)) .AND. (.NOT. done) ) converged(islip,:,:) = .TRUE.
-            endwhere
-           enddo
-        enddo
-
-        !Finds out which areas have not converged and which newton_ok are not okay
-        !Set
-        do iphase=1,numphases
-            call CrystalTypeGet(ctype(iphase))
-            n_slip=ctype(iphase)%numslip
-            do islip=0,n_slip-1
-                    !Converged_all set to false only when one slip system is false
-                    where(.NOT. converged(islip,:,:)) converged_all=.FALSE.
-                    !Newton_ok_all set to false only when one slip system is false
-                    where(.NOT. newton_ok(islip,:,:)) newton_ok_all=.FALSE.
-            enddo
-        enddo
-
-!        Write(*,*) 'Converged_all:',converged_all
-!        WRITE(*,*) 'Newton_ok_all:',newton_ok_all
-
-        inewton = COUNT( .NOT. newton_ok_all )
-        IF ((COUNT(converged_all) + inewton) .EQ. nm) THEN
-          !
-          ! all converged or not OK: print message if any not OK, else exit loop
-          !
-!          IF (inewton .GT. 0) THEN
-!            WRITE(ounits(LOG_U), 1000) COUNT(converged), inewton,&
-!                 &  MINVAL(dabs(res), MASK=converged),&
-!                 &  MAXVAL(dabs(res), MASK=converged)
-!          END IF
-
-          EXIT
-        ENDIF
-
-      enddo
-            
-      IF (iter_hard > MAX_ITER_HARD) THEN
+            !
+            RATIO_RES = RK_ZERO
+            !        
+        ENDWHERE
         !
-        ! NOTE: only processes with this condition will write this message
+        ! Line search
         !
-        WRITE(DFLT_U, *) 'Warning:       . Update hardening iteration limit reached.'
-        !message = 'Warning:       . Update hardening iteration limit reached.'
-        !CALL par_message(STDERR, message, ALLWRITE=.TRUE.)
-      END IF
-
-
-      ! Should we do this? maybe log the count of not converged
-      where(.not. converged) crss = crss_0
-      
-      RETURN
-
- 1000 FORMAT(' upd_hard: converged =', i6, ' remaining = ', i6 /&
-  &   ' min/max residual for converged grains =', g12.5, 2x, g12.5)
-
-      END SUBROUTINE
-!
-      SUBROUTINE upd_rotn(rstar, rstar_n, dr, time_step, wp_hat, wp_ss, done, n, m) 
-!
-!------------------------------------------------------------------------
-!
-      USE DimsModule
-      IMPLICIT NONE
-!
-!
-!     Arguments:
-!
-      INTEGER n, m
-      REAL(RK)  time_step
-      REAL(RK), INTENT(INOUT) ::  rstar(0:DIMS1, 0:DIMS1, 0:(n - 1), 0:(m - 1))
-      !REAL(RK), INTENT(OUT) ::  rstar(0:DIMS1, 0:DIMS1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)  ::  rstar_n(0:DIMS1, 0:DIMS1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(INOUT) ::  dr(0:DIMS1, 0:DIMS1, 0:(n - 1), 0:(m - 1))
-      !REAL(RK), INTENT(OUT) ::  dr(0:DIMS1, 0:DIMS1, 0:(n - 1), 0:(m - 1))      
-      REAL(RK), INTENT(IN)  ::  wp_hat(0:DIMS1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)  ::  wp_ss(0:DIMS1, 0:(n - 1), 0:(m - 1))
-      LOGICAL, INTENT(IN) ::  done(0:(n - 1), 0:(m - 1))
-!
-!     Locals:
-!
-      INTEGER   ::  i, j, k
-      REAL(RK)  ::  th1(0:(n - 1), 0:(m - 1)), th2(0:(n - 1), 0:(m - 1))
-      REAL(RK)  ::  th3(0:(n - 1), 0:(m - 1))
-      REAL(RK)  ::  tau(0:(n - 1), 0:(m - 1)), taua(0:(n - 1), 0:(m - 1))
-      REAL(RK)  ::  r(0:DIMS1, 0:DIMS1, 0:(n - 1), 0:(m - 1))
-!
-!------------------------------------------------------------------------
-!
-!     Integrate the evolution equation for r*.
-!
-      th1 = (wp_hat(0, :, :) - wp_ss(0, :, :)) * time_step
-      th2 = (wp_hat(1, :, :) - wp_ss(1, :, :)) * time_step
-      th3 = (wp_hat(2, :, :) - wp_ss(2, :, :)) * time_step
-    
-      tau = sqrt(th1 * th1 + th2 * th2 + th3 * th3)
-      where(tau .ne. 0.0)
-        taua = tan(tau / 2.0) / tau
-        th1 = taua * th1
-        th2 = taua * th2
-        th3 = taua * th3
-        tau = taua * tau
-      end where
-    
-      tau = 2.0 / (1.0 + tau * tau)
-
-      where (.not. done)
-    
-        dr(0, 0, :, :) = 1.0 - tau * (th1 * th1 + th2 * th2)
-        dr(0, 1, :, :) = - tau * (th1 + th2 * th3)
-        dr(0, 2, :, :) = tau * ( - th2 + th1 * th3)
-        dr(1, 0, :, :) = tau * (th1 - th2 * th3)
-        dr(1, 1, :, :) = 1.0 - tau * (th1 * th1 + th3 * th3)
-        dr(1, 2, :, :) = - tau * (th3 + th1 * th2)
-        dr(2, 0, :, :) = tau * (th2 + th1 * th3)
-        dr(2, 1, :, :) = tau * (th3 - th1 * th2)
-        dr(2, 2, :, :) = 1.0 - tau * (th2 * th2 + th3 * th3)
-    
-      endwhere
-      
-      r = 0.0d0
-!  RC 3/24/2016: Reordered for better memory striding
-      do j = 0, DIMS1
-        do k = 0, DIMS1
-          do i = 0, DIMS1
-            r(i, j, :, :) = r(i, j, :, :) + rstar_n(i, k, :, :) * dr(k, j, :, :)
-          enddo
-        enddo
-      enddo
-
-      where (.not. done)
-    
-        rstar(0, 0, :, :) = r(0, 0, :, :) 
-        rstar(0, 1, :, :) = r(0, 1, :, :) 
-        rstar(0, 2, :, :) = r(0, 2, :, :) 
-        rstar(1, 0, :, :) = r(1, 0, :, :) 
-        rstar(1, 1, :, :) = r(1, 1, :, :) 
-        rstar(1, 2, :, :) = r(1, 2, :, :) 
-        rstar(2, 0, :, :) = r(2, 0, :, :) 
-        rstar(2, 1, :, :) = r(2, 1, :, :) 
-        rstar(2, 2, :, :) = r(2, 2, :, :) 
-    
-      endwhere
-
-      RETURN
-      END SUBROUTINE
-!
-!**********************************************************************
-!
-      SUBROUTINE get_c(c, r, c_0, done, n, m)
-!
-!------------------------------------------------------------------------
-!
-      USE DimsModule
-      IMPLICIT NONE
-!
-!
-!     Arguments:
-! 
-      INTEGER   ::  n, m
-      REAL(RK), INTENT(IN)  ::  r(0:DIMS1, 0:DIMS1, 0:(n - 1), 0:(m -1))
-      REAL(RK), INTENT(IN)  ::  c_0(0:DIMS1, 0:DIMS1, 0:(n - 1), 0:(m -1))
-      REAL(RK), INTENT(OUT) ::  c(0:DIMS1, 0:DIMS1, 0:(n - 1), 0:(m -1))
-      LOGICAL, INTENT(IN) ::  done(0:(n - 1), 0:(m - 1))
-!
-!     Locals:
-!
-      INTEGER   ::  i, j, k
-      REAL(RK)  ::  c_aux(0:DIMS1, 0:DIMS1, 0:(n - 1), 0:(m -1))
-!
-!------------------------------------------------------------------------
-!
-!     Compute : c = c_0 * rstar
-
-      c_aux = 0.0_RK
-!  RC 3/24/2016: Reordered for better memory striding
-      do j = 0, DIMS1
-        do k = 0, DIMS1
-          do i = 0, DIMS1
-            c_aux(i, j, :, :) = c_aux(i, j, :, :) + c_0(i, k, :, :) * r(k, j, :, :)
-          enddo
-        enddo
-      enddo
-
-      where (.not. done)
-    
-        c(0, 0, :, :) = c_aux(0, 0, :, :) 
-        c(0, 1, :, :) = c_aux(0, 1, :, :) 
-        c(0, 2, :, :) = c_aux(0, 2, :, :) 
-        c(1, 0, :, :) = c_aux(1, 0, :, :) 
-        c(1, 1, :, :) = c_aux(1, 1, :, :) 
-        c(1, 2, :, :) = c_aux(1, 2, :, :) 
-        c(2, 0, :, :) = c_aux(2, 0, :, :) 
-        c(2, 1, :, :) = c_aux(2, 1, :, :) 
-        c(2, 2, :, :) = c_aux(2, 2, :, :) 
- 
-      endwhere
-
-      RETURN
-      END SUBROUTINE
-!
-      END MODULE rstarn_solve_lag_mod
-!
-      
+        FJ31 = RK_ONE
+        !
+        DO WHILE (ANY(RATIO_RES .GT. RK_ONE &
+            & .AND. NEWTON_OK .AND. .NOT. CONVERGED))
+            !
+            WHERE (RATIO_RES .GT. RK_ONE &
+                & .AND. NEWTON_OK .AND. .NOT. CONVERGED) FJ31 = FJ31 * 0.5_RK
+            !            
+            ! Find where the newton_ok criterion is not satisfied
+            !
+            WHERE(FJ31 .LT. LS_CUTOFF) NEWTON_OK = .FALSE.
+            !
+            XLAM = CRSS_TMP + FJ31 * DEL_CRSS
+            !
+            CALL HARD_LAW(HARD_RATE, DHARD_RATE, XLAM, CRSS_SAT, SHEAR, &
+                & SHRATE, EPSEFF, 1, IHARD, N, M)
+            ! 
+            WHERE (RATIO_RES .GT. RK_ONE .AND. NEWTON_OK .AND. .NOT. CONVERGED)
+                !            
+                RES = - (XLAM - CRSS_0 - DTIME * HARD_RATE)
+                RATIO_RES = ABS(RES) / ABS(RES_N)
+                !          
+            ENDWHERE
+            !
+        ENDDO
+        !
+        WHERE((NEWTON_OK) .AND. (.NOT.CONVERGED)) &
+            & CRSS = CRSS_TMP + FJ31 * DEL_CRSS
+        !
+        ! Find slip systems that have reached convergence tolerance
+        !
+        DO IPHASE = 1, NUMPHASES
+            !
+            CALL CRYSTALTYPEGET(CTYPE(IPHASE))
+            N_SLIP=CTYPE(IPHASE)%NUMSLIP
+            !            
+            DO ISLIP = 0, N_SLIP-1
+                !             
+                WHERE (MY_PHASE .EQ. IPHASE)
+                    !                    
+                    WHERE ( (DABS(RES(ISLIP,:,:)) .LT. &
+                        & TOLER_HARD * CRYSTAL_PARM(3,IPHASE)) .AND. &
+                        & (NEWTON_OK(ISLIP,:,:)) .AND. (.NOT. DONE) ) &
+                        & CONVERGED(ISLIP,:,:) = .TRUE.
+                    !
+                ENDWHERE
+                !           
+            ENDDO
+            !
+        ENDDO
+        !
+        ! Finds out which areas have not converged and which 
+        !   newton_ok are not okay
+        !
+        DO IPHASE = 1, NUMPHASES
+            !
+            CALL CRYSTALTYPEGET(CTYPE(IPHASE))
+            N_SLIP=CTYPE(IPHASE)%NUMSLIP
+            !            
+            DO ISLIP = 0, N_SLIP-1
+                !
+                ! Converged_all set to false only when one slip system is false
+                !
+                WHERE(.NOT. CONVERGED(ISLIP,:,:)) CONVERGED_ALL=.FALSE.
+                !                
+                ! Newton_ok_all set to false only when one slip system is false
+                !                
+                WHERE(.NOT. NEWTON_OK(ISLIP,:,:)) NEWTON_OK_ALL=.FALSE.
+                !            
+            ENDDO
+            !
+        ENDDO
+        !
+        INEWTON = COUNT(.NOT. NEWTON_OK_ALL)
+        IF ((COUNT(CONVERGED_ALL) + INEWTON) .EQ. NM) EXIT
+        !
+    ENDDO
+    !            
+    IF (ITER_HARD > MAX_ITER_HARD) THEN
+        !
+        ! All processes with this condition will write this message. This could
+        ! likely be cleaned up to avoid 
+        !
+        WRITE(DFLT_U, '(A)') 'Warning:       . &
+            &Update hardening iteration limit reached.'
+        !
+    END IF
+    !
+    ! Perhaps a count of "not converged" is a better approach?
+    WHERE (.NOT. CONVERGED) CRSS = CRSS_0
+    !  
+    RETURN
+    !
+    END SUBROUTINE UPD_HARD
+    !
+    !===========================================================================
+    !
+    SUBROUTINE UPD_ROTN(RSTAR, RSTAR_N, DR, TIME_STEP, WP_HAT, WP_SS, DONE, &
+        & N, M) 
+    !
+    ! Add description here.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    !
+    INTEGER :: N, M
+    REAL(RK) :: TIME_STEP
+    REAL(RK), INTENT(INOUT) :: RSTAR(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN)    :: RSTAR_N(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(INOUT) :: DR(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN)    :: WP_HAT(0:DIMS1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN)    :: WP_SS(0:DIMS1, 0:(N - 1), 0:(M - 1))
+    LOGICAL, INTENT(IN)     :: DONE(0:(N - 1), 0:(M - 1))
+    !
+    ! Locals:
+    !
+    INTEGER  :: I, J, K
+    REAL(RK) :: TH1(0:(N - 1), 0:(M - 1)), TH2(0:(N - 1), 0:(M - 1))
+    REAL(RK) :: TH3(0:(N - 1), 0:(M - 1))
+    REAL(RK) :: TAU(0:(N - 1), 0:(M - 1)), TAUA(0:(N - 1), 0:(M - 1))
+    REAL(RK) :: R(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(M - 1))
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Integrate the evolution equation for r*.
+    !
+    TH1 = (WP_HAT(0, :, :) - WP_SS(0, :, :)) * TIME_STEP
+    TH2 = (WP_HAT(1, :, :) - WP_SS(1, :, :)) * TIME_STEP
+    TH3 = (WP_HAT(2, :, :) - WP_SS(2, :, :)) * TIME_STEP
+    !
+    TAU = SQRT(TH1 * TH1 + TH2 * TH2 + TH3 * TH3)
+    !
+    WHERE (TAU .NE. 0.0)
+        !
+        TAUA = TAN(TAU / 2.0) / TAU
+        TH1 = TAUA * TH1
+        TH2 = TAUA * TH2
+        TH3 = TAUA * TH3
+        TAU = TAUA * TAU
+        !
+    ENDWHERE
+    !
+    TAU = 2.0 / (1.0 + TAU * TAU)
+    !
+    WHERE (.NOT. DONE)
+        !
+        DR(0, 0, :, :) = 1.0 - TAU * (TH1 * TH1 + TH2 * TH2)
+        DR(0, 1, :, :) = - TAU * (TH1 + TH2 * TH3)
+        DR(0, 2, :, :) = TAU * ( - TH2 + TH1 * TH3)
+        DR(1, 0, :, :) = TAU * (TH1 - TH2 * TH3)
+        DR(1, 1, :, :) = 1.0 - TAU * (TH1 * TH1 + TH3 * TH3)
+        DR(1, 2, :, :) = - TAU * (TH3 + TH1 * TH2)
+        DR(2, 0, :, :) = TAU * (TH2 + TH1 * TH3)
+        DR(2, 1, :, :) = TAU * (TH3 - TH1 * TH2)
+        DR(2, 2, :, :) = 1.0 - TAU * (TH2 * TH2 + TH3 * TH3)
+        !
+    ENDWHERE
+    !      
+    R = 0.0D0
+    !
+    ! RC 3/24/2016: Reordered for better memory striding
+    DO J = 0, DIMS1
+        !    
+        DO K = 0, DIMS1
+            !          
+            DO I = 0, DIMS1
+                !            
+                R(I, J, :, :) = R(I, J, :, :) + &
+                    & RSTAR_N(I, K, :, :) * DR(K, J, :, :)
+                !          
+            ENDDO
+            !
+        ENDDO
+        !
+    ENDDO
+    !
+    WHERE (.NOT. DONE)
+        !
+        RSTAR(0, 0, :, :) = R(0, 0, :, :) 
+        RSTAR(0, 1, :, :) = R(0, 1, :, :) 
+        RSTAR(0, 2, :, :) = R(0, 2, :, :) 
+        RSTAR(1, 0, :, :) = R(1, 0, :, :) 
+        RSTAR(1, 1, :, :) = R(1, 1, :, :) 
+        RSTAR(1, 2, :, :) = R(1, 2, :, :) 
+        RSTAR(2, 0, :, :) = R(2, 0, :, :) 
+        RSTAR(2, 1, :, :) = R(2, 1, :, :) 
+        RSTAR(2, 2, :, :) = R(2, 2, :, :) 
+        !
+    ENDWHERE
+    !
+    RETURN
+    !
+    END SUBROUTINE UPD_ROTN
+    !
+    !===========================================================================
+    !
+    SUBROUTINE GET_C(C, R, C_0, DONE, N, M)
+    !
+    ! Add description here.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! 
+    INTEGER :: N, M
+    REAL(RK), INTENT(IN)  :: R(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(M -1))
+    REAL(RK), INTENT(IN)  :: C_0(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(M -1))
+    REAL(RK), INTENT(OUT) :: C(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(M -1))
+    LOGICAL, INTENT(IN)   :: DONE(0:(N - 1), 0:(M - 1))
+    !
+    ! Locals:
+    !
+    INTEGER  :: I, J, K
+    REAL(RK) :: C_AUX(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(M -1))
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Compute : c = c_0 * rstar
+    !
+    C_AUX = 0.0_RK
+    !
+    ! RC 3/24/2016: Reordered for better memory striding
+    DO J = 0, DIMS1
+        !        
+        DO K = 0, DIMS1
+            !          
+            DO I = 0, DIMS1
+                !            
+                C_AUX(I, J, :, :) = C_AUX(I, J, :, :) + &
+                    & C_0(I, K, :, :) * R(K, J, :, :)
+                !            
+            ENDDO
+            !
+        ENDDO
+        !
+    ENDDO
+    !
+    WHERE (.NOT. DONE)
+        !
+        C(0, 0, :, :) = C_AUX(0, 0, :, :) 
+        C(0, 1, :, :) = C_AUX(0, 1, :, :) 
+        C(0, 2, :, :) = C_AUX(0, 2, :, :) 
+        C(1, 0, :, :) = C_AUX(1, 0, :, :) 
+        C(1, 1, :, :) = C_AUX(1, 1, :, :) 
+        C(1, 2, :, :) = C_AUX(1, 2, :, :) 
+        C(2, 0, :, :) = C_AUX(2, 0, :, :) 
+        C(2, 1, :, :) = C_AUX(2, 1, :, :) 
+        C(2, 2, :, :) = C_AUX(2, 2, :, :) 
+        !
+    ENDWHERE
+    !
+    RETURN
+    !      
+    END SUBROUTINE GET_C
+    !
+END MODULE RSTARN_SOLVE_LAG_MOD   

@@ -251,6 +251,9 @@ CONTAINS
       if (myid .eq. 0) write(DFLT_U,'(A,I0,A)') 'Info   :     > Converged in ',&
           & iter-1, ' iterations'
 
+      if (myid .eq. 0) write(DFLT_U,'(A,A)') 'Info   :     > Ready for ',&
+          &'anisotropic elasto-viscoplastic simulation.'
+
       RETURN
     END FUNCTION itmethod_vp
 !
