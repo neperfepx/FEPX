@@ -11,6 +11,8 @@ MODULE MATRIX_OPERATIONS_MOD
 ! CALC_ELVOL: Calculates element volumes.
 ! DETERMINANT_GRN: Calculates determinants of an array of 3x3 matrices
 ! FIND_INDICES: Find the members of vector equal to target, return val and ind.
+! GEN_MATRIX_VECTOR_MULT: Matrix times vector
+! GEN_MATRIX_MULT: Matrix times matrix
 ! INVERT5X5: Inverts an array of 5x5 matrices.
 ! LATTICE_DEFORM: Change coordinates from sample to lattice (for 5-vectors).
 ! LATTICE_DEFORM_SER: Serial version (one element).
@@ -27,15 +29,22 @@ MODULE MATRIX_OPERATIONS_MOD
 ! MAT_X_MATS3: Multiply array of 3x3 matrices by a fixed 3x3 matrix, tranposed.
 ! MAT_X_VEC5: Multiply array of matrices times array of vectors. (5 dim)
 ! MAT_X_VEC5_SER: Serial version (one element).
+! MATRIX_VEC_MULT: Matrix-vector multiplication routine (RC, 2017)
 ! MATT_X_MAT3: Matrix multiplication by transpose (first matrix T). (3x3)
 ! NORM_VEC: Compute 2-norm for array of 5-vectors.
 ! ROT_MAT_SKEW: Construct 3x3 rotation matrix acting on skew-matrix 3-vectors.
 ! ROT_MAT_SKEW_SER: Serial version (one element).
 ! ROT_MAT_SYMM: Construct 5x5 rotation matrix acting on 5-vectors.
 ! ROT_MAT_SYMM_SER: Serial version (one element).
+! SOLVE_LIN_SYS_3: Solve a linear system of three equations. Used for triaxial
+!   loading.
+! SPARSE_MATVEC_EBE: Matrix times vector, element by element
 ! SYMM_VGR: Compute symmetric part of an array of velocity gradients.
 ! SYMM_VGR_SER: Serial version (one element).
 ! SKEW_VGR: Compute skew part of an array of velocity gradients.
+! TENSOR3DCOMPOSE: Form matrix from deviatoric, skew, or spherical parts. If no
+!   parts are passed, the matix is zeroed.
+! TESNRO3DDECOMPOSE: Decompose matrix into deviatoric and spherical parts.
 ! VEC5_VEC6: Convert 5-vector to 6-vector of symmetric matrix.
 ! VEC_D_VEC5: Multiply diagonal matrix times array of vectors. (5 dim)
 ! VEC_MAT_SKEW: Convert array of 3-vectors to array of skew matrices.
@@ -44,14 +53,34 @@ MODULE MATRIX_OPERATIONS_MOD
 ! VEC_MAT_SYMM_GRN: Also considers legacy grains per element.
 ! VEC_MAT_SYMM_SER: Serial version (one element).
 !
-USE INTRINSICTYPESMODULE, ONLY: RK=>REAL_KIND
+! From libf95:
 !
-USE DIMSMODULE
-USE READ_INPUT_MOD
+USE INTRINSIC_TYPES_MOD, ONLY: RK=>REAL_KIND
+!
+! From libfepx:
+!
+USE DIMENSIONS_MOD
 USE QUADRATURE_MOD
+USE READ_INPUT_MOD
 USE SHAPE_3D_MOD
 !
+! From libparallel:
+!
+USE GATHER_SCATTER_MOD
+!
 IMPLICIT NONE
+!
+! Parameters (some private, some public)
+!
+INTEGER, PARAMETER:: DECOMP_MPSIM = 0
+INTEGER, PARAMETER:: DECOMP_FEMEVPS = 1
+INTEGER, PRIVATE :: DECOMP_DFLT = DECOMP_MPSIM
+!
+! Constants (all private)
+!
+REAL(RK), PARAMETER, PRIVATE :: SQ2_I = 1.0D0 / DSQRT(2.0D0)
+REAL(RK), PARAMETER, PRIVATE :: SQ6_I = 1.0D0 / DSQRT(6.0D0)
+REAL(RK), PARAMETER, PRIVATE :: TWOSQ6_I = 2.0D0 * DSQRT(6.0D0)
 !
 CONTAINS 
     !
@@ -93,7 +122,7 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    ELVOL = 0.0_RK
+    ELVOL = 0.0D0
     !
     DO I = 0, NQPT1
         !
@@ -232,6 +261,139 @@ CONTAINS
     !
     !===========================================================================
     !
+    SUBROUTINE GEN_MATRIX_VECTOR_MULT(Y, A, X, I1, I2, I3, I4, IER)
+    !
+    !  Array of matrices times array of vectors: y(i) = A(i)*x(i)
+    !
+    ! Note that the arrays x,y,a are all assumed shape arrays and that they are
+    !   therefore dimensioned 1:p, 1:q, etc., even though they may be
+    !   dimensioned differently in the calling routine.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! Y:
+    ! A:
+    ! X:
+    ! I1:
+    ! I2:
+    ! I3:
+    ! I4:
+    ! IER:
+    !
+    REAL(RK) :: Y(:,:)
+    REAL(RK) :: A(:,:,:)
+    REAL(RK) :: X(:,:)
+    INTEGER :: I1
+    INTEGER :: I2
+    INTEGER :: I3
+    INTEGER :: I4
+    INTEGER :: IER
+    !
+    ! Locals:
+    !
+    INTEGER :: I
+    INTEGER :: J
+    INTEGER :: K
+    INTEGER :: AD1
+    INTEGER :: AD2
+    INTEGER :: AD3
+    !
+    !---------------------------------------------------------------------------
+    !
+    AD1 = UBOUND(A, 1)
+    AD2 = UBOUND(A, 2)
+    AD3 = UBOUND(A, 3)
+    !
+    DO K = 1, AD3
+        !
+        DO J = 1, AD2
+            !
+            !DO I = 1, AD1
+            Y(:, K) = Y(:, K) + A(:, J, K) * X(J, K)
+            !END DO
+            !
+        END DO
+        !
+    END DO
+    !
+    IER = 0
+    !
+    RETURN
+    !
+    END SUBROUTINE GEN_MATRIX_VECTOR_MULT
+    !
+    !===========================================================================
+    !
+    SUBROUTINE GEN_MATRIX_MULT(C, A, B, I1, I2, IER)
+    !
+    ! Accumulate Array of matrices times array of matrices: c(i) = a(i) * b(i)
+    !
+    ! Note: c is not zeroed in this subroutine, so the values are accumulated;
+    !   in all the calling routines, however, the c array is zeroed before
+    !   calling this routine.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! C: Array of result matrices (c=a*b)
+    ! A, B: Array of input matrices
+    ! I1, I2: Not used (MPK: So why are they here?)
+    ! IER: Return status (0 = okay)
+    !
+    REAL(RK) :: C(:,:,:)
+    REAL(RK) :: A(:,:,:)
+    REAL(RK) :: B(:,:,:)
+    INTEGER :: I1
+    INTEGER :: I2
+    INTEGER :: IER
+    !
+    ! Locals:
+    !
+    INTEGER :: I
+    INTEGER :: J
+    INTEGER :: K
+    INTEGER :: M
+    INTEGER :: LDA
+    INTEGER :: LDB
+    INTEGER :: LDC
+    INTEGER :: LTA
+    INTEGER :: LTB
+    INTEGER :: N
+    !
+    !---------------------------------------------------------------------------
+    !
+    LDA = UBOUND(A, 1)
+    LDB = UBOUND(B, 1)
+    LDC = UBOUND(C, 1)
+    LTA = UBOUND(A, 2)
+    LTB = UBOUND(B, 2)
+    N = UBOUND(A, 3)
+    !
+    DO M = 1, N
+        !
+        DO J = 1, LTB
+            !
+            DO K = 1, LTA
+                !
+!               DO I = 1,LDC
+                C(:, J, M) = C(:, J, M) + A(:, K, M) * B(K, J, M)
+!               END DO
+                !
+            END DO
+            !
+        END DO
+        !
+    END DO
+    !
+    IER = 0
+    !
+    RETURN
+    !
+    END SUBROUTINE GEN_MATRIX_MULT
+    !
+    !===========================================================================
+    !
     SUBROUTINE INVERT5X5(A, N, M)
     !
     ! Invert array of 5x5 matrices.
@@ -306,7 +468,7 @@ CONTAINS
     ! ** A = LDL'.
     ! j = 1
     !
-    AI55 = 1.0_RK / A11
+    AI55 = 1.0D0 / A11
     A21 = A21 * AI55
     A31 = A31 * AI55
     A41 = A41 * AI55
@@ -320,7 +482,7 @@ CONTAINS
     A32 = A32 - A31 * AI11
     A42 = A42 - A41 * AI11
     A52 = A52 - A51 * AI11
-    AI55 = 1.0_RK / A22
+    AI55 = 1.0D0 / A22
     A32 = A32 * AI55
     A42 = A42 * AI55
     A52 = A52 * AI55
@@ -333,7 +495,7 @@ CONTAINS
     !
     A33 = A33 - AI55
     !
-    AI55 = 1.0_RK / A33
+    AI55 = 1.0D0 / A33
     A43 = A43 - A41 * AI11 - A42 * AI22
     A53 = A53 - A51 * AI11 - A52 * AI22
     A43 = A43 * AI55
@@ -371,7 +533,7 @@ CONTAINS
     !
     ! Dz = y
     !
-    AI11 = 1.0_RK / A11
+    AI11 = 1.0D0 / A11
     AI21 = AI21 / A22
     AI31 = AI31 / A33
     AI41 = AI41 / A44
@@ -393,7 +555,7 @@ CONTAINS
     !
     ! Dz = y
     !
-    AI22 = 1.0_RK / A22
+    AI22 = 1.0D0 / A22
     AI32 = AI32 / A33
     AI42 = AI42 / A44
     AI52 = AI52 / A55
@@ -412,7 +574,7 @@ CONTAINS
     !
     ! Dz = y
     !
-    AI33 = 1.0_RK / A33
+    AI33 = 1.0D0 / A33
     AI43 = AI43 / A44
     AI53 = AI53 / A55
     !
@@ -428,7 +590,7 @@ CONTAINS
     !
     ! Dz = y
     !
-    AI44 = 1.0_RK / A44
+    AI44 = 1.0D0 / A44
     AI54 = AI54 / A55
     !
     ! L'x = z
@@ -438,7 +600,7 @@ CONTAINS
     ! Column 5 of inverse
     ! Dz = y
     !
-    AI55 = 1.0_RK / A55
+    AI55 = 1.0D0 / A55
     !
     ! Recover Array
     !
@@ -506,7 +668,7 @@ CONTAINS
     !
     ! Rotate {vec}_sm -> {vec}_lat : {v_lat} = [QR5X5]' {v_sm}
     !
-    VEC_LAT = 0.0_RK
+    VEC_LAT = 0.0D0
     !
     DO I = 0, TVEC1
         !
@@ -551,7 +713,7 @@ CONTAINS
     !
     !----------------------------------------------------------------------
     !
-    VEC_LAT = 0.0_RK
+    VEC_LAT = 0.0D0
     !
     DO I = 0, TVEC1
         !
@@ -599,7 +761,7 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    W_VEC_LAT = 0.0_RK
+    W_VEC_LAT = 0.0D0
     !
     DO I = 0, DIMS1
         !
@@ -644,7 +806,7 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    W_VEC_LAT = 0.0_RK
+    W_VEC_LAT = 0.0D0
     !
     DO I = 0, DIMS1
         !
@@ -679,7 +841,7 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    VEC = 0.0_RK
+    VEC = 0.0D0
     !
     VEC(0, :) = MAT(1, 0, :)
     VEC(1, :) = MAT(2, 0, :)
@@ -706,7 +868,7 @@ CONTAINS
     !
     !----------------------------------------------------------------------
     !
-    VEC = 0.0_RK
+    VEC = 0.0D0
     !
     VEC(0) = MAT(1, 0)
     VEC(1) = MAT(2, 0)
@@ -741,9 +903,9 @@ CONTAINS
     !
     !----------------------------------------------------------------------
     !
-    SQR2 = DSQRT(2.0_RK)
-    SQR32 = DSQRT(1.5_RK)
-    VEC = 0.0_RK
+    SQR2 = DSQRT(2.0D0)
+    SQR32 = DSQRT(1.5D0)
+    VEC = 0.0D0
     !
     VEC(0, :) = (MAT(0, 0, :) - MAT(1, 1, :)) / SQR2
     VEC(1, :) = MAT(2, 2, :) * SQR32
@@ -778,9 +940,9 @@ CONTAINS
     !
     !----------------------------------------------------------------------
     !
-    SQR2 = DSQRT(2.0_RK)
-    SQR32 = DSQRT(1.5_RK)
-    VEC = 0.0_RK
+    SQR2 = DSQRT(2.0D0)
+    SQR32 = DSQRT(1.5D0)
+    VEC = 0.0D0
     !
     VEC(0) = (MAT(0, 0) - MAT(1, 1)) / SQR2
     VEC(1) = MAT(2, 2) * SQR32
@@ -821,7 +983,7 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    C = 0.0_RK
+    C = 0.0D0
     !
     DO J = 0, DIMS1
         !
@@ -870,7 +1032,7 @@ CONTAINS
     !
     !----------------------------------------------------------------------
     !
-    C = 0.0_RK
+    C = 0.0D0
     !
     DO J = 0, TVEC1
         !
@@ -919,7 +1081,7 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    C = 0.0_RK
+    C = 0.0D0
     !
     DO J = 0, DIMS1
         !
@@ -968,7 +1130,7 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    C = 0.0_RK
+    C = 0.0D0
     !
     DO K = 0, TVEC1
         !
@@ -1018,7 +1180,7 @@ CONTAINS
     !
     !----------------------------------------------------------------------
     !
-    C = 0.0_RK
+    C = 0.0D0
     !
     DO K = 0, DIMS1
         !
@@ -1067,7 +1229,7 @@ CONTAINS
     !
     !----------------------------------------------------------------------
     !
-    PRODUCT = 0.0_RK
+    PRODUCT = 0.0D0
     !
     DO J = 0, TVEC1
         !
@@ -1109,7 +1271,7 @@ CONTAINS
     !
     !----------------------------------------------------------------------
     !
-    PRODUCT = 0.0_RK
+    PRODUCT = 0.0D0
     !
     DO J = 0, TVEC1
         !
@@ -1124,6 +1286,43 @@ CONTAINS
     RETURN
     !
     END SUBROUTINE MAT_X_VEC5_SER
+    !
+    !===========================================================================
+    !
+    SUBROUTINE MATRIX_VEC_MULT(M, V, MV, DIM)
+    !
+    ! A simple matrix vector multiplication routine that takes advantage of the
+    !   compiler's vectorization optimizations. It ends up being faster than
+    !   using the built in Fortran matmul method (RC 2017).
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! M: Array of matrices
+    ! V: Array of vectors
+    ! MV: Array of products of M*V
+    ! DIM:
+    !
+    REAL(RK), INTENT(IN) :: M(0:DIM-1,0:DIM-1)
+    REAL(RK), INTENT(IN) :: V(0:DIM-1)
+    REAL(RK), INTENT(OUT) :: MV(0:DIM-1)
+    INTEGER, INTENT(IN) :: DIM
+    !
+    ! Locals:
+    !
+    INTEGER :: I
+    !
+    !---------------------------------------------------------------------------
+    !
+    MV = 0.0D0
+    !
+    DO I = 0, DIM - 1
+        !
+        MV(:) = MV(:) + M(:, I) * V(I)
+        !
+    END DO
+    !
+    END SUBROUTINE MATRIX_VEC_MULT
     !
     !===========================================================================
     !
@@ -1154,7 +1353,7 @@ CONTAINS
     !
     !----------------------------------------------------------------------
     !
-    C = 0.0_RK
+    C = 0.0D0
     !
     DO J = 0, DIMS1
         !
@@ -1200,7 +1399,7 @@ CONTAINS
     !
     !----------------------------------------------------------------------
     !
-    NORM = 0.0_RK
+    NORM = 0.0D0
     !
     DO I = 0, TVEC1
         !
@@ -1385,7 +1584,7 @@ CONTAINS
     !
     !----------------------------------------------------------------------
     !
-    SQR3 = DSQRT(3.0_RK)
+    SQR3 = DSQRT(3.0D0)
     !
     C11 = C(0, 0, :, :)
     C21 = C(1, 0, :, :)
@@ -1397,14 +1596,14 @@ CONTAINS
     C23 = C(1, 2, :, :)
     C33 = C(2, 2, :, :)
     !
-    QR5X5(0, 0, :, :)  =  0.5_RK * (C11 * C11 - C12 * C12 - C21 * C21 + C22 * &
+    QR5X5(0, 0, :, :)  =  0.5D0 * (C11 * C11 - C12 * C12 - C21 * C21 + C22 * &
         & C22)
-    QR5X5(0, 1, :, :)  =  SQR3 / 2.0_RK * (C13 * C13 - C23 * C23)
+    QR5X5(0, 1, :, :)  =  SQR3 / 2.0D0 * (C13 * C13 - C23 * C23)
     QR5X5(0, 2, :, :)  =  C11 * C12 - C21 * C22
     QR5X5(0, 3, :, :)  =  C11 * C13 - C21 * C23
     QR5X5(0, 4, :, :)  =  C12 * C13 - C22 * C23
-    QR5X5(1, 0, :, :)  =  SQR3 / 2.0_RK * (C31 * C31 - C32 * C32)
-    QR5X5(1, 1, :, :)  =  1.5_RK * C33 * C33 - 0.5_RK
+    QR5X5(1, 0, :, :)  =  SQR3 / 2.0D0 * (C31 * C31 - C32 * C32)
+    QR5X5(1, 1, :, :)  =  1.5D0 * C33 * C33 - 0.5D0
     QR5X5(1, 2, :, :)  =  SQR3 * C31 * C32
     QR5X5(1, 3, :, :)  =  SQR3 * C31 * C33
     QR5X5(1, 4, :, :)  =  SQR3 * C32 * C33
@@ -1469,7 +1668,7 @@ CONTAINS
     !
     !----------------------------------------------------------------------
     !
-    SQR3 = DSQRT(3.0_RK)
+    SQR3 = DSQRT(3.0D0)
     !
     C11 = C(0, 0)
     C21 = C(1, 0)
@@ -1481,13 +1680,13 @@ CONTAINS
     C23 = C(1, 2)
     C33 = C(2, 2)
     !
-    QR5X5(0, 0)  =  0.5_RK * (C11 * C11 - C12 * C12 - C21 * C21 + C22 * C22)
-    QR5X5(0, 1)  =  SQR3 / 2.0_RK * (C13 * C13 - C23 * C23)
+    QR5X5(0, 0)  =  0.5D0 * (C11 * C11 - C12 * C12 - C21 * C21 + C22 * C22)
+    QR5X5(0, 1)  =  SQR3 / 2.0D0 * (C13 * C13 - C23 * C23)
     QR5X5(0, 2)  =  C11 * C12 - C21 * C22
     QR5X5(0, 3)  =  C11 * C13 - C21 * C23
     QR5X5(0, 4)  =  C12 * C13 - C22 * C23
-    QR5X5(1, 0)  =  SQR3 / 2.0_RK * (C31 * C31 - C32 * C32)
-    QR5X5(1, 1)  =  1.5_RK * C33 * C33 - 0.5_RK
+    QR5X5(1, 0)  =  SQR3 / 2.0D0 * (C31 * C31 - C32 * C32)
+    QR5X5(1, 1)  =  1.5D0 * C33 * C33 - 0.5D0
     QR5X5(1, 2)  =  SQR3 * C31 * C32
     QR5X5(1, 3)  =  SQR3 * C31 * C33
     QR5X5(1, 4)  =  SQR3 * C32 * C33
@@ -1513,6 +1712,140 @@ CONTAINS
     !
     !===========================================================================
     !
+    SUBROUTINE SOLVE_LIN_SYS_3(MAT, VEC, SOL)
+    !
+    ! Solve a linear system of three equations. Used for triaxial loading.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    !
+    REAL(RK), INTENT(IN) :: MAT(3,3)
+    REAL(RK), INTENT(IN) :: VEC(3)
+    REAL(RK), INTENT(OUT) :: SOL(3)
+    !
+    ! Locals:
+    !
+    REAL(RK) :: INV(3,3)
+    REAL(RK) :: A, B, C, D, E, F, G, H, K
+    REAL(RK) :: DET, MATNORM, INVNORM, COND
+    !
+    !---------------------------------------------------------------------------
+    !
+    A = MAT(1, 1)
+    B = MAT(1, 2)
+    C = MAT(1, 3)
+    D = MAT(2, 1)
+    E = MAT(2, 2)
+    F = MAT(2, 3)
+    G = MAT(3, 1)
+    H = MAT(3, 2)
+    K = MAT(3, 3)
+    !
+    DET = A * (E * K - F * H) - B * (D * K - F * G) + C * (D * H - E * G)
+    !
+    INV(1, 1) = (E * K - F * H) / DET
+    INV(1, 2) = (C * H - B * K) / DET
+    INV(1, 3) = (B * F - C * E) / DET
+    INV(2, 1) = (F * G - D * K) / DET
+    INV(2, 2) = (A * K - C * G) / DET
+    INV(2, 3) = (C * D - A * F) / DET
+    INV(3, 1) = (D * H - E * G) / DET
+    INV(3, 2) = (B * G - A * H) / DET
+    INV(3, 3) = (A * E - B * D) / DET
+    !
+    SOL = MATMUL(INV, VEC)
+    !
+    ! Find conditioning number
+    !
+    MATNORM = MAX(MAT(1, 1) + MAT(1, 2) + MAT(1, 3), &
+         & MAT(2, 1) + MAT(2, 2) + MAT(2, 3), &
+         & MAT(3, 1) + MAT(3, 2) + MAT(3, 3))
+    INVNORM = MAX(INV(1, 1) + INV(1, 2) + INV(1, 3), &
+         & INV(2, 1) + INV(2, 2) + INV(2, 3), &
+         & INV(3, 1) + INV(3, 2) + INV(3, 3))
+    COND = MATNORM * INVNORM
+    !
+    IF (COND .GT. 1.0D3) THEN
+        !
+        CALL PAR_QUIT('Error  :     > Matrix is poorly conditioned.')
+        !
+    ENDIF
+    !
+    RETURN
+    !
+    END SUBROUTINE SOLVE_LIN_SYS_3
+    !
+    !===========================================================================
+    !
+    SUBROUTINE SPARSE_MATVEC_EBE(RES, SOL, TEMP1, TEMP2, GSTIF, BCS, NNPE, &
+        & NSUB, NSUP, ESUB, ESUP, DTRACE, NP)
+    !
+    !  Matrix vector multiply, element by element.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! RES:
+    ! SOL:
+    ! TEMP1:
+    ! TEMP2:
+    ! GSTIF:
+    ! BCS:
+    ! NNPE:
+    ! NSUB:
+    ! NSUP:
+    ! ESUB:
+    ! ESUP:
+    ! DTRACE:
+    ! NP:
+    !
+    REAL(RK) :: RES(NSUB:NSUP)
+    REAL(RK) :: SOL(NSUB:NSUP)
+    REAL(RK) :: TEMP1(0:(NNPE - 1), ESUB:ESUP)
+    REAL(RK) :: TEMP2(0:(NNPE - 1), ESUB:ESUP)
+    REAL(RK) :: GSTIF(0:(NNPE - 1), 0:(NNPE - 1), ESUB:ESUP)
+    LOGICAL :: BCS(NSUB:NSUP)
+    INTEGER :: NNPE
+    INTEGER :: NSUB
+    INTEGER :: NSUP
+    INTEGER :: ESUB
+    INTEGER :: ESUP
+    TYPE(TRACE) :: DTRACE
+    INTEGER :: NP(0:(NNPE-1),ESUB:ESUP)
+    !
+    !  Locals:
+    !
+    INTEGER :: IER
+    INTEGER :: I
+    INTEGER :: J
+    INTEGER :: IDUMMY
+    !
+    !---------------------------------------------------------------------------
+    !
+    CALL PART_GATHER(TEMP1, SOL, NP, DTRACE)
+    !
+    TEMP2 = 0.0D0
+    !
+    CALL GEN_MATRIX_VECTOR_MULT(TEMP2, GSTIF, TEMP1, IDUMMY, IDUMMY, IDUMMY, &
+        & IDUMMY, IER)
+    !
+    RES = 0.0D0
+    !
+    CALL PART_SCATTER(RES, TEMP2, NP, .FALSE., DTRACE)
+    !
+    WHERE (BCS)
+        !
+        RES = 0.0D0
+        !
+    END WHERE
+    !
+    RETURN
+    !
+    END SUBROUTINE SPARSE_MATVEC_EBE
+    !
+    !===========================================================================
+    !
     SUBROUTINE SYMM_VGR(D, DKK, VGRAD, M)
     !
     ! Compute symmetric part of an array of velocity gradients.
@@ -1535,18 +1868,18 @@ CONTAINS
     D(0, 0, :) = VGRAD(0, 0, :)
     D(1, 1, :) = VGRAD(1, 1, :)
     D(2, 2, :) = VGRAD(2, 2, :)
-    D(1, 0, :) = 0.5_RK * (VGRAD(1, 0, :) + VGRAD(0, 1, :))
-    D(2, 0, :) = 0.5_RK * (VGRAD(2, 0, :) + VGRAD(0, 2, :))
-    D(2, 1, :) = 0.5_RK * (VGRAD(2, 1, :) + VGRAD(1, 2, :))
+    D(1, 0, :) = 0.5D0 * (VGRAD(1, 0, :) + VGRAD(0, 1, :))
+    D(2, 0, :) = 0.5D0 * (VGRAD(2, 0, :) + VGRAD(0, 2, :))
+    D(2, 1, :) = 0.5D0 * (VGRAD(2, 1, :) + VGRAD(1, 2, :))
     D(0, 1, :) = D(1, 0, :)
     D(0, 2, :) = D(2, 0, :)
     D(1, 2, :) = D(2, 1, :)
     !
     DKK = D(0, 0, :) + D(1, 1, :) + D(2, 2, :)
     !
-    D(0, 0, :) = D(0, 0, :) - DKK / 3.0_RK
-    D(1, 1, :) = D(1, 1, :) - DKK / 3.0_RK
-    D(2, 2, :) = D(2, 2, :) - DKK / 3.0_RK
+    D(0, 0, :) = D(0, 0, :) - DKK / 3.0D0
+    D(1, 1, :) = D(1, 1, :) - DKK / 3.0D0
+    D(2, 2, :) = D(2, 2, :) - DKK / 3.0D0
     !
     RETURN
     !
@@ -1575,18 +1908,18 @@ CONTAINS
     D(0, 0) = VGRAD(0, 0)
     D(1, 1) = VGRAD(1, 1)
     D(2, 2) = VGRAD(2, 2)
-    D(1, 0) = 0.5_RK * (VGRAD(1, 0) + VGRAD(0, 1))
-    D(2, 0) = 0.5_RK * (VGRAD(2, 0) + VGRAD(0, 2))
-    D(2, 1) = 0.5_RK * (VGRAD(2, 1) + VGRAD(1, 2))
+    D(1, 0) = 0.5D0 * (VGRAD(1, 0) + VGRAD(0, 1))
+    D(2, 0) = 0.5D0 * (VGRAD(2, 0) + VGRAD(0, 2))
+    D(2, 1) = 0.5D0 * (VGRAD(2, 1) + VGRAD(1, 2))
     D(0, 1) = D(1, 0)
     D(0, 2) = D(2, 0)
     D(1, 2) = D(2, 1)
     !
     DKK = D(0, 0) + D(1, 1) + D(2, 2)
     !
-    D(0, 0) = D(0, 0) - DKK / 3.0_RK
-    D(1, 1) = D(1, 1) - DKK / 3.0_RK
-    D(2, 2) = D(2, 2) - DKK / 3.0_RK
+    D(0, 0) = D(0, 0) - DKK / 3.0D0
+    D(1, 1) = D(1, 1) - DKK / 3.0D0
+    D(2, 2) = D(2, 2) - DKK / 3.0D0
     !
     RETURN
     !
@@ -1611,11 +1944,11 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    W(:, :, :) = 0.0_RK
+    W(:, :, :) = 0.0D0
     !
-    W(0, 1, :) = 0.5_RK * (VGRAD(0, 1, :) - VGRAD(1, 0, :))
-    W(0, 2, :) = 0.5_RK * (VGRAD(0, 2, :) - VGRAD(2, 0, :))
-    W(1, 2, :) = 0.5_RK * (VGRAD(1, 2, :) - VGRAD(2, 1, :))
+    W(0, 1, :) = 0.5D0 * (VGRAD(0, 1, :) - VGRAD(1, 0, :))
+    W(0, 2, :) = 0.5D0 * (VGRAD(0, 2, :) - VGRAD(2, 0, :))
+    W(1, 2, :) = 0.5D0 * (VGRAD(1, 2, :) - VGRAD(2, 1, :))
     W(1, 0, :) = -W(0, 1, :)
     W(2, 0, :) = -W(0, 2, :)
     W(2, 1, :) = -W(1, 2, :)
@@ -1623,6 +1956,174 @@ CONTAINS
     RETURN
     !
     END SUBROUTINE SKEW_VGR
+    !
+    !===========================================================================
+    !
+    SUBROUTINE TENSOR3DCOMPOSE(MAT, DEV, SKW, SPH)
+    !
+    ! Form  matrix from deviatoric, skew, or spherical parts. If no parts are
+    !   passed, the matix is zeroed.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! MAT: Resulting array of 3x3 matrices
+    ! DEV: Arry of 5-vec representing symmetric, traceless portion
+    ! SKW: Array of 3-vec representing axial vectors of the skew pportion
+    ! SPH: Array of scalars representing one third of the trace
+    !
+    REAL(RK), INTENT(OUT) :: MAT(:, :, :)
+    REAL(RK), INTENT(IN), OPTIONAL :: DEV(:, :)
+    REAL(RK), INTENT(IN), OPTIONAL :: SKW(:, :)
+    REAL(RK), INTENT(IN), OPTIONAL :: SPH(:)
+    !
+    !---------------------------------------------------------------------------
+    !
+    MAT = 0.0D0
+    !
+    IF (PRESENT(DEV)) THEN
+        !
+        MAT(1, 1, :) = -DEV(1, :) * SQ2_I - DEV(2, :) * SQ6_I
+        MAT(2, 2, :) = DEV(1, :) * SQ2_I - DEV(2, :) * SQ6_I
+        MAT(3, 3, :) = DEV(2, :) * TWOSQ6_I
+        !
+        MAT(2, 3, :) = DEV(3, :) * SQ2_I
+        MAT(3, 2, :) = MAT(2, 3, :)
+        !
+        MAT(1, 3, :) = DEV(4, :) * SQ2_I
+        MAT(3, 1, :) = MAT(1, 3, :)
+        !
+        MAT(1, 2, :) = DEV(5, :) * SQ2_I
+        MAT(2, 1, :) = MAT(1, 2, :)
+        !
+    END IF
+    !
+    IF (PRESENT(SKW)) THEN
+        !
+        MAT(2, 3, :) = MAT(2, 3, :) - SKW(1, :)
+        MAT(3, 2, :) = MAT(3, 2, :) + SKW(1, :)
+        !
+        MAT(1, 3, :) = MAT(1, 3, :) + SKW(2, :)
+        MAT(3, 1, :) = MAT(3, 1, :) - SKW(2, :)
+        !
+        MAT(1, 2, :) = MAT(1, 2, :) - SKW(3, :)
+        MAT(2, 1, :) = MAT(2, 1, :) + SKW(3, :)
+        !
+    END IF
+    !
+    IF (PRESENT(SPH)) THEN
+        !
+        MAT(1, 1, :) = MAT(1, 1, :) + SPH
+        MAT(2, 2, :) = MAT(2, 2, :) + SPH
+        MAT(3, 3, :) = MAT(3, 3, :) + SPH
+        !
+    END IF
+    !
+    END SUBROUTINE TENSOR3DCOMPOSE
+    !
+    !===========================================================================
+    !
+    SUBROUTINE TENSOR3DDECOMPOSE(MAT, DEV, SKW, SPH, DECOMP)
+    !
+    ! Decompose matrix into deviatoric, skew, or spherical parts.
+    !
+    ! Note that the three components of the decomposition are orthogonal, but
+    !   the underlying basis is not orthonormal due to scaling.
+    !
+    ! Note: dev(2) = sqrt(3/2)*mat(3,3), when mat is deviatoric.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! MAT: Array of 3x3 matrices
+    ! DEV: Array of 5-vec representing symmetric portion (MPSIM convention)
+    ! SKW: Array of 3-vec representing skew portion (MPSIM convention)
+    ! SPH: Array of scalars representing one third of the trace
+    ! DECOMP: Flag indicating decomposition convention
+    !
+    REAL(RK), INTENT(IN) :: MAT(:, :, :)
+    REAL(RK), INTENT(OUT), OPTIONAL :: DEV(:, :)
+    REAL(RK), INTENT(OUT), OPTIONAL :: SKW(:, :)
+    REAL(RK), INTENT(OUT), OPTIONAL :: SPH(:)
+    INTEGER, INTENT(IN), OPTIONAL :: DECOMP
+    !
+    ! Locals:
+    !
+    INTEGER ::  DECOMP_CONV
+    !
+    !---------------------------------------------------------------------------
+    !
+    DECOMP_CONV = DECOMP_DFLT
+    !
+    IF (PRESENT(DECOMP)) THEN
+        !
+        DECOMP_CONV = DECOMP
+        !
+    END IF
+    !
+    IF (PRESENT(DEV)) THEN
+        !
+        SELECT CASE(DECOMP_CONV)
+        !
+        CASE (DECOMP_MPSIM)
+            !
+            DEV(1, :) = (MAT(2, 2, :) - MAT(1, 1, :)) * SQ2_I
+            DEV(2, :) = (MAT(3, 3, :) + MAT(3, 3, :) - MAT(1, 1, :) - &
+                & MAT(2, 2, :)) * SQ6_I
+            !
+            DEV(3, :) = SQ2_I * (MAT(2, 3, :) + MAT(3, 2, :))
+            DEV(4, :) = SQ2_I * (MAT(1, 3, :) + MAT(3, 1, :))
+            DEV(5, :) = SQ2_I * (MAT(1, 2, :) + MAT(2, 1, :))
+            !
+        CASE (DECOMP_FEMEVPS)
+            !
+            DEV(1,:) = ( MAT(1,1,:) - MAT(2,2,:) )*SQ2_I
+            DEV(2,:) = ( MAT(3,3,:) + MAT(3,3,:) - MAT(1,1,:) - MAT(2,2,:) ) * &
+                & SQ6_I
+            !
+            DEV(3, :) = SQ2_I * (MAT(1, 2, :) + MAT(2, 1, :))
+            DEV(4, :) = SQ2_I * (MAT(1, 3, :) + MAT(3, 1, :))
+            DEV(5, :) = SQ2_I * (MAT(2, 3, :) + MAT(3, 2, :))
+            !
+        CASE DEFAULT
+        !
+        ! Return error status
+        !
+        END SELECT
+        !
+    END IF
+    !
+    IF (PRESENT(SKW)) THEN
+        !
+        SELECT CASE(DECOMP_CONV)
+        !
+        CASE (DECOMP_MPSIM)
+            !
+            SKW(1, :) = 0.5D0 * (MAT(3, 2, :) - MAT(2, 3, :))
+            SKW(2, :) = 0.5D0 * (MAT(1, 3, :) - MAT(3, 1, :))
+            SKW(3, :) = 0.5D0 * (MAT(2, 1, :) - MAT(1, 2, :))
+            !
+        CASE (DECOMP_FEMEVPS)
+            !
+            SKW(1, :) = 0.5D0 * (MAT(2, 1, :) - MAT(1, 2, :))
+            SKW(2, :) = -0.5D0 * (MAT(1, 3, :) - MAT(3, 1, :))
+            SKW(3, :) = 0.5D0 * (MAT(3, 2, :) - MAT(2, 3, :))
+            !
+        CASE DEFAULT
+            !
+            ! Return error status
+            !
+        END SELECT
+        !
+    END IF
+    !
+    IF (PRESENT(SPH)) THEN
+        !
+        SPH = (MAT(1, 1, :) + MAT(2, 2, :) + MAT(3, 3, :)) * (1.0D0 / 3.0D0)
+        !
+    END IF
+    !
+    END SUBROUTINE TENSOR3DDECOMPOSE
     !
     !===========================================================================
     !
@@ -1649,12 +2150,12 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    SQR2 = DSQRT(2.0_RK)
-    SQR23 = DSQRT(2.0_RK/3.0_RK)
+    SQR2 = DSQRT(2.0D0)
+    SQR23 = DSQRT(2.0D0 / 3.0D0)
     !
     ! Diagonal: 11 22 33
-    MAT(0) = 0.5_RK * (SQR2 * VEC(0) - SQR23 * VEC(1))
-    MAT(1) = -0.5_RK * (SQR2 * VEC(0) + SQR23 * VEC(1))
+    MAT(0) = 0.5D0 * (SQR2 * VEC(0) - SQR23 * VEC(1))
+    MAT(1) = -0.5D0 * (SQR2 * VEC(0) + SQR23 * VEC(1))
     MAT(2) = VEC(1) * SQR23
     !
     ! Off-diagonal: 23 13 12
@@ -1724,9 +2225,9 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    MAT(0, 0, :) = 0.0_RK
-    MAT(1, 1, :) = 0.0_RK
-    MAT(2, 2, :) = 0.0_RK
+    MAT(0, 0, :) = 0.0D0
+    MAT(1, 1, :) = 0.0D0
+    MAT(2, 2, :) = 0.0D0
     !
     MAT(1, 0, :) = VEC(0, :)
     MAT(2, 0, :) = VEC(1, :)
@@ -1762,9 +2263,9 @@ CONTAINS
     !
     !----------------------------------------------------------------------
     !
-    MAT(0, 0, :, :) = 0.0_RK
-    MAT(1, 1, :, :) = 0.0_RK
-    MAT(2, 2, :, :) = 0.0_RK
+    MAT(0, 0, :, :) = 0.0D0
+    MAT(1, 1, :, :) = 0.0D0
+    MAT(2, 2, :, :) = 0.0D0
     !
     MAT(1, 0, :, :) = VEC(0, :, :)
     MAT(2, 0, :, :) = VEC(1, :, :)
@@ -1803,11 +2304,11 @@ CONTAINS
     !
     !----------------------------------------------------------------------
     !
-    SQR2 = DSQRT(2.0_RK)
-    SQR23 = DSQRT(2.0_RK/3.0_RK)
+    SQR2 = DSQRT(2.0D0)
+    SQR23 = DSQRT(2.0D0 / 3.0D0)
     !
-    MAT(0, 0, :) = 0.5_RK * (SQR2 * VEC(0, :) - SQR23 * VEC(1, :))
-    MAT(1, 1, :) = -0.5_RK * (SQR2 * VEC(0, :) + SQR23 * VEC(1, :))
+    MAT(0, 0, :) = 0.5D0 * (SQR2 * VEC(0, :) - SQR23 * VEC(1, :))
+    MAT(1, 1, :) = -0.5D0 * (SQR2 * VEC(0, :) + SQR23 * VEC(1, :))
     MAT(2, 2, :) = VEC(1, :) * SQR23
     MAT(1, 0, :) = VEC(2, :) / SQR2
     MAT(2, 0, :) = VEC(3, :) / SQR2
@@ -1848,11 +2349,11 @@ CONTAINS
     !
     !----------------------------------------------------------------------
     !
-    SQR2 = DSQRT(2.0_RK)
-    SQR23 = DSQRT(2.0_RK/3.0_RK)
+    SQR2 = DSQRT(2.0D0)
+    SQR23 = DSQRT(2.0D0 / 3.0D0)
     !
-    MAT(0, 0, :, :) = 0.5_RK * (SQR2 * VEC(0, :, :) - SQR23 * VEC(1, :, :))
-    MAT(1, 1, :, :) = -0.5_RK * (SQR2 * VEC(0, :, :) + SQR23 * VEC(1, :, :))
+    MAT(0, 0, :, :) = 0.5D0 * (SQR2 * VEC(0, :, :) - SQR23 * VEC(1, :, :))
+    MAT(1, 1, :, :) = -0.5D0 * (SQR2 * VEC(0, :, :) + SQR23 * VEC(1, :, :))
     MAT(2, 2, :, :) = VEC(1, :, :) * SQR23
     MAT(1, 0, :, :) = VEC(2, :, :) / SQR2
     MAT(2, 0, :, :) = VEC(3, :, :) / SQR2
@@ -1889,11 +2390,11 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    SQR2 = DSQRT(2.0_RK)
-    SQR23 = DSQRT(2.0_RK/3.0_RK)
+    SQR2 = DSQRT(2.0D0)
+    SQR23 = DSQRT(2.0D0 / 3.0D0)
     !
-    MAT(0, 0) = 0.5_RK * (SQR2 * VEC(0) - SQR23 * VEC(1))
-    MAT(1, 1) = -0.5_RK * (SQR2 * VEC(0) + SQR23 * VEC(1))
+    MAT(0, 0) = 0.5D0 * (SQR2 * VEC(0) - SQR23 * VEC(1))
+    MAT(1, 1) = -0.5D0 * (SQR2 * VEC(0) + SQR23 * VEC(1))
     MAT(2, 2) = VEC(1) * SQR23
     MAT(1, 0) = VEC(2) / SQR2
     MAT(2, 0) = VEC(3) / SQR2

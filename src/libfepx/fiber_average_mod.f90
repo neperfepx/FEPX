@@ -16,15 +16,22 @@ MODULE FIBER_AVERAGE_MOD
 ! PRINT_STATS: Print fiber averaging statistics
 ! INITIALIZE_CRYSTAL_SYMS: Initialize crystal symmetry operations
 !
-USE GATHER_SCATTER
-USE LIBF95
-USE PARALLEL_MOD
+! From libf95:
 !
-USE DIMSMODULE
+USE LIBF95
+!
+! From libfepx:
+!
+USE DIMENSIONS_MOD
+USE MATRIX_OPERATIONS_MOD
 USE MICROSTRUCTURE_MOD
 USE READ_INPUT_MOD
 USE UNITS_MOD
-USE MATRIX_OPERATIONS_MOD
+!
+! From libparallel:
+!
+USE GATHER_SCATTER_MOD
+USE PARALLEL_MOD
 !
 IMPLICIT NONE
 !
@@ -49,6 +56,8 @@ INTEGER,  PARAMETER, PRIVATE :: NSYMCUB = 24, NSYMCUB1 = 23
 INTEGER,  PARAMETER, PRIVATE :: NSYMHEX = 12, NSYMHEX1 = 11
 REAL(RK), PRIVATE :: RMATSYMCUB(0:DIMS1, 0:DIMS1, 0:NSYMCUB1)
 REAL(RK), PRIVATE :: RMATSYMHEX(0:DIMS1, 0:DIMS1, 0:NSYMHEX1)
+!
+REAL(RK), PARAMETER, PRIVATE :: PI_OVER_180 = (4.0D0 * DATAN(1.0D0)) / 180.0D0
 !
 CONTAINS
     !
@@ -113,7 +122,7 @@ CONTAINS
     !
     INTEGER, PARAMETER  :: NSYMCUB = 24, NSYMCUB1 = 23
     INTEGER, PARAMETER  :: NSYMHEX = 12, NSYMHEX1 = 11
-    REAL(RK), PARAMETER :: TOL = 1e-4
+    REAL(RK), PARAMETER :: TOL = 1.0D-4
     INTEGER  :: NUM_VFE(0:NFIB1) ! VFE = "Valid Fiber Element"
     REAL(RK) :: VOL_VFE(0:NFIB1)
     REAL(RK) :: LS_AVG(0:NFIB1), LS_STD(0:NFIB1)
@@ -145,18 +154,18 @@ CONTAINS
     !
     ! Initialization
     !
-    LS_AVG = 0.0_RK
-    DPEFF_AVG = 0.0_RK
-    SGD_AVG = 0.0_RK
-    CRSS_AVG = 0.0_RK
-    LS_STD = 0.0_RK
-    DPEFF_STD = 0.0_RK
-    SGD_STD = 0.0_RK
-    CRSS_STD = 0.0_RK
+    LS_AVG = 0.0D0
+    DPEFF_AVG = 0.0D0
+    SGD_AVG = 0.0D0
+    CRSS_AVG = 0.0D0
+    LS_STD = 0.0D0
+    DPEFF_STD = 0.0D0
+    SGD_STD = 0.0D0
+    CRSS_STD = 0.0D0
     !
     ! Calculate sum of the gammadots
     !
-    SGD = 0.0_RK
+    SGD = 0.0D0
     DO KELEM = EL_SUB1, EL_SUP1
         !
         DO ISS = 0, MAXSLIP1
@@ -173,19 +182,19 @@ CONTAINS
         !
         ! Initialization
         !
-        LS = 0.0_RK
-        P_NUM_VFE = 0.0_RK
-        P_VOL_VFE = 0.0_RK
-        P_LS_SUM = 0.0_RK
-        P_DPEFF_SUM = 0.0_RK
-        P_SGD_SUM = 0.0_RK
-        P_CRSS_SUM = 0.0_RK
-        NUM_VFE_IFIB = 0.0_RK
-        VOL_VFE_IFIB = 0.0_RK
-        LS_SUM = 0.0_RK
-        DPEFF_SUM = 0.0_RK
-        SGD_SUM = 0.0_RK
-        CRSS_SUM = 0.0_RK
+        LS = 0.0D0
+        P_NUM_VFE = 0.0D0
+        P_VOL_VFE = 0.0D0
+        P_LS_SUM = 0.0D0
+        P_DPEFF_SUM = 0.0D0
+        P_SGD_SUM = 0.0D0
+        P_CRSS_SUM = 0.0D0
+        NUM_VFE_IFIB = 0.0D0
+        VOL_VFE_IFIB = 0.0D0
+        LS_SUM = 0.0D0
+        DPEFF_SUM = 0.0D0
+        SGD_SUM = 0.0D0
+        CRSS_SUM = 0.0D0
         !
         ! Extract HKL
         !
@@ -210,7 +219,7 @@ CONTAINS
                 ! construct lattice plane unit normal vectors (PLN) in Cartesian
                 ! crystal basis
                 !
-                PLN = HKL/SQRT(HKL(0)*HKL(0) + HKL(1)*HKL(1) + HKL(2)*HKL(2))
+                PLN = HKL/DSQRT(HKL(0)*HKL(0) + HKL(1)*HKL(1) + HKL(2)*HKL(2))
                 NSYM1 = NSYMCUB1
                 ALLOCATE(RMATSYM(0:DIMS1, 0:DIMS1, 0:NSYM1))
                 RMATSYM = RMATSYMCUB
@@ -222,9 +231,9 @@ CONTAINS
                 ! crystal basis
                 !
                 PLN(0) = HKL(0)
-                PLN(1) = (2*HKL(1)+HKL(0))/RK_ROOT_3
+                PLN(1) = (2*HKL(1)+HKL(0)) / DSQRT(3.0D0)
                 PLN(2) = HKL(2)/CRYSTAL_PARM(11,PHASEFIB(IFIB))
-                PLN = PLN/SQRT(PLN(0)*PLN(0) + PLN(1)*PLN(1) + PLN(2)*PLN(2))
+                PLN = PLN / DSQRT(PLN(0)*PLN(0) + PLN(1)*PLN(1) + PLN(2)*PLN(2))
                 NSYM1 = NSYMHEX1
                 ALLOCATE(RMATSYM(0:DIMS1, 0:DIMS1, 0:NSYM1))
                 RMATSYM = RMATSYMHEX
@@ -269,7 +278,7 @@ CONTAINS
                     & ALLPLN(1, I) * ALLPLN(1, J) + &
                     & ALLPLN(2, I) * ALLPLN(2, J)
                 !
-                IF (ABS(1.0_RK - ABS(DOTPROD)) .LT. TOL) ISUNIQUEPLN = .FALSE.
+                IF (ABS(1.0D0 - ABS(DOTPROD)) .LT. TOL) ISUNIQUEPLN = .FALSE.
                 !
             ENDDO
             !
@@ -289,11 +298,11 @@ CONTAINS
             !
             IF (ISINTERIOR(KELEM) .AND. (PHASE(KELEM) .EQ. PHASEFIB(IFIB))) THEN
                 !
-                DOTPROD = 0.0_RK
+                DOTPROD = 0.0D0
                 !
                 DO IPLN = 0, (NUNQPLN - 1)
                     !
-                    SVEC = 0.0_RK
+                    SVEC = 0.0D0
                     !
                     DO I = 0, DIMS1
                         !
@@ -322,7 +331,7 @@ CONTAINS
                     ! Scattering vector in crystal coordinates
                     ! {n}_c = [R]^T {n}_s
                     !
-                    CVEC = 0.0_RK
+                    CVEC = 0.0D0
                     !
                     DO I = 0, DIMS1
                         !
@@ -358,7 +367,7 @@ CONTAINS
                     !
                     ! Sum some quantities
                     !
-                    P_NUM_VFE = P_NUM_VFE + 1.0_RK
+                    P_NUM_VFE = P_NUM_VFE + 1.0D0
                     P_VOL_VFE = P_VOL_VFE + ELVOL(KELEM)
                     !
                     ! The following sums are weighted by element volume
@@ -451,16 +460,16 @@ CONTAINS
         !
         ! Calculate standard deviations
         !
-        P_LS_SUM = 0.0_RK
-        P_DPEFF_SUM = 0.0_RK
-        P_SGD_SUM = 0.0_RK
-        P_CRSS_SUM = 0.0_RK
-        LS_SUM = 0.0_RK
-        DPEFF_SUM = 0.0_RK
-        SGD_SUM = 0.0_RK
-        CRSS_SUM = 0.0_RK
+        P_LS_SUM = 0.0D0
+        P_DPEFF_SUM = 0.0D0
+        P_SGD_SUM = 0.0D0
+        P_CRSS_SUM = 0.0D0
+        LS_SUM = 0.0D0
+        DPEFF_SUM = 0.0D0
+        SGD_SUM = 0.0D0
+        CRSS_SUM = 0.0D0
         !
-        IF (VOL_VFE_IFIB .GT. 0.0_RK) THEN
+        IF (VOL_VFE_IFIB .GT. 0.0D0) THEN
             !
             DO KELEM = EL_SUB1, EL_SUP1
                 !
@@ -530,13 +539,13 @@ CONTAINS
                 !
             ENDDO
             !
-            LS_STD(IFIB) = SQRT(LS_SUM/VOL_VFE_IFIB)
-            DPEFF_STD(IFIB) = SQRT(DPEFF_SUM/VOL_VFE_IFIB)
-            SGD_STD(IFIB) = SQRT(SGD_SUM/VOL_VFE_IFIB)
+            LS_STD(IFIB) = DSQRT(LS_SUM/VOL_VFE_IFIB)
+            DPEFF_STD(IFIB) = DSQRT(DPEFF_SUM/VOL_VFE_IFIB)
+            SGD_STD(IFIB) = DSQRT(SGD_SUM/VOL_VFE_IFIB)
             !
             DO ISS = 0, MAXSLIP1
                 !
-                CRSS_STD(IFIB,ISS) = SQRT(CRSS_SUM(ISS)/VOL_VFE_IFIB)
+                CRSS_STD(IFIB,ISS) = DSQRT(CRSS_SUM(ISS)/VOL_VFE_IFIB)
                 !
             ENDDO
             !
@@ -654,7 +663,7 @@ CONTAINS
         !
     END DO
     !
-    TOLFIB = COS(TOLFIB * RK_PI_OVER_180)
+    TOLFIB = COS(TOLFIB * PI_OVER_180)
     !
     CLOSE(UNIT = INPUT_UNIT)
     !
@@ -915,13 +924,13 @@ CONTAINS
     ! RMATSYMCUB: 3 x 3 x NSYMCUB rotation matrices for cubic symmetry
     ! RMATSYMHEX: 3 x 3 x NSYMHEX rotation matrices for hexagonal symmetry
     !
-    REAL(RK), PARAMETER :: Z = 0.0_RK
-    REAL(RK), PARAMETER :: P1 = 1.0_RK
-    REAL(RK), PARAMETER :: M1 = -1.0_RK
-    REAL(RK), PARAMETER :: P32 = RK_ROOT_3/RK_TWO
+    REAL(RK), PARAMETER :: Z = 0.0D0
+    REAL(RK), PARAMETER :: P1 = 1.0D0
+    REAL(RK), PARAMETER :: M1 = -1.0D0
+    REAL(RK), PARAMETER :: P32 = DSQRT(3.0D0) / 2.0D0
     REAL(RK), PARAMETER :: M32 = -P32
-    REAL(RK), PARAMETER :: P12 = 0.5_RK
-    REAL(RK), PARAMETER :: M12 = -0.5_RK
+    REAL(RK), PARAMETER :: P12 = 0.5D0
+    REAL(RK), PARAMETER :: M12 = -0.5D0
     !
     REAL(RK), PARAMETER, DIMENSION(216) :: RMATSYMCUB_DAT = (/&
         & P1,  Z,  Z,  Z, P1,  Z,  Z,  Z, P1, &

@@ -10,7 +10,6 @@ MODULE STRESS_SOLVE_EVPS_MOD
 ! STRESS_SOLVE_EVPS: Add descriptions here.
 ! SOLVE_NEWTON_EVPS:
 ! MATRIX_FJAC:
-! JACOB5X5:
 ! DP_WP_HAT:
 ! WP_HAT_MAT5X5:
 ! WP_HAT_MAT5X5_ALL:
@@ -18,16 +17,24 @@ MODULE STRESS_SOLVE_EVPS_MOD
 ! CHECK_DIAGONALS_EVPS:
 ! SYMMETRIZE_JAC:
 !
-USE INTRINSICTYPESMODULE, RK=>REAL_KIND
-USE PARALLEL_MOD
+! From libf95:
 !
-USE CONVERGENCEMODULE, ONLY: CV_OPTIONS
-USE DIMSMODULE
+USE INTRINSIC_TYPES_MOD, RK=>REAL_KIND
+!
+! From libfepx:
+!
+USE CONVERGENCE_MOD, ONLY: CV_OPTIONS
+USE DIMENSIONS_MOD
+USE KINEMATICS_MOD, ONLY: DP_WP_HAT
+USE MATRIX_OPERATIONS_MOD
 USE MICROSTRUCTURE_MOD
 USE READ_INPUT_MOD
-USE STRESSSOLVEVPMODULE
+USE STRESS_SOLVE_VP_MOD
 USE UNITS_MOD
-USE MATRIX_OPERATIONS_MOD
+!
+! From libparallel:
+!
+USE PARALLEL_MOD
 !
 IMPLICIT NONE
 !
@@ -180,7 +187,7 @@ CONTAINS
     REAL(RK), POINTER :: WP_X_E_TMP(:,:,:) => NULL()
     REAL(RK), POINTER :: FJAC_TMP(:,:,:,:) => NULL()
     !   
-    REAL(RK), PARAMETER :: ONE_DP = 1.0_RK
+    REAL(RK), PARAMETER :: ONE_DP = 1.0D0
     REAL(RK) :: UFLOW = TINY(ONE_DP)
     REAL(RK) :: TOOSMALL(NUMPHASES)
     !
@@ -198,18 +205,18 @@ CONTAINS
     ! 
     IRC   = 0
     JITER = 0
-    SIG_0 = 0.0_RK
+    SIG_0 = 0.0D0
     NEWTON_OK = .TRUE.
     !
     NM  = N * M
-    C1  = 1.0_RK / DT
+    C1  = 1.0D0 / DT
     !
     ! e_bar_vec {5} --> e_bar [3x3]sym
     !
     CALL VEC_MAT_SYMM_GRN(E_BAR_VEC, E_BAR, N, M)
     !
-    GDOT = 0.0_RK
-    DGDOT = 0.0_RK
+    GDOT = 0.0D0
+    DGDOT = 0.0D0
     !      
     ! Begin iterations
     !   
@@ -253,8 +260,8 @@ CONTAINS
             ! Added parameter check for anisotropic rate sensitivity
             IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .FALSE.) THEN
                 !
-                XNN(IPHASE) = 1.0_RK / CRYSTAL_PARM(0,IPHASE)
-                XN(IPHASE)  = XNN(IPHASE) - 1.0_RK
+                XNN(IPHASE) = 1.0D0 / CRYSTAL_PARM(0,IPHASE)
+                XN(IPHASE)  = XNN(IPHASE) - 1.0D0
                 TOOSMALL(IPHASE) = UFLOW**CRYSTAL_PARM(0,IPHASE)
                 !
             ELSE IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .TRUE.) THEN
@@ -263,15 +270,15 @@ CONTAINS
                 ANISO_M_TEMP(3:5)  = CRYS_OPTIONS%ANISO_M(IPHASE,2)
                 ANISO_M_TEMP(6:17) = CRYS_OPTIONS%ANISO_M(IPHASE,3)
                 !
-                AXNN(:,IPHASE) = 1.0_RK / ANISO_M_TEMP(:)
-                AXN(:,IPHASE)  = AXNN(:,IPHASE) - 1.0_RK
+                AXNN(:,IPHASE) = 1.0D0 / ANISO_M_TEMP(:)
+                AXN(:,IPHASE)  = AXNN(:,IPHASE) - 1.0D0
                 ATOOSMALL(:,IPHASE) = UFLOW**ANISO_M_TEMP(:)
                 !
             END IF
             !
             DO ISLIP = 0, N_SLIP - 1
                 !         
-                TAU(:,INDICES) = 0.0_RK
+                TAU(:,INDICES) = 0.0D0
                 !                
                 DO I = 0, TVEC1
                     !
@@ -285,7 +292,7 @@ CONTAINS
                 IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .FALSE.) THEN
                     !
                     WHERE (TAUA(:,INDICES) .LE. TOOSMALL(IPHASE)) &
-                        & TAUA(:,INDICES) = 0.0_RK
+                        & TAUA(:,INDICES) = 0.0D0
                     !
                     FJ21(:,INDICES) = &
                         &CRYSTAL_PARM(1,IPHASE) * TAUA(:,INDICES)**XN(IPHASE)  
@@ -296,7 +303,7 @@ CONTAINS
                 ELSE IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .TRUE.) THEN
                     !
                     WHERE (TAUA(:,INDICES) .LE. ATOOSMALL(ISLIP,IPHASE)) &
-                        & TAUA(:,INDICES) = 0.0_RK
+                        & TAUA(:,INDICES) = 0.0D0
                     !
                     FJ21(:,INDICES) = CRYSTAL_PARM(1,IPHASE) * &
                         &TAUA(:,INDICES)**AXN(ISLIP,IPHASE)  
@@ -400,7 +407,7 @@ CONTAINS
             ! Added parameter check for anisotropic rate sensitivity
             DO ISLIP = 0, N_SLIP - 1
                 !
-                TAU(:,INDICES) = 0.0_RK
+                TAU(:,INDICES) = 0.0D0
                 !               
                 DO I = 0, TVEC1
                     !
@@ -416,14 +423,14 @@ CONTAINS
                     IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .FALSE.) THEN
                         !
                         WHERE (TAUA(IN,INDICES) .LE. TOOSMALL(IPHASE)) &
-                            & TAUA(IN,INDICES) = 0.0_RK
+                            & TAUA(IN,INDICES) = 0.0D0
                         GDOT(ISLIP, IN, :) = CRYSTAL_PARM(1,IPHASE)*&
                             &TAU(IN,:)*TAUA(IN,:)**XN(IPHASE) 
                         !
                     ELSE IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .TRUE.) THEN
                         !
                         WHERE (TAUA(IN,INDICES).LE.ATOOSMALL(ISLIP,IPHASE)) &
-                            & TAUA(IN,INDICES) = 0.0_RK
+                            & TAUA(IN,INDICES) = 0.0D0
                         GDOT(ISLIP, IN, :) = CRYSTAL_PARM(1,IPHASE)*&
                             &TAU(IN,:)*TAUA(IN,:)**AXN(ISLIP,IPHASE) 
                         !
@@ -465,13 +472,13 @@ CONTAINS
         !
         ! Line Search.
         !
-        FACT = 1.0_RK
+        FACT = 1.0D0
         RATIO_RES = RES / RES_N
         !
         DO WHILE(ANY(RATIO_RES .GT. 1.0 .AND. NEWTON_OK .AND. .NOT. CONVERGED))
             !
             WHERE(RATIO_RES .GT. 1.0 .AND. NEWTON_OK .AND. .NOT. CONVERGED) &
-                & FACT = FACT*0.5_RK
+                & FACT = FACT*0.5D0
             !
             IF(ANY(FACT .LT. 0.001)) THEN
                 !
@@ -517,7 +524,7 @@ CONTAINS
                 !
                 DO ISLIP = 0, N_SLIP - 1
                     !
-                    TAU(:,INDICES) = 0.0_RK
+                    TAU(:,INDICES) = 0.0D0
                     !                  
                     DO I = 0, TVEC1
                         !
@@ -697,149 +704,6 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE JACOB5X5(JAC, A, N, M)
-    !
-    ! Computes the 5x5 Jacobian for matrix `a'. Doesn't appear to be used?
-    !
-    !---------------------------------------------------------------------------
-    !
-    ! Arguments:
-    !
-    INTEGER, INTENT(IN)   :: N, M
-    !
-    REAL(RK), INTENT(IN)  :: A(0:DIMS1, 0:DIMS1, 0:DIMS1, &
-        & 0:DIMS1, 0:(N-1), 0:(M-1))
-    REAL(RK), INTENT(OUT) :: JAC(0:TVEC1, 0:TVEC1, 0:(N - 1), 0:(M - 1))
-    !
-    ! Locals:
-    !
-    REAL(RK) :: SQR3, SQR3B2
-    !
-    !---------------------------------------------------------------------------
-    !
-    SQR3   = DSQRT(3.D0)
-    SQR3B2 = SQR3 / 2.D0 
-    !
-    JAC(0, 0, :, :) = (A(0, 0, 0, 0, :, :) + A(1, 1, 1, 1, :, :) - &
-        & A(0, 0, 1, 1, :, :) - A(1, 1, 0, 0, :, :)) / 2.
-    JAC(0, 1, :, :) = SQR3B2 * (A(0, 0, 2, 2, :, :) - &
-        & A(1, 1, 2, 2, :, :))
-    JAC(0, 2, :, :) = A(0, 0, 0, 1, :, :) - A(1, 1, 0, 1, :, :)
-    JAC(0, 3, :, :) = A(0, 0, 0, 2, :, :) - A(1, 1, 0, 2, :, :)
-    JAC(0, 4, :, :) = A(0, 0, 1, 2, :, :) - A(1, 1, 1, 2, :, :)
-    !
-    JAC(1, 0, :, :) = SQR3B2 * (A(2, 2, 0, 0, :, :) -&
-        & A(2, 2, 1, 1, :, :))
-    JAC(1, 1, :, :) = 1.5 * A(2, 2, 2, 2, :, :) - &
-        & 0.5*(A(2, 2, 0, 0, :, :) + A(2, 2, 1, 1, :, :) + A(2, 2, 2, 2, :, :))
-    JAC(1, 2, :, :) = SQR3 * A(2, 2, 0, 1, :, :)
-    JAC(1, 3, :, :) = SQR3 * A(2, 2, 0, 2, :, :)
-    JAC(1, 4, :, :) = SQR3 * A(2, 2, 1, 2, :, :)
-    !
-    JAC(2, 0, :, :) = A(0, 1, 0, 0, :, :) - A(0, 1, 1, 1, :, :)
-    JAC(2, 1, :, :) = SQR3 * A(0, 1, 2, 2, :, :)
-    JAC(2, 2, :, :) = 2. * A(0, 1, 0, 1, :, :)
-    JAC(2, 3, :, :) = 2. * A(0, 1, 0, 2, :, :)
-    JAC(2, 4, :, :) = 2. * A(0, 1, 1, 2, :, :)
-    !
-    JAC(3, 0, :, :) = A(0, 2, 0, 0, :, :) - A(0, 2, 1, 1, :, :)
-    JAC(3, 1, :, :) = SQR3 * A(0, 2, 2, 2, :, :)
-    JAC(3, 2, :, :) = 2. * A(0, 2, 0, 1, :, :)
-    JAC(3, 3, :, :) = 2. * A(0, 2, 0, 2, :, :)
-    JAC(3, 4, :, :) = 2. * A(0, 2, 1, 2, :, :)
-    !
-    JAC(4, 0, :, :) = A(1, 2, 0, 0, :, :) - A(1, 2, 1, 1, :, :)
-    JAC(4, 1, :, :) = SQR3 * A(1, 2, 2, 2, :, :)
-    JAC(4, 2, :, :) = 2. * A(1, 2, 0, 1, :, :)
-    JAC(4, 3, :, :) = 2. * A(1, 2, 0, 2, :, :)
-    JAC(4, 4, :, :) = 2. * A(1, 2, 1, 2, :, :)
-    !
-    RETURN
-    !
-    END SUBROUTINE JACOB5X5
-    !
-    !===========================================================================
-    !
-    SUBROUTINE DP_WP_HAT(P_HAT_VEC, DP_HAT, WP_HAT, E_ELAS, E_BAR, W_VEC_LAT, &
-        & GDOT, N_SLIP, DT, N, M, NUMIND, INDICES)
-    !
-    ! Add descriptions here.
-    !
-    !---------------------------------------------------------------------------
-    !
-    ! Arguments:
-    !
-    INTEGER, INTENT(IN)   :: N_SLIP, N, M, NUMIND, INDICES(1:NUMIND)
-    REAL(RK), INTENT(OUT) :: DP_HAT(0:TVEC1, 0:(N - 1), 0:(M - 1))
-    REAL(RK), INTENT(OUT) :: WP_HAT(0:DIMS1, 0:(N - 1), 0:(M - 1))
-    REAL(RK), INTENT(IN)  :: P_HAT_VEC(0:TVEC1,0:MAXSLIP1)
-    REAL(RK), INTENT(IN)  :: DT
-    REAL(RK), INTENT(IN)  :: E_ELAS(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(M - 1))
-    REAL(RK), INTENT(IN)  :: E_BAR(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(M - 1))
-    REAL(RK), INTENT(IN)  :: W_VEC_LAT(0:DIMS1, 0:(N - 1), 0:(M - 1))
-    REAL(RK), INTENT(IN)  :: GDOT(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
-    !
-    ! Locals:
-    !
-    INTEGER  :: I, ISLIP
-    REAL(RK) :: DP_HAT_TMP(0:TVEC1, 0:(N - 1), 0:(NUMIND - 1))
-    REAL(RK) :: WP_HAT_TMP(0:DIMS1, 0:(N - 1), 0:(NUMIND - 1))
-    REAL(RK) :: E_ELAS_TMP(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(NUMIND - 1))
-    REAL(RK) :: E_BAR_TMP(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(NUMIND - 1))
-    REAL(RK) :: W_VEC_LAT_TMP(0:DIMS1, 0:(N - 1), 0:(NUMIND - 1))
-    REAL(RK) :: GDOT_TMP(0:MAXSLIP1, 0:(N - 1), 0:(NUMIND - 1))
-    REAL(RK) :: P_HAT(0:DIMS1, 0:DIMS1, 0:MAXSLIP1)
-    REAL(RK) :: X (0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(NUMIND - 1))
-    REAL(RK) :: EE(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(NUMIND - 1))
-    !
-    !---------------------------------------------------------------------------
-    !    
-    E_ELAS_TMP=E_ELAS(:, :, :, INDICES)
-    E_BAR_TMP=E_BAR(:, :, :, INDICES)
-    W_VEC_LAT_TMP=W_VEC_LAT(:, :, INDICES)
-    GDOT_TMP=GDOT(:, :, INDICES)
-    !    
-    CALL VEC_MAT_SYMM(P_HAT_VEC, P_HAT, N_SLIP)
-    DP_HAT_TMP = 0.0_RK
-    !
-    CALL MAT_X_MAT3(E_ELAS_TMP, E_BAR_TMP, EE, N, NUMIND)
-    !
-    WP_HAT_TMP(0, :, :) = W_VEC_LAT_TMP(0, :, :) + &
-        & 0.5 / DT * (EE(1, 0, :, :) - EE(0, 1, :, :))
-    WP_HAT_TMP(1, :, :) = W_VEC_LAT_TMP(1, :, :) + &
-        & 0.5 / DT * (EE(2, 0, :, :) - EE(0, 2, :, :))
-    WP_HAT_TMP(2, :, :) = W_VEC_LAT_TMP(2, :, :) + &
-        & 0.5 / DT * (EE(2, 1, :, :) - EE(1, 2, :, :))
-    !
-    DO ISLIP = 0, N_SLIP - 1
-        !
-        CALL MAT_X_MATS3(E_ELAS_TMP, P_HAT(0, 0, ISLIP), X, N, NUMIND)
-        !
-        WP_HAT_TMP(0, :, :) = WP_HAT_TMP(0, :, :) - &
-            & GDOT_TMP(ISLIP, :, :) * (X(1, 0, :, :) - X(0, 1, :, :))
-        WP_HAT_TMP(1, :, :) = WP_HAT_TMP(1, :, :) - &
-            & GDOT_TMP(ISLIP, :, :) * (X(2, 0, :, :) - X(0, 2, :, :))
-        WP_HAT_TMP(2, :, :) = WP_HAT_TMP(2, :, :) - &
-            & GDOT_TMP(ISLIP, :, :) * (X(2, 1, :, :) - X(1, 2, :, :))
-        !
-        DO I = 0, TVEC1
-            !        
-            DP_HAT_TMP(I, :, :) = DP_HAT_TMP(I, :, :) + &
-                & GDOT_TMP(ISLIP, :, :) * P_HAT_VEC(I, ISLIP)
-            !
-        ENDDO
-        !
-    ENDDO
-    !
-    DP_HAT(:,:,INDICES) = DP_HAT_TMP
-    WP_HAT(:, :, INDICES) = WP_HAT_TMP
-    !
-    RETURN
-    !
-    END SUBROUTINE DP_WP_HAT
-    !
-    !===========================================================================
-    !
     SUBROUTINE WP_HAT_MAT5X5(WP_HAT, WP_HAT_MATX, N, M, NUMIND, INDICES)
     !
     ! Add descriptions here.
@@ -967,7 +831,7 @@ CONTAINS
     !---------------------------------------------------------------------------
     !
     RHS = D_VEC_LAT - C1 * (E_VEC - E_BAR_VEC) - DP_HAT_VEC - WP_X_E
-    RES(:,INDICES) = 0.0_RK
+    RES(:,INDICES) = 0.0D0
     !
     DO I = 0, TVEC1
         !         
@@ -1038,8 +902,8 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    TEMPJ = 0.0_RK
-    TEMPS = 0.0_RK
+    TEMPJ = 0.0D0
+    TEMPS = 0.0D0
     !
     ! RC 6/24/2016: Reordered loops for better memory striding      
     DO J = 0, TVEC1

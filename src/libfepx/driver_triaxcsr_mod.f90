@@ -8,35 +8,41 @@ MODULE DRIVER_TRIAXCSR_MOD
 !
 ! Contains subroutines:
 ! DRIVER_TRIAX_CSR: Primary driver for triaxial CSR control simulations.
-! READ_CTRL_DATA_CSR: Read data for control and modify initial velocity field.
-! READ_TRIAXCSR_RESTART: Read triaxial CSR control restart information.
+! PROCESS_CTRL_DATA_CSR: Read data for control and modify initial velocity field.
+! DRIVER_TRIAXCSR_RESTART: Read triaxial CSR restart information.
 !
+! From libf95:
+!
+USE INTRINSIC_TYPES_MOD, RK=>REAL_KIND
 USE LIBF95, ONLY: NEWUNITNUMBER
-USE INTRINSICTYPESMODULE, RK=>REAL_KIND
-USE GATHER_SCATTER, ONLY: TRACE, PART_GATHER
-USE PARALLEL_MOD, ONLY: MYID, PAR_MESSAGE, PAR_QUIT
 !
-USE DIMSMODULE, ONLY: DIMS1, TVEC, TVEC1, MAXSLIP1, NGRAIN1, ANISOTROPIC_EVPS, &
-    & VTINY
+! From libfepx:
+!
+USE DIMENSIONS_MOD, ONLY: DIMS1, TVEC, TVEC1, MAXSLIP1, NGRAIN1, &
+    & ANISOTROPIC_EVPS, VTINY
 USE DRIVER_UTILITIES_MOD, ONLY: VELOCITY_ITERATION, CALC_MESH_DIM, EST_AVG_MOD,&
-    & SOLVE_LIN_SYS_3, UPDATE_STATE_EVPS, CALC_STRESS_STRAIN
-USE ITMETHODEVPSMODULE, ONLY: ITMETHOD_EVPS
+    & UPDATE_STATE_EVPS, CALC_STRESS_STRAIN
 USE FIBER_AVERAGE_MOD, ONLY: RUN_FIBER_AVERAGE
+USE ITERATE_STRESS_EVPS_MOD, ONLY: ITMETHOD_EVPS
+USE KINEMATICS_MOD, ONLY: PLASTICVELGRADSYMSKW, CALC_TOTAL_WORK,&
+    & CALC_PLASTIC_WORK
+USE MATRIX_OPERATIONS_MOD, ONLY: CALC_ELVOL, SOLVE_LIN_SYS_3
 USE MICROSTRUCTURE_MOD, ONLY: NUMPHASES, GAMMADOT
 USE READ_INPUT_MOD, ONLY: KDIM1, EL_SUB1, EL_SUP1, DOF_SUB1, DOF_SUP1, COORDS,&
     & OPTIONS, BCS_OPTIONS, UNIAXIAL_OPTIONS, FIBER_AVERAGE_OPTIONS, &
-    & TRIAXCSR_OPTIONS, PRINT_OPTIONS, NODES, READ_RESTART_FIELD, &
-    & D_TOT, EL_WORK_N, EL_WORKP_N, EL_WORK_RATE_N, EL_WORKP_RATE_N, EL_WORK, &
-    & EL_WORKP
-USE SURF_INFO_MOD, ONLY: NSURFACES, COMPUTE_AREA
+    & TRIAXCSR_OPTIONS, PRINT_OPTIONS, NODES, READ_RESTART_FIELD, D_TOT, &
+    & EL_WORK_N, EL_WORKP_N, EL_WORK_RATE_N, EL_WORKP_RATE_N, EL_WORK, EL_WORKP
+USE SURFACE_MOD, ONLY: NSURFACES, COMPUTE_AREA
 USE UNITS_MOD, ONLY: DFLT_U, FORCE_U1, FORCE_U2, FORCE_U3, FORCE_U4, FORCE_U5,&
     & FORCE_U6, CONV_U, OUNITS, BCS_ITER_1_U, REPORT_U
 USE WRITE_OUTPUT_MOD, ONLY: PRINT_STEP, WRITE_REPORT_FILE_COMPLETE_STEPS, &
     & WRITE_FORCE_FILE_HEADERS, WRITE_FORCE_FILE_DATA, WRITE_CONV_FILE_HEADERS,&
     & WRITE_TRIAXCSR_RESTART, WRITE_RESTART_FIELD
-USE ELEMENTAL_VARIABLES_UTILS_MOD, ONLY: PLASTICVELGRADSYMSKW, CALC_TOTAL_WORK,&
-    & CALC_PLASTIC_WORK
-USE MATRIX_OPERATIONS_MOD, ONLY: CALC_ELVOL
+!
+! From libparallel:
+!
+USE GATHER_SCATTER_MOD, ONLY: TRACE, PART_GATHER
+USE PARALLEL_MOD, ONLY: MYID, PAR_MESSAGE, PAR_QUIT
 !
 IMPLICIT NONE
 !
@@ -249,10 +255,10 @@ CONTAINS
         !
         ! Initialize areas and load arrays
         !
-        SURF_LOAD_ARRAY = 0.0_RK
-        CURR_LOAD = 0.0_RK
-        AREA = 0.0_RK
-        AREA0 = 0.0_RK
+        SURF_LOAD_ARRAY = 0.0D0
+        CURR_LOAD = 0.0D0
+        AREA = 0.0D0
+        AREA0 = 0.0D0
         !
         ! Compute initial area (area0)
         !
@@ -271,8 +277,8 @@ CONTAINS
         !
         ! Initialize state
         !
-        E_ELAS_KK_BAR = 0.0_RK
-        SIG_VEC_N = 0.0_RK
+        E_ELAS_KK_BAR = 0.0D0
+        SIG_VEC_N = 0.0D0
         C_ANGS = C0_ANGS
         !
         ! Initialize elvol arrays (and associated) iff it needs to be printed
@@ -284,8 +290,8 @@ CONTAINS
             ALLOCATE(ELVOL_0(EL_SUB1:EL_SUP1))
             ALLOCATE(ECOORDS(0:KDIM1, EL_SUB1:EL_SUP1))
             !
-            ELVOL = 0.0_RK
-            ELVOL_0 = 0.0_RK
+            ELVOL = 0.0D0
+            ELVOL_0 = 0.0D0
             CALL PART_GATHER(ECOORDS, COORDS, NODES, DTRACE)
             CALL CALC_ELVOL(ELVOL_0, ECOORDS)
             !
@@ -293,21 +299,21 @@ CONTAINS
         !
         ! Initialize integrated quantities
         !
-        GAMMA = 0.0_RK
-        EQPLSTRAIN = 0.0_RK
-        EQSTRAIN   = 0.0_RK
+        GAMMA = 0.0D0
+        EQPLSTRAIN = 0.0D0
+        EQSTRAIN   = 0.0D0
         !
         ! Initialize deformation control
         !
         INCR = 0
-        TIME = 0.0_RK
+        TIME = 0.0D0
         ISTEP = 1
         INCR = 0
         STEP_COMPLETE = .FALSE.
         DTIME = TIME_STEP(1)   
         S_PERT_MAG = MIN_PERT_FRAC*ABS(INITIAL_VEL)
         T_PERT_MAG = MIN_PERT_FRAC*ABS(INITIAL_VEL)
-        CURR_EQSTRAIN = 0.0_RK
+        CURR_EQSTRAIN = 0.0D0
         !
         ! Estimate bulk elastic moduli
         ! Assume uniform texture and equal element volumes
@@ -404,7 +410,7 @@ CONTAINS
         !
         ! Initialize shear rates
         !
-        GAMMADOT = 0.0_RK
+        GAMMADOT = 0.0D0
         !
         CONVERGED_SOLUTION = .TRUE.
         !
@@ -749,13 +755,13 @@ CONTAINS
         !        
         DO II = 1, 3
             !
-            MACRO_ENG_STRAIN(II) = LENGTH(II) / LENGTH0(II) - 1.0_RK
+            MACRO_ENG_STRAIN(II) = LENGTH(II) / LENGTH0(II) - 1.0D0
             !
         END DO
         !
         ! Calculate the current increment macroscopic eqstrain
         !
-        CURR_EQSTRAIN = (2. / 3. ) * SQRT( (3 * ((MACRO_ENG_STRAIN(1) ** 2) &
+        CURR_EQSTRAIN = (2. / 3. ) * DSQRT( (3 * ((MACRO_ENG_STRAIN(1) ** 2) &
             & + (MACRO_ENG_STRAIN(2) ** 2) + (MACRO_ENG_STRAIN(3) ** 2))/2))
         !
         ! Print the macroscopic strain values to console for monitoring
@@ -980,7 +986,7 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE READ_CTRL_DATA_CSR(VELOCITY)
+    SUBROUTINE PROCESS_CTRL_DATA_CSR(VELOCITY)
     !
     ! Read data for triaxial load control at constant strain rate.
     !
@@ -1018,7 +1024,7 @@ CONTAINS
     NSTEPS = TRIAXCSR_OPTIONS%NUMBER_OF_CSR_LOAD_STEPS
     PRIMARY_DIR = BCS_OPTIONS%LOADING_DIRECTION + 1
     USER_STRAIN_RATE = BCS_OPTIONS%STRAIN_RATE
-    DIFF_STRESS = 0.0_RK
+    DIFF_STRESS = 0.0D0
     !
     ! Allocate the arrays for the load target sequence.
     !
@@ -1073,7 +1079,7 @@ CONTAINS
         !
         IF (UNIAXIAL_OPTIONS%STRAIN_RATE_JUMP(II,1) .EQ. -1) THEN
             !
-            CALL PAR_QUIT('Error  :     > Inputted `number_of_strain_rate_jumps`&
+            CALL PAR_QUIT('Error  :     > Input `number_of_strain_rate_jumps`&
                 & does not match number of defined `strain_rate_jumps`.')
             !
         END IF
@@ -1115,13 +1121,13 @@ CONTAINS
             !
             DIFF_STRESS = (TRIAXCSR_OPTIONS%TARGET_CSR_LOAD(I,PRIMARY_DIR))
             !
-            IF (DIFF_STRESS .GT. 0.0_RK) THEN
+            IF (DIFF_STRESS .GT. 0.0D0) THEN
                 !
                 IS_SIGNED(I)   = .FALSE.
                 TARGET_SIGN(I) = 1
                 !VEL_FACTOR(I)  = 1
                 !
-            ELSE IF (DIFF_STRESS .LT. 0.0_RK) THEN
+            ELSE IF (DIFF_STRESS .LT. 0.0D0) THEN
                 !
                 IS_SIGNED(I) = .TRUE.
                 TARGET_SIGN(I) = -1
@@ -1156,12 +1162,12 @@ CONTAINS
             DIFF_STRESS = (TRIAXCSR_OPTIONS%TARGET_CSR_LOAD(I,PRIMARY_DIR)) &
                 & - (TRIAXCSR_OPTIONS%TARGET_CSR_LOAD(I-1,PRIMARY_DIR))
             !
-            IF (DIFF_STRESS .GT. 0.0_RK) THEN
+            IF (DIFF_STRESS .GT. 0.0D0) THEN
                 !
                 IS_SIGNED(I)   = .FALSE.
                 TARGET_SIGN(I) = 1
                 !
-            ELSE IF (DIFF_STRESS .LT. 0.0_RK) THEN
+            ELSE IF (DIFF_STRESS .LT. 0.0D0) THEN
                 !                
                 IS_SIGNED(I) = .TRUE.
                 TARGET_SIGN(I) = -1
@@ -1195,7 +1201,7 @@ CONTAINS
     !
     RETURN
     !
-    END SUBROUTINE READ_CTRL_DATA_CSR
+    END SUBROUTINE PROCESS_CTRL_DATA_CSR
     !
     !===========================================================================
     !
@@ -1205,7 +1211,7 @@ CONTAINS
     !
     ! Read triaxial CSR restart information.
     !
-    !--------------------------------------------------------------------------- 
+    !---------------------------------------------------------------------------
     !
     ! Arguments:
     ! Needs to be defined - JC
@@ -1213,8 +1219,8 @@ CONTAINS
     LOGICAL, INTENT(OUT)  :: STEP_COMPLETE
     INTEGER, INTENT(OUT)  :: ISTEP
     INTEGER, INTENT(OUT)  :: INCR
-    REAL(RK), INTENT(OUT) :: CURR_LOAD(3), PREV_LOAD(3)  
-    REAL(RK), INTENT(OUT) :: DTIME, TIME    
+    REAL(RK), INTENT(OUT) :: CURR_LOAD(3), PREV_LOAD(3)
+    REAL(RK), INTENT(OUT) :: DTIME, TIME
     REAL(RK), INTENT(OUT) :: SURF_LOAD_ARRAY(NSURFACES,3)
     REAL(RK), INTENT(OUT) :: AREA(NSURFACES), AREA0(NSURFACES)
     REAL(RK), INTENT(OUT) :: LENGTH(3), LENGTH0(3)
@@ -1244,7 +1250,7 @@ CONTAINS
     READ(MYUNIT) TIME
     !
     DO ISURF = 1, NSURFACES
-        !    
+        !
         READ(MYUNIT) SURF_LOAD_ARRAY(ISURF,:)
         !
     ENDDO

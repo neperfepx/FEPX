@@ -10,12 +10,19 @@ MODULE BOUNDARY_CONDITIONS_MOD
 ! CALC_BCS: Calculate grip, symmetry, or initial triaxial boundary conditions.
 ! READ_BCS: Read boundary conditions from file.
 !
-USE INTRINSICTYPESMODULE, ONLY: RK=>REAL_KIND
+! From libf95:
+!
+USE INTRINSIC_TYPES_MOD, ONLY: RK=>REAL_KIND
+!
+! From libfepx:
 !
 USE READ_INPUT_MOD, ONLY: COORDS, DOF_SUB1, DOF_SUP1, NP_SUB1, NP_SUP1,&
     & BCS_OPTIONS, OPTIONS
-USE PARALLEL_MOD, ONLY: PAR_MAX, PAR_MIN, PAR_QUIT, PAR_MESSAGE, MYID
 USE UNITS_MOD
+!
+! From libparallel:
+!
+USE PARALLEL_MOD, ONLY: PAR_MAX, PAR_MIN, PAR_QUIT, PAR_MESSAGE, MYID
 !
 IMPLICIT NONE
 !
@@ -108,8 +115,8 @@ CONTAINS
     !
     ! Initialize variables.
     GLOBAL_BCS = .FALSE.
-    GLOBAL_VEL = 0.0_RK
-    GLOBAL_FORCE = 0.0_RK
+    GLOBAL_VEL = 0.0D0
+    GLOBAL_FORCE = 0.0D0
     !
     ! Read in boundary condition type from the options module.
     BOUNDARY_CONDITIONS = BCS_OPTIONS%BOUNDARY_CONDITIONS
@@ -196,7 +203,7 @@ CONTAINS
         !
         ! Locate the extrema for our coordinate of interest in spatial mesh.
         ALLOCATE(TEMP(0:SIZE(GLOBAL_COORDS)/3))
-        TEMP = 0.0_RK
+        TEMP = 0.0D0
         J = 0
         !
         DO I = DOF_SUB1, DOF_SUP1, 3
@@ -236,9 +243,9 @@ CONTAINS
                 GLOBAL_BCS(I+1) = .TRUE.
                 GLOBAL_BCS(I+2) = .TRUE.
                 !
-                GLOBAL_VEL(I)   = 0.0_RK
-                GLOBAL_VEL(I+1) = 0.0_RK
-                GLOBAL_VEL(I+2) = 0.0_RK
+                GLOBAL_VEL(I)   = 0.0D0
+                GLOBAL_VEL(I+1) = 0.0D0
+                GLOBAL_VEL(I+2) = 0.0D0
                 !
             ! If the coordinate component is on the LOADING_FACE.
             ELSE IF ((GLOBAL_COORDS(I+COORD_OFFSET)) .EQ. MAX_SPATIAL_DIM) THEN
@@ -304,7 +311,7 @@ CONTAINS
         !
         ! Locate the extrema for our coordinate of interest in spatial mesh.
         ALLOCATE(TEMP(0:SIZE(GLOBAL_COORDS)/3))
-        TEMP = 0.0_RK
+        TEMP = 0.0D0
         ! First, consider the loading and control faces.
         J = 0
         DO I = DOF_SUB1, DOF_SUP1, 3
@@ -365,7 +372,7 @@ CONTAINS
                 !
                 GLOBAL_BCS(I+SYMM_OFFSET_1) = .TRUE.
                 !
-                GLOBAL_VEL(I+SYMM_OFFSET_1) = 0.0_RK
+                GLOBAL_VEL(I+SYMM_OFFSET_1) = 0.0D0
                 !
             END IF
         END DO
@@ -376,7 +383,7 @@ CONTAINS
                 !
                 GLOBAL_BCS(I+SYMM_OFFSET_2) = .TRUE.
                 !
-                GLOBAL_VEL(I+SYMM_OFFSET_2) = 0.0_RK
+                GLOBAL_VEL(I+SYMM_OFFSET_2) = 0.0D0
                 !
             END IF
         END DO
@@ -387,7 +394,7 @@ CONTAINS
                 !
                 GLOBAL_BCS(I + LOAD_DIRECTION) = .TRUE.
                 !
-                GLOBAL_VEL(I + LOAD_DIRECTION) = 0.0_RK
+                GLOBAL_VEL(I + LOAD_DIRECTION) = 0.0D0
                 !
             ! If the coordinate component is on the LOADING_FACE.
             ELSE IF ((GLOBAL_COORDS(I+LOAD_DIRECTION)) .EQ. MAX_SPATIAL_DIM) THEN
@@ -415,16 +422,16 @@ CONTAINS
         ! and set to zero.
         !
         ! Initialize dimension variables.
-        MIN_X_DIM = 0.0_RK
-        MAX_X_DIM = 0.0_RK
-        MIN_Y_DIM = 0.0_RK
-        MAX_Y_DIM = 0.0_RK
-        MIN_Z_DIM = 0.0_RK
-        MAX_Z_DIM = 0.0_RK
+        MIN_X_DIM = 0.0D0
+        MAX_X_DIM = 0.0D0
+        MIN_Y_DIM = 0.0D0
+        MAX_Y_DIM = 0.0D0
+        MIN_Z_DIM = 0.0D0
+        MAX_Z_DIM = 0.0D0
         !
         ! Locate the extrema for our coordinate of interest in spatial mesh.
         ALLOCATE(TEMP(0:SIZE(GLOBAL_COORDS)/3))
-        TEMP = 0.0_RK
+        TEMP = 0.0D0
         !
         ! Loop over all load directions to find surface nodes.
         DO LOAD_DIRECTION = 0, 2
@@ -468,13 +475,13 @@ CONTAINS
                 !
                 GLOBAL_BCS(I + 0) = .TRUE.
                 !
-                GLOBAL_VEL(I + 0) = 0.0_RK
+                GLOBAL_VEL(I + 0) = 0.0D0
                 !
             ELSE IF ((GLOBAL_COORDS(I + 0)) .EQ. MAX_X_DIM) THEN
                 !
                 GLOBAL_BCS(I + 0) = .TRUE.
                 !
-                GLOBAL_VEL(I + 0) = 0.0_RK
+                GLOBAL_VEL(I + 0) = 0.0D0
                 !
             END IF
             !
@@ -486,13 +493,13 @@ CONTAINS
                 !
                 GLOBAL_BCS(I + 1) = .TRUE.
                 !
-                GLOBAL_VEL(I + 1) = 0.0_RK
+                GLOBAL_VEL(I + 1) = 0.0D0
                 !
             ELSE IF ((GLOBAL_COORDS(I + 1)) .EQ. MAX_Y_DIM) THEN
                 !
                 GLOBAL_BCS(I + 1) = .TRUE.
                 !
-                GLOBAL_VEL(I + 1) = 0.0_RK
+                GLOBAL_VEL(I + 1) = 0.0D0
                 !
             END IF
             !
@@ -504,13 +511,13 @@ CONTAINS
                 !
                 GLOBAL_BCS(I + 2) = .TRUE.
                 !
-                GLOBAL_VEL(I + 2) = 0.0_RK
+                GLOBAL_VEL(I + 2) = 0.0D0
                 !
             ELSE IF ((GLOBAL_COORDS(I + 2)) .EQ. MAX_Z_DIM) THEN
                 !
                 GLOBAL_BCS(I + 2) = .TRUE.
                 !
-                GLOBAL_VEL(I + 2) = 0.0_RK
+                GLOBAL_VEL(I + 2) = 0.0D0
                 !
             END IF
             !
@@ -559,16 +566,16 @@ CONTAINS
         BCS_OPTIONS%LOADING_FACE = LOADING_FACE
         !
         ! Initialize dimension variables.
-        MIN_X_DIM = 0.0_RK
-        MAX_X_DIM = 0.0_RK
-        MIN_Y_DIM = 0.0_RK
-        MAX_Y_DIM = 0.0_RK
-        MIN_Z_DIM = 0.0_RK
-        MAX_Z_DIM = 0.0_RK
+        MIN_X_DIM = 0.0D0
+        MAX_X_DIM = 0.0D0
+        MIN_Y_DIM = 0.0D0
+        MAX_Y_DIM = 0.0D0
+        MIN_Z_DIM = 0.0D0
+        MAX_Z_DIM = 0.0D0
         !
         ! Locate the extrema for our coordinate of interest in spatial mesh.
         ALLOCATE(TEMP(0:SIZE(GLOBAL_COORDS)/3))
-        TEMP = 0.0_RK
+        TEMP = 0.0D0
         !
         ! Loop over all load directions to find surface nodes.
         DO I = 0, 2
@@ -639,7 +646,7 @@ CONTAINS
                 !
                 GLOBAL_BCS(I + LOAD_DIRECTION) = .TRUE.
                 !
-                GLOBAL_VEL(I + LOAD_DIRECTION) = 0.0_RK
+                GLOBAL_VEL(I + LOAD_DIRECTION) = 0.0D0
                 !
             ! If the coordinate component is on the LOADING_FACE.
             ELSE IF ((GLOBAL_COORDS(I+LOAD_DIRECTION)) .EQ. MAX_SPATIAL_DIM) THEN
@@ -667,9 +674,9 @@ CONTAINS
                         GLOBAL_BCS(I+1) = .TRUE.
                         GLOBAL_BCS(I+2) = .TRUE.
                         !
-                        GLOBAL_VEL(I+0) = 0.0_RK
-                        GLOBAL_VEL(I+1) = 0.0_RK
-                        GLOBAL_VEL(I+2) = 0.0_RK
+                        GLOBAL_VEL(I+0) = 0.0D0
+                        GLOBAL_VEL(I+1) = 0.0D0
+                        GLOBAL_VEL(I+2) = 0.0D0
                         !
                     END IF
                     !
@@ -724,7 +731,7 @@ CONTAINS
                         ! If we reach here then fixed this nodes values.
                         GLOBAL_BCS(I+ROTATION_DIR) = .TRUE.
                         !
-                        GLOBAL_VEL(I+ROTATION_DIR) = 0.0_RK
+                        GLOBAL_VEL(I+ROTATION_DIR) = 0.0D0
                         !
                     END IF
                     !
@@ -795,8 +802,8 @@ CONTAINS
     !
     ! Initialize variables.
     BCS = .FALSE.
-    VELOCITY = 0.0_RK
-    FORCE = 0.0_RK
+    VELOCITY = 0.0D0
+    FORCE = 0.0D0
     !
     IOFILE = 'simulation.bcs'
     !

@@ -5,7 +5,7 @@
 # Top-level CMakeLists.txt for building FEPX
 cmake_minimum_required(VERSION 2.8)
 project(fepx Fortran)
-set(FEPX_VERSION \"1.1.0\")
+set(FEPX_VERSION \"1.1.1\")
 
 # Prepare CMake for Fortran and locate MPI package
 enable_language(Fortran)

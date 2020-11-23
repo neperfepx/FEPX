@@ -13,6 +13,7 @@
 *.mv*
 *.dvi
 *.info
+*.swp
 
 /lib/libf95/modules
 /lib/libparallel/modules_serial
@@ -31,3 +32,8 @@
 *.toc
 
 fepx.pdf
+
+# Ignore sed -e files
+VERSIONS-e
+*.f90-e
+*.texi-e

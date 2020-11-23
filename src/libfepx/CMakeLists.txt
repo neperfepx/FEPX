@@ -10,45 +10,37 @@ file(GLOB libfepx_src
     aniso_evps_mod.f90
     aniso_vp_lag.f90
     boundary_conditions_mod.f90
-    ConvergenceModule.f90
-    CrystalTypeModule.f90
-    DimsModule.f90
-    Dpeff.f90
+    conjugate_gradient_mod.f90
+    convergence_mod.f90
+    crystal_type_mod.f90
+    dimensions_mod.f90
     driver_iso_vp_mod.f90
-    driver_uniaxial_control_mod.f90
     driver_triaxclr_mod.f90
     driver_triaxcsr_mod.f90
+    driver_uniaxial_control_mod.f90
     driver_utilities_mod.f90
-    elemental_variables_utils_mod.f90
-    F90UtilitiesModule.f90
     fiber_average_mod.f90
-    Hardening.f90
-    hart.f90
-    itstress_evps_lag.f90
-    itstress_vp_lag.f90
-    KinematicsModule.f90
-    material_mtx_evps_lag.f90
-    material_mtx_vp_lag.f90
-    read_input_mod.f90
+    hardening_mod.f90
+    iterate_stress_evps_mod.f90
+    iterate_stress_vp_mod.f90
+    kinematics_mod.f90
+    material_matrix_evps_mod.f90
+    material_matrix_vp_mod.f90
     matrix_operations_mod.f90
-    microstructure.f90
+    microstructure_mod.f90
     orientation_conversion_mod.f90
-    parallel-matrix.f90
-    pcg_solver.f90
-    poly_response_evps_lag.f90
-    quadrature.f90
-    rstarn_solve_lag.f90
-    shape_2d.f90
-    shape_3d.f90
-    StiffnessEvpsModule.f90
-    stiffness_vp_lag.f90
-    stress_deform_lag.f90
+    polycrystal_response_evps_mod.f90
+    quadrature_mod.f90
+    read_input_mod.f90
+    rstarn_solve_mod.f90
+    shape_2d_mod.f90
+    shape_3d_mod.f90
+    stiffness_evps_mod.f90
+    stiffness_vp_mod.f90
     stress_solve_evps_mod.f90
-    stress_solve_vp_lag.f90
-    surface.f90
-    surf_info.f90
-    Tensor3DModule.f90
-    units.f90
+    stress_solve_vp_mod.f90
+    surface_mod.f90
+    units_mod.f90
     write_output_mod.f90
     )
 

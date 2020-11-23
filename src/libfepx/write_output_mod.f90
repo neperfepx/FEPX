@@ -31,17 +31,23 @@ MODULE WRITE_OUTPUT_MOD
 ! To do:
 ! - is PROB_TYPE necessary for PRINT_STEP?
 !
-USE INTRINSICTYPESMODULE, ONLY: RK=>REAL_KIND
-USE PARALLEL_MOD
+! From libf95:
 !
-USE DIMSMODULE
-USE CONSTANTSMODULE, ONLY: RK_PI_OVER_180, RK_ROOT_2
-USE READ_INPUT_MOD
+USE INTRINSIC_TYPES_MOD, ONLY: RK=>REAL_KIND
+!
+! From libfepx:
+!
+USE DIMENSIONS_MOD
+USE MATRIX_OPERATIONS_MOD
 USE MICROSTRUCTURE_MOD
 USE ORIENTATION_CONVERSION_MOD
-USE SURF_INFO_MOD, ONLY: NSURFACES
+USE READ_INPUT_MOD
+USE SURFACE_MOD, ONLY: NSURFACES
 USE UNITS_MOD
-USE MATRIX_OPERATIONS_MOD
+!
+! From libparallel
+!
+USE PARALLEL_MOD
 !
 IMPLICIT NONE
 !
@@ -196,7 +202,7 @@ CONTAINS
         !
         ! Determine passive (C2S) or active (S2C) from orientation options
         !
-        ORIENT_INT = 0.0_RK
+        ORIENT_INT = 0.0D0
         IF (ORIENTATION_OPTIONS%ORIENTATION_CONVENTION .EQ. &
             & 'passive') THEN
             !
@@ -415,7 +421,7 @@ CONTAINS
                 !
                 DO IGRAIN = 0, NGRAIN1
                     !
-                    ELAS_SAM = 0.0_RK
+                    ELAS_SAM = 0.0D0
                     CALL STRAIN_TO_SAMPLE(ELAS(:, IGRAIN, I), &
                         & ORIENT(:, :, IGRAIN, I), ELAS_SAM)
                     !
@@ -600,8 +606,8 @@ CONTAINS
             !
             DO I = EL_SUB1, EL_SUP1
                 !
-                DP_HAT_MAT = 0.0_RK
-                DP_HAT_SAM = 0.0_RK
+                DP_HAT_MAT = 0.0D0
+                DP_HAT_SAM = 0.0D0
                 !
                 ! Convert the transpose of the elemental rotation matrix into 
                 ! an operator on 5-vectors. The transpose outputs QR5X5 in 
@@ -781,7 +787,7 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    EQSTRESS = 0.0_RK
+    EQSTRESS = 0.0D0
     !
     DO I = EL_SUB1, EL_SUP1
         !
@@ -790,7 +796,7 @@ CONTAINS
             & ((S(2, 2, I) - S(0, 0, I)) ** 2) + &
             & (6 * ((S(0, 1, I) ** 2) + (S(1, 2, I) ** 2) + (S(2, 0, I) ** 2))))
         !
-        EQSTRESS(I) = EQSTRESS(I) * (1.0_RK / RK_ROOT_2)
+        EQSTRESS(I) = EQSTRESS(I) * (1.0D0 / DSQRT(2.0D0))
         !
     ENDDO
     !
@@ -827,10 +833,10 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    ELAS_SAM = 0.0_RK
-    ELAS_33 = 0.0_RK
-    ELAS_SAM_33 = 0.0_RK
-    TEMP = 0.0_RK
+    ELAS_SAM = 0.0D0
+    ELAS_33 = 0.0D0
+    ELAS_SAM_33 = 0.0D0
+    TEMP = 0.0D0
     !
     ! Put 6-vector into 3x3 matrix
     !

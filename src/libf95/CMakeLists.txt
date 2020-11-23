@@ -5,14 +5,12 @@
 message(STATUS "Preparing library: libf95")
 
 file(GLOB libf95_src
-    IntrinsicTypesModule.f90
-    ConstantsModule.f90
-    StringsModule.f90
-    FilesModule.f90
-    TimerModule.f90
-    CommandModule.f90
-    OptimModule.f90
-    LibF95.f90
+    command_mod.f90
+    files_mod.f90
+    intrinsic_types_mod.f90
+    libf95.f90
+    strings_mod.f90
+    timer_mod.f90
     )
 
 add_library(libf95 STATIC ${libf95_src})

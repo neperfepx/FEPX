@@ -12,33 +12,39 @@ MODULE DRIVER_UTILITIES_MOD
 !   and macroscopic loads.
 ! EST_AVG_MOD: Estimate bulk elastic moduli. Assumes a uniform texture and 
 !   equal valued element volumes.
-! SOLVE_LIN_SYS_3: Solve a linear system of three equations.
 ! TEMP_UPDATE_STATE_EVPS: Temporarily updates state at center of element only.
 ! UPDATE_STATE_EVPS: Update crystal states for entire mesh.
 ! VELOCITY_ITERATION: Perform iteration on velocity field.
 !
-USE IntrinsicTypesModule, RK=>REAL_KIND
+! From libf95:
 !
-USE DIMSMODULE
-USE GATHER_SCATTER
-USE ITMETHODEVPSMODULE
-USE KINEMATICSMODULE
-USE READ_INPUT_MOD
-USE MICROSTRUCTURE_MOD
-USE PARALLEL_MOD
-USE POLYCRYSTALRESPONSEEVPSMODULE
-USE QUADRATURE_MOD
-USE RSTARN_SOLVE_LAG_MOD
-USE SHAPE_3D_MOD
-USE SURF_INFO_MOD
-USE UNITS_MOD
+USE INTRINSIC_TYPES_MOD, ONLY: RK=>REAL_KIND
+!
+! From libfepx:
+!
+USE DIMENSIONS_MOD
+USE ITERATE_STRESS_EVPS_MOD
+USE KINEMATICS_MOD
 USE MATRIX_OPERATIONS_MOD
+USE MICROSTRUCTURE_MOD
+USE POLYCRYSTAL_RESPONSE_EVPS_MOD
+USE QUADRATURE_MOD
+USE READ_INPUT_MOD
+USE RSTARN_SOLVE_MOD
+USE SHAPE_3D_MOD
+USE SURFACE_MOD
+USE UNITS_MOD
+!
+! From libparallel:
+!
+USE GATHER_SCATTER_MOD
+USE PARALLEL_MOD
 !
 IMPLICIT NONE
 !
 PRIVATE
 !
-PUBLIC :: CALC_MESH_DIM, CALC_STRESS_STRAIN, EST_AVG_MOD, SOLVE_LIN_SYS_3, &
+PUBLIC :: CALC_MESH_DIM, CALC_STRESS_STRAIN, EST_AVG_MOD, &
     & TEMP_UPDATE_STATE_EVPS, UPDATE_STATE_EVPS, VELOCITY_ITERATION
 !
 CONTAINS
@@ -116,16 +122,16 @@ CONTAINS
     ! Needs to be defined - JC
     !
     REAL(RK), POINTER :: E_ELAS_VEC_DEV_TMP(:,:,:) => NULL()
-    REAL(RK)  ::  E_ELAS_VEC_DEV(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK)  ::  E_ELAS_KK_GRN(0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK)  ::  S_KK_GRN(0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK)  ::  ELAS_T3X3(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK)  ::  V_TENSOR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK)  ::  DETERM_V(0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK)  ::  QR5X5(0:TVEC1, 0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK)  ::  SIG_SM(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK)  ::  S_AVG(0:TVEC1,  EL_SUB1:EL_SUP1)
-    REAL(RK)  ::  S_AVG_KK(EL_SUB1:EL_SUP1)
+    REAL(RK) :: E_ELAS_VEC_DEV(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: E_ELAS_KK_GRN(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: S_KK_GRN(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: ELAS_T3X3(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: V_TENSOR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: DETERM_V(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: QR5X5(0:TVEC1, 0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: SIG_SM(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: S_AVG(0:TVEC1,  EL_SUB1:EL_SUP1)
+    REAL(RK) :: S_AVG_KK(EL_SUB1:EL_SUP1)
     REAL(RK), ALLOCATABLE :: SIG_AVG_ALL(:)
     INTEGER :: MY_PHASE(0:(EL_SUP1-EL_SUB1))
     INTEGER :: M_EL, EL_DOF_MIN, EL_DOF_MAX, IDOF, I, J, K
@@ -193,9 +199,9 @@ CONTAINS
     !
     ! Elastic strain tensor: deviatoric + volumetric
     !
-    ELAS_T3X3(0,0,:,:) = ELAS_T3X3(0,0,:,:) + E_ELAS_KK_GRN/3.0_RK
-    ELAS_T3X3(1,1,:,:) = ELAS_T3X3(1,1,:,:) + E_ELAS_KK_GRN/3.0_RK
-    ELAS_T3X3(2,2,:,:) = ELAS_T3X3(2,2,:,:) + E_ELAS_KK_GRN/3.0_RK
+    ELAS_T3X3(0,0,:,:) = ELAS_T3X3(0,0,:,:) + E_ELAS_KK_GRN / 3.0D0
+    ELAS_T3X3(1,1,:,:) = ELAS_T3X3(1,1,:,:) + E_ELAS_KK_GRN / 3.0D0
+    ELAS_T3X3(2,2,:,:) = ELAS_T3X3(2,2,:,:) + E_ELAS_KK_GRN / 3.0D0
     !
     ! Elastic strain tensor in 6-vec format
     !
@@ -213,7 +219,7 @@ CONTAINS
     !
     DO I = 0, DIMS1
         !
-        V_TENSOR(I, I, :, :) = ELAS_T3X3(I, I, :, :) + 1.0_RK
+        V_TENSOR(I, I, :, :) = ELAS_T3X3(I, I, :, :) + 1.0D0
         !
     END DO
     !
@@ -254,8 +260,8 @@ CONTAINS
     !
     ! Average Cauchy stress (sample COORDS)
     !
-    S_AVG = 0.0_RK
-    S_AVG_KK = 0.0_RK
+    S_AVG = 0.0D0
+    S_AVG_KK = 0.0D0
     !
     ! Get weighted average
     !
@@ -275,9 +281,9 @@ CONTAINS
     !
     ! Total stress tensor: deviatoric + volumetric
     !
-    S_AVG_3X3(0,0,:) = S_AVG_3X3(0,0,:) + S_AVG_KK/3.0_RK
-    S_AVG_3X3(1,1,:) = S_AVG_3X3(1,1,:) + S_AVG_KK/3.0_RK
-    S_AVG_3X3(2,2,:) = S_AVG_3X3(2,2,:) + S_AVG_KK/3.0_RK
+    S_AVG_3X3(0,0,:) = S_AVG_3X3(0,0,:) + S_AVG_KK / 3.0D0
+    S_AVG_3X3(1,1,:) = S_AVG_3X3(1,1,:) + S_AVG_KK / 3.0D0
+    S_AVG_3X3(2,2,:) = S_AVG_3X3(2,2,:) + S_AVG_KK / 3.0D0
     !
     ! Update surface information.
     !
@@ -321,7 +327,8 @@ CONTAINS
     ! E_AVG:
     ! NU_AVG:
     !
-    REAL(RK), INTENT(OUT) :: E_avg, nu_avg
+    REAL(RK), INTENT(OUT) :: E_AVG
+    REAL(RK), INTENT(OUT) :: NU_AVG
     !
     ! Locals:
     ! MY_PHASE:
@@ -336,23 +343,33 @@ CONTAINS
     ! F, G, H:
     !
     INTEGER :: MY_PHASE(EL_SUB1:EL_SUP1)
-    INTEGER :: i, IPHASE
-    REAL(RK) :: part_numel_phase, numel_phase
-    REAL(RK) :: phase_frac
-    REAL(RK) :: K_phase, E_phase, nu_phase
-    REAL(RK) :: c11, c12, c13, c33, c44, c66
-    REAL(RK) :: F, G, H
+    INTEGER :: I, IPHASE
+    REAL(RK) :: PART_NUMEL_PHASE
+    REAL(RK) :: NUMEL_PHASE
+    REAL(RK) :: PHASE_FRAC
+    REAL(RK) :: K_PHASE
+    REAL(RK) :: E_PHASE
+    REAL(RK) :: NU_PHASE
+    REAL(RK) :: C11
+    REAL(RK) :: C12
+    REAL(RK) :: C13
+    REAL(RK) :: C33
+    REAL(RK) :: C44
+    REAL(RK) :: C66
+    REAL(RK) :: F
+    REAL(RK) :: G
+    REAL(RK) :: H
     !      
     !---------------------------------------------------------------------------
     !
     MY_PHASE(:) = PHASE(EL_SUB1:EL_SUP1)
     !
-    E_AVG = 0.0
-    NU_AVG = 0.0
+    E_AVG = 0.0D0
+    NU_AVG = 0.0D0
     !
     DO IPHASE = 1, NUMPHASES
         !
-        PART_NUMEL_PHASE = 0.0_RK
+        PART_NUMEL_PHASE = 0.0D0
         !        
         DO I = EL_SUB1, EL_SUP1
             !
@@ -365,7 +382,7 @@ CONTAINS
         END DO
         !
         CALL PAR_SUM(PART_NUMEL_PHASE, NUMEL_PHASE)
-        PHASE_FRAC = NUMEL_PHASE/REAL(NUMELM, RK) 
+        PHASE_FRAC = NUMEL_PHASE / REAL(NUMELM, RK)
         !
         IF ((IPHASE .EQ. 1) .OR. (IPHASE .EQ. 2)) THEN
             !
@@ -399,82 +416,16 @@ CONTAINS
         END IF
         !
         K_PHASE = CRYSTAL_PARM(8, IPHASE)
-        NU_PHASE = (3*K_PHASE-E_PHASE)/(6*K_PHASE)
+        NU_PHASE = (3 * K_PHASE - E_PHASE)/(6 * K_PHASE)
         !
-        E_AVG = E_AVG + PHASE_FRAC*E_PHASE
-        NU_AVG = NU_AVG + PHASE_FRAC*NU_PHASE
+        E_AVG = E_AVG + PHASE_FRAC * E_PHASE
+        NU_AVG = NU_AVG + PHASE_FRAC * NU_PHASE
         !
     END DO
     !
     RETURN
     !  
     END SUBROUTINE EST_AVG_MOD
-    !
-    !===========================================================================
-    !
-    SUBROUTINE SOLVE_LIN_SYS_3(MAT, VEC, SOL)
-    !
-    ! Solve a linear system of three equations. Used for triaxial loading.
-    !      
-    !---------------------------------------------------------------------------
-    !      
-    ! Arguments:
-    !
-    REAL(RK), INTENT(IN) :: MAT(3,3)
-    REAL(RK), INTENT(IN) :: VEC(3)
-    REAL(RK), INTENT(OUT) :: SOL(3)
-    !
-    ! Locals:
-    !
-    REAL(RK) :: INV(3,3)
-    REAL(RK) :: A, B, C, D, E, F, G, H, K
-    REAL(RK) :: DET, MATNORM, INVNORM, COND
-    !      
-    !---------------------------------------------------------------------------
-    !      
-    A = MAT(1, 1)
-    B = MAT(1, 2)
-    C = MAT(1, 3)
-    D = MAT(2, 1)
-    E = MAT(2, 2)
-    F = MAT(2, 3)
-    G = MAT(3, 1)
-    H = MAT(3, 2)
-    K = MAT(3, 3)
-    !
-    DET = A * (E * K - F * H) - B * (D * K - F * G) + C * (D * H - E * G)
-    !
-    INV(1, 1) = (E * K - F * H) / DET
-    INV(1, 2) = (C * H - B * K) / DET
-    INV(1, 3) = (B * F - C * E) / DET
-    INV(2, 1) = (F * G - D * K) / DET
-    INV(2, 2) = (A * K - C * G) / DET
-    INV(2, 3) = (C * D - A * F) / DET
-    INV(3, 1) = (D * H - E * G) / DET
-    INV(3, 2) = (B * G - A * H) / DET
-    INV(3, 3) = (A * E - B * D) / DET
-    !
-    SOL = MATMUL(INV, VEC)
-    !
-    ! Find conditioning number
-    !
-    MATNORM = MAX(MAT(1, 1) + MAT(1, 2) + MAT(1, 3), &
-         & MAT(2, 1) + MAT(2, 2) + MAT(2, 3), &
-         & MAT(3, 1) + MAT(3, 2) + MAT(3, 3))
-    INVNORM = MAX(INV(1, 1) + INV(1, 2) + INV(1, 3), &
-         & INV(2, 1) + INV(2, 2) + INV(2, 3), &
-         & INV(3, 1) + INV(3, 2) + INV(3, 3))
-    COND = MATNORM * INVNORM
-    !
-    IF (COND .GT. 1e3) THEN
-        !
-        CALL PAR_QUIT('Error  :     > Matrix is poorly conditioned.')
-        !
-    ENDIF
-    !
-    RETURN
-    !
-    END SUBROUTINE solve_lin_sys_3
     !
     !===========================================================================
     !
@@ -551,8 +502,8 @@ CONTAINS
     !
     M_EL = EL_SUP1 - EL_SUB1 + 1
     !
-    SQR2  = SQRT(2.0_RK)
-    SQR32 = SQRT(1.5_RK)
+    SQR2  = DSQRT(2.0D0)
+    SQR32 = DSQRT(1.5D0)
     !
     ! COORDS --> ECOORDS [30 x m]
     ! velocity --> EVEL  [30 x m]
@@ -562,9 +513,9 @@ CONTAINS
     !
     ! Coordinates in the parent element
     !
-    LOC0 = 0.25_RK
-    LOC1 = 0.25_RK
-    LOC2 = 0.25_RK
+    LOC0 = 0.25D0
+    LOC1 = 0.25D0
+    LOC2 = 0.25D0
     !
     ! Initialize state variables at centroid
     !
@@ -705,23 +656,23 @@ CONTAINS
     REAL(RK) :: EVEL(0:KDIM1, EL_SUB1:EL_SUP1)
     REAL(RK) :: SQR2, SQR32
     REAL(RK) :: ALPHA(TVEC), ELAPSED
-    REAL(RK) ::  D_VEC_Q(0:TVEC1, EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  W_VEC_Q(0:DIMS1, EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  C_ANGS_Q(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  RSTAR_Q(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  SIG_VEC_N_Q(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  SIG_VEC_Q(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  E_BAR_VEC_Q(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  CRSS_Q(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  E_ELAS_KK_BAR_Q(EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  E_ELAS_KK_Q(EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  SIG_KK_Q(EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  DEFF_Q(EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  DEFF_G(0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK) ::  D_KK_Q(EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  SHEAR(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK) ::  SHRATE(0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK) ::  WP_SS(0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: D_VEC_Q(0:TVEC1, EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: W_VEC_Q(0:DIMS1, EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: C_ANGS_Q(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: RSTAR_Q(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: SIG_VEC_N_Q(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: SIG_VEC_Q(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: E_BAR_VEC_Q(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: CRSS_Q(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: E_ELAS_KK_BAR_Q(EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: E_ELAS_KK_Q(EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: SIG_KK_Q(EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: DEFF_Q(EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: DEFF_G(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: D_KK_Q(EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: SHEAR(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: SHRATE(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: WP_SS(0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     INTEGER :: E1, E2, M, IPHASE, NUMIND
     INTEGER, POINTER :: INDICES(:) => NULL()
     INTEGER :: MY_PHASE(0:(EL_SUP1-EL_SUB1))
@@ -732,8 +683,8 @@ CONTAINS
     !
     M_EL = EL_SUP1 - EL_SUB1 + 1
     !
-    SQR2  = SQRT(2.0_RK)
-    SQR32 = SQRT(1.5_RK)
+    SQR2  = DSQRT(2.0D0)
+    SQR32 = DSQRT(1.5D0)
     !
     ! Compute coordinates @(t+dt) using the velocity @(t+dt)
     !
@@ -854,9 +805,9 @@ CONTAINS
     !
     ! Coordinates in the parent element
     !
-    LOC0 = 0.25_RK
-    LOC1 = 0.25_RK
-    LOC2 = 0.25_RK
+    LOC0 = 0.25D0
+    LOC1 = 0.25D0
+    LOC2 = 0.25D0
     !
     ! Initialize state variables at centroid
     !
@@ -951,10 +902,10 @@ CONTAINS
     ! Fix STIF & FE to be used for stress post-processing.
     !
     ALPHA(1) = SQR2
-    ALPHA(2) = 1.0_RK / SQR32
-    ALPHA(3) = 1.0_RK / SQR2
-    ALPHA(4) = 1.0_RK / SQR2
-    ALPHA(5) = 1.0_RK / SQR2
+    ALPHA(2) = 1.0D0 / SQR32
+    ALPHA(3) = 1.0D0 / SQR2
+    ALPHA(4) = 1.0D0 / SQR2
+    ALPHA(5) = 1.0D0 / SQR2
     !
     DO J = 1, TVEC
         !
@@ -986,9 +937,6 @@ CONTAINS
     !
     ! Arguments:
     !
-    
-
-    
     LOGICAL, INTENT(IN) :: BCS(DOF_SUB1:DOF_SUP1)
     REAL(RK), INTENT(IN) :: PFORCE(DOF_SUB1:DOF_SUP1)
     REAL(RK), INTENT(INOUT) :: VELOCITY(DOF_SUB1:DOF_SUP1)

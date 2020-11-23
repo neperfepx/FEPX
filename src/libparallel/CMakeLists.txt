@@ -5,8 +5,8 @@
 message(STATUS "Preparing library: libparallel")
 
 file(GLOB libparallel_src
-    parallel.f90
-    gather-scatter-par.f90
+    gather_scatter_mod.f90
+    parallel_mod.f90
     )
 
 add_definitions(${MPI_Fortran_COMPILE_FLAGS})
