@@ -67,15 +67,17 @@ FEPX: Finite Element Polycrystal Plasticity
 |(via CMake) and run on any Unix-like system (including MacOS).           |                                                |
 |                                                                         |                                                |
 +-------------------------------------------------------------------------+------------------------------------------------+
+
 Contents
 ========
+
 .. toctree::
    :maxdepth: 1
+   
    applications
    downloads
    community
    about
-
 
 Developer
 ==================
