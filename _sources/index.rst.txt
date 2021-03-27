@@ -1,9 +1,6 @@
-===========================================
 FEPX: Finite Element Polycrystal Plasticity
 ===========================================
-
 .. role:: red
-
 +-------------------------------------------------------------------------+------------------------------------------------+
 |                                                                         |                                                |
 |FEPX is a finite element software package for polycrystal plasticity.    |                                                |
@@ -70,21 +67,17 @@ FEPX: Finite Element Polycrystal Plasticity
 |(via CMake) and run on any Unix-like system (including MacOS).           |                                                |
 |                                                                         |                                                |
 +-------------------------------------------------------------------------+------------------------------------------------+
-
 Contents
 ========
-
 .. toctree::
    :maxdepth: 1
-
-   downloads
    applications
+   downloads
    community
    about
 
 
-Current Developers
+Developer
 ==================
 
 - `Matthew Kasemer <https://eng.ua.edu/eng-directory/dr-matthew-kasemer/>`_, `ACME Lab <https://acmelab.ua.edu>`_
-- Jonathan Cappola, `ACME Lab <https://acmelab.ua.edu>`_

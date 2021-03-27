@@ -10,6 +10,13 @@ work should be listed here, please `contact us <mkasemer@eng.ua.edu>`_.
    :depth: 2
    :local:
 
+2021
+----
+
+- ​MP Echlin, M Kasemer, K Chatterjee, D Boyce, JC Stinville, PG Callahan, E Wielewski, JS Park, JC Williams, RM Suter, TM Pollock, MP Miller, PR Dawson, *Microstructure-Based Estimation of Strength and Ductility Distributions for α+β Titanium Alloys*, **Metallurgical and Materials Transactions A**, In Press.
+
+- J Cappola, JC Stinville, MA Charpagne, PG Callahan, MP Echlin, TM Pollock, A Pilchak, M Kasemer, *On the Localization of Plastic Strain in Microtextured Regions of Ti-6Al-4V*, **Acta Materialia**, doi://10.1016/j.actamat.2020.116492.
+
 2020
 ----
 
