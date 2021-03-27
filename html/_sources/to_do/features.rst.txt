@@ -1,0 +1,111 @@
+.. _features_link:
+
+Features
+========
+
+- ability to run an small and large problems -> images of deformed 10, 100 and 1000 grain polycrystals (and maybe more)
+- ability to deform complex microstructures -> image TA6V (the complexity is more on the microstructure generation from, but still)
+- ability to deform different shapes of samples: cubes, cylinders, actual specimens
+- ability to apply various boundary conditions: uniaxial, multiaxial, tension, compression, plane strain compression, ...
+- ability to run to large strain -> image of a much deformed polycrystal showing the orientation field and the plastic work
+- ability to output many results -> image of a deformed polycrystal colored from several meaningful variables
+
+Operation
+---------
+
+.. - highlight example jobs packaged with FEPX (include shell scripts for Neper generation, running, post processing - same as with FEPX)
+.. - highlight how it works with Neper? Generation / meshing / simulation / results
+
+FEPX contains several example simulations pre-packaged to get you started running simulations. These simulations are small - they are meant to be easily distributed and quickly performed on
+a modern laptop computer. Much larger meshes (many more grains, or finer microstructural features) are able to be simulated given more robust computational power - either a computational
+workstation or a computational cluster.
+
+The example simulations detailed on this page are also outlined in detail within the documentation. A domain of a 100 grain aggregate with a synthetic microstructure generated via centroidal tessellation is utilized for all examples. Each cell in the tessellation represents a discrete grain in the domain and all grains are volumetrically discretized into finite elements. Below are the commands to generate the tessellation and finite element mesh via `Neper <https://http://www.neper.info/>`_:
+
+::
+
+  $ neper -T -n 100 -reg 1 -morpho "centroidal" -oricrysym "cubic" -o simulation
+  $ neper -M simulation.tess -order 2 -rcl 1.2
+
+.. image :: imgs/0_morpho.png
+   :width: 40%
+
+.. image :: imgs/0_femesh.png
+   :width: 40%
+
+.. contents::
+   :depth: 2
+   :local:
+
+
+Uniaxial Deformation
+--------------------
+
+This example covers the uniaxial tensile deformation of a FCC polycrystal by strain targeting to
+2% axial strain. Four steps are defined with 2 increments prescribed for each step. Grip boundary
+conditions are applied to the sample with the primary loading face set as ‘z1’ loaded in the ‘+Z’
+direction.
+
+.. image:: imgs/1_e33_deform.png
+  :width: 25%
+
+:download:`gene_gene.sh <imgs/gene_gene.sh>`
+
+Multiaxial Deformation with Constant Strain Rate
+------------------------------------------------
+
+This example covers the biaxial deformation of a HCP polycrystal at a constant strain rate
+followed by unloading. Loads are proportionally applied in the principal stress space as ‘-1:0:1’
+for σ 1 :σ 2 :σ 3 , respectively. Strict load tolerance options are prescribed and ‘latent’ hardening
+is enabled. The primary loading direction is set to be coincident with the compressive stress
+direction or ‘x’ and a strain rate jump is applied on the third step doubling the prescribed
+strain rate.
+
+.. image:: imgs/2_eqplstrain_deform.png
+  :width: 25%
+
+:download:`gene_morp.sh <imgs/gene_morp.sh>`
+
+Multiaxial Deformation with Constant Load Rate
+----------------------------------------------
+
+This example covers the triaxial deformation of a dual phase FCC/BCC polycrystal at a constant
+load rate followed by a dwell episode and subsequent unloading. Loads are proportionally
+applied in the principal stress space as ‘-0.375:-0.625:1’ for σ1:σ2:σ3, respectively. Loose
+load tolerance options are prescribed and ‘cyclic’ hardening is enabled with generic values.
+The primary loading direction is set to be coincident with the tensile stress direction or ‘z’
+and a dwell episode is initiated on the third step for 500 seconds.
+
+.. image:: imgs/3_crss_deform.png
+  :width: 25%
+
+:download:`gene_mult.sh <imgs/gene_mult.sh>`
+
+Restarting a Simulation
+-----------------------
+
+A typical use case for the restart capabilities are to append additional loading steps to a completed simulation or to add additional loading cycles to a deformed sample. This example covers
+the triaxial deformation of a FCC polycrystal at a constant strain rate followed by unloading.
+Loads are proportionally applied in the principal stress space as ‘0:0:1’ for σ1:σ2:σ3 , respectively. Strict load tolerance options are prescribed and ‘restart’ is enabled in the second cycle
+directory. The primary loading direction is set to be coincident with the tensile stress direction
+or ‘z’.
+
+.. image:: imgs/4_slipshear7_cycle2.png
+  :width: 25%
+
+:download:`gene_peri.sh <imgs/gene_peri.sh>`
+
+Running a Simulation with External File Reading
+-----------------------------------------------
+
+Certain simulation input may be input from external files in order to allow for a static configuration and mesh file to be used for multiple simulations while certain microstructure information is varied. This example covers the uniaxial tension/compression deformation of a dual phase
+FCC/BCC polycrystal by load targeting to +/- 500 [N]. Three steps are defined with a standard
+time-step value of 0.05 [s] and a minimum time-step value of 0.0001 [s]. Minimal boundary
+conditions are applied to the sample with the primary loading face set as ‘x1’ loaded in the ‘+X’
+direction. Elemental orientations and grain/phase assignments are read in from the external
+files simulation.ori and simulation.phase, respectively.
+
+.. image:: imgs/5_eltorientations.png
+  :width: 25%
+
+:download:`gene_cut.sh <imgs/gene_cut.sh>`
