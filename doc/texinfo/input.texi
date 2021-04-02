@@ -754,6 +754,8 @@ The file is structured in several, successive @dfn{fields} that define different
 
 @item Mesh Format (@samp{$MeshFormat}),
 
+@item Mesh Version (@samp{$MeshVersion}),
+
 @item Nodes (@samp{$Nodes}),
 
 @item Elements (@samp{$Elements}),
