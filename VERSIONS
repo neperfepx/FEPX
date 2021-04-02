@@ -1,4 +1,7 @@
-New in 1.1.1 (23 Nov 2020):
+New in 1.1.2-1 (02 Apr 2021):
+- Updated mesh parsing.
+
+New in 1.1.1 (23 Nov 2021):
 - Major code formatting changes
 - Minor bug fixes
 

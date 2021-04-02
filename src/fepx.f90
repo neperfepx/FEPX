@@ -84,7 +84,7 @@ IF (MYID .EQ. 0) THEN
     CALL DATE_AND_TIME(VALUES = TIMEVALUES)
     WRITE(DFLT_U,'(A)')'==========================    F   E   P   X   =========================='
     WRITE(DFLT_U,'(A)')'Info   : A finite element software package for polycrystal plasticity.'
-    WRITE(DFLT_U,'(A)')'Info   : Version 1.1.1'
+    WRITE(DFLT_U,'(A)')'Info   : Version 1.1.2-1'
     WRITE(DFLT_U,'(A,I0,A)')'Info   : Running on ', NUMPROCS, ' cores.'
     WRITE(DFLT_U,'(A)')'Info   : <https://fepx.info>'
     WRITE(DFLT_U,'(A)')'Info   : Copyright (C) 1996-2020, DPLab, ACME Lab.'

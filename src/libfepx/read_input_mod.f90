@@ -27,6 +27,7 @@ MODULE READ_INPUT_MOD
 ! GET_NODE_INFO: Gets the number of nodes in the mesh.
 ! GET_ELEM_INFO: Gets the number of elements in the mesh and partitions.
 ! READ_MESH_FORMAT: Reads in gmsh file format - 2.2 0 8 only.
+! READ_MESH_VERSION: Reads in gmsh file version.
 ! READ_NODES: Read in node ID and [X Y Z] spatial coordinates.
 ! READ_ELEMENTS: Read in ALL elements and only store 3D elements.
 ! READ_NSETS: Read in node sets - currently not stored for read-in BCs.
@@ -140,6 +141,10 @@ INTEGER, PRIVATE :: PRIV_INPUNIT
 !
 PUBLIC
 !
+! Mesh format
+!
+CHARACTER(LEN=5)   :: MESH_VERSION = "2.2"
+!
 ! Element/DOF array bounds
 !
 INTEGER, PARAMETER :: NDIM  = 10 ! 10-noded tetrahedra
@@ -151,6 +156,7 @@ INTEGER, PARAMETER :: KDIM1 = KDIM - 1
 !  
 INTEGER :: NUMELM, NUMNP, MAXEL, MAXEL1, MAXNP, MAXNP1, MAXDOF, MAXDOF1
 INTEGER :: EL_SUB1, EL_SUP1, NP_SUB1, NP_SUP1, DOF_SUB1, DOF_SUP1
+INTEGER :: EL_STARTID = 0
 !
 ! Connectivities and coordinates.
 !
@@ -612,6 +618,12 @@ CONTAINS
         !
         IF (ELMTYPE .EQ. 11) THEN
             !
+            if (EL_STARTID .EQ. 0) THEN
+            !
+                READ(IARRAY(1), *) EL_STARTID
+            !
+            END IF
+
             ! Assign data from IARRAY(6) the TAG3 value which contain partition.
             READ(IARRAY(6), *) TEMP(I)
             !
@@ -747,6 +759,11 @@ CONTAINS
                 !
                 BACKSPACE(IO)
                 CALL READ_MESH_FORMAT(IO)
+                !
+            CASE('$MeshVersion')
+                !
+                BACKSPACE(IO)
+                CALL READ_MESH_VERSION(IO)
                 !
             CASE('$Nodes')
                 !
@@ -966,6 +983,58 @@ CONTAINS
     RETURN
     !
     END SUBROUTINE READ_MESH_FORMAT
+    !
+    !===========================================================================
+    !
+    SUBROUTINE READ_MESH_VERSION(IO)
+    !
+    ! Read the mesh file version
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! IO: Input unit for .msh file.
+    !
+    INTEGER, INTENT(IN) :: IO
+    !
+    ! Locals:
+    ! IERR: Value that confirms if a READ() fails.
+    ! LINE: Input line on current record to be parsed.
+    !
+    INTEGER :: IERR
+    CHARACTER(LEN=256) :: LINE
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Read the first line and confirm it is the correct record.
+    READ(IO, '(A)', IOSTAT = IERR) LINE
+    !
+    IF ((IERR .LT. 0) .OR. (LINE .NE. '$MeshVersion')) THEN
+        !
+        CALL PAR_QUIT('Error  :     > Parse error attempting to read in &
+            &mesh version.')
+        !
+    END IF
+    !
+    ! Read in the mesh version string.
+    READ(IO, '(A)', IOSTAT = IERR) MESH_VERSION
+    !
+    IF (MESH_VERSION .NE. '2.2.1') &
+        &CALL PAR_QUIT('Error  :     > Incorrect mesh version provided.')
+    !
+    ! Read the end of section footer.
+    READ(IO, '(A)', IOSTAT = IERR) LINE
+    !
+    IF ((IERR .LT. 0) .OR. (LINE .NE. '$EndMeshVersion')) THEN
+        !
+        CALL PAR_QUIT('Error  :     > Parse error attempting to read in &
+            &mesh version.')
+        !
+    END IF
+    !
+    RETURN
+    !
+    END SUBROUTINE READ_MESH_VERSION
     !
     !===========================================================================
     !
@@ -1360,6 +1429,13 @@ CONTAINS
             !
             ! For each element, read in the ID and 3D connectivity.
             READ(IO, *) ELEM_ID, ELEM_NODES_TMP
+            !
+            ! Shift the ID for msh file version > 2.2
+            IF (MESH_VERSION .NE. '2.2') THEN
+              !
+              ELEM_ID = ELEM_ID - EL_STARTID - 1
+              !
+            END IF
             !
             ! Shift the ID to maintain internal zero-indexing.
             ELEM_ID = ELEM_ID - 1
