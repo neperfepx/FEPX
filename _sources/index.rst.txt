@@ -1,6 +1,7 @@
 FEPX: Finite Element Polycrystal Plasticity
 ===========================================
 .. role:: red
+
 +-------------------------------------------------------------------------+------------------------------------------------+
 |                                                                         |                                                |
 |FEPX is a finite element software package for polycrystal plasticity.    |                                                |
@@ -70,14 +71,14 @@ FEPX: Finite Element Polycrystal Plasticity
 
 Contents
 ========
-
 .. toctree::
    :maxdepth: 1
-   
+
    applications
    downloads
    community
    about
+
 
 Developer
 ==================

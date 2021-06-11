@@ -17,7 +17,7 @@ It you use FEPX for your own work, please mention it explicitly and cite one or 
 Current official release
 ------------------------
 
-- `fepx-1.1.2.tgz (23 Nov 2020) <tarballs/fepx-1.1.2.tgz>`_: source code and documentation
+- `fepx-1.1.2.tgz (11 Jun 2021) <tarballs/fepx-1.1.2.tgz>`_: source code and documentation
 - `fepx.pdf <docs/fepx.pdf>`_: documentation
 
 Development repository
