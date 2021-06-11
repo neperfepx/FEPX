@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE RSTARN_SOLVE_MOD
@@ -45,17 +45,16 @@ PUBLIC :: UPD_EULER_FWD, UPD_EULER_BWD
 !
 INTEGER, PARAMETER :: UPD_EULER_FWD = 1, UPD_EULER_BWD = 2
 !
-! Temporary storage
-!
-CHARACTER(LEN=128) :: MESSAGE
-!
 ! Hardening model iteration limits
 !
 ! Note: The equation should be quadratic for the usual hardening model,
 !   and so it should only require one iteration.
 !
+! MAX_ITER_HARD is now an available user input option from READ_INPUT_MOD
+! and is assigned from the options type in UPD_HARD.
+!
 REAL(RK), PARAMETER :: TOLER_HARD = 1.0D-4, LS_CUTOFF = 0.001D0
-INTEGER, PARAMETER  :: MAX_ITER_HARD = 10
+INTEGER :: MAX_ITER_HARD
 !
 CONTAINS
     !
@@ -68,13 +67,16 @@ CONTAINS
     !
     ! Arguments:
     !
-    INTEGER  :: N_SLIP, IFLAG
+    INTEGER  :: IFLAG
     REAL(RK) :: DTIME
     !
     LOGICAL, INTENT(IN)     :: DONE(0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK), INTENT(IN)    :: RSTAR_N(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK), INTENT(INOUT) :: RSTAR  (0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)      
-    REAL(RK), INTENT(INOUT) :: D_RSTAR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN)    :: RSTAR_N(0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(INOUT) :: RSTAR  (0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(INOUT) :: D_RSTAR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(INOUT) :: CRSS  (0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN)    :: CRSS_N(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(OUT)   :: C  (0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
@@ -88,7 +90,7 @@ CONTAINS
     REAL(RK) :: SHRATE(0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: WP_SS(0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: SHEAR(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    INTEGER  :: M_EL,I
+    INTEGER  :: M_EL
     !
     !---------------------------------------------------------------------------
     !
@@ -136,7 +138,7 @@ CONTAINS
     !
     ! Locals:
     !
-    INTEGER  :: ISLIP, I, IPHASE, IS, NUMIND,J
+    INTEGER  :: ISLIP, I, IPHASE, IS, NUMIND
     !
     REAL(RK), POINTER :: PLOCAL(:,:) => NULL()
     REAL(RK), POINTER :: QLOCAL(:,:) => NULL()
@@ -306,33 +308,47 @@ CONTAINS
     ! m_prime     = crystal_parm(5)
     ! gammadot_s0 = crystal_parm(6)
     !
-    MY_PHASE(N-1,:) = PHASE(EL_SUB1:EL_SUP1)     
+    MY_PHASE(N-1,:) = PHASE(EL_SUB1:EL_SUP1)
+    !
+    MAX_ITER_HARD = OPTIONS%MAX_ITER_HARD_LIMIT
     !
     ! Hardwire the legacy flag passed to `hard_law' - is this still used?
     !
     IHARD = 2
     !
     DO IPHASE = 1, NUMPHASES
-        !       
-        WHERE (MY_PHASE.EQ.IPHASE)
-            !          
-            WHERE(SHRATE .GT. 0.0D0)
+        !
+        IF (OPTIONS%SAT_EVO .EQV. .TRUE.) THEN
+            !
+            WHERE (MY_PHASE .EQ. IPHASE)
                 !
-                CRSS_SAT = CRYSTAL_PARM(4,IPHASE) &
-                    & * ((SHRATE / CRYSTAL_PARM(6,IPHASE)) &
-                    & ** CRYSTAL_PARM(5,IPHASE))
-                !
-                ELSEWHERE
-                !
-                CRSS_SAT = CRYSTAL_PARM(4,IPHASE)
+                WHERE(SHRATE .GT. 0.0D0)
+                    !
+                    CRSS_SAT = CRYSTAL_PARM(4, IPHASE) &
+                        & * ((SHRATE / CRYSTAL_PARM(6, IPHASE)) &
+                        & ** CRYSTAL_PARM(5, IPHASE))
+                    !
+                    ELSEWHERE
+                    !
+                    CRSS_SAT = CRYSTAL_PARM(4, IPHASE)
+                    !
+                END WHERE
                 !
             END WHERE
             !
-        END WHERE
+        ELSE IF (OPTIONS%SAT_EVO .EQV. .FALSE.) THEN
+            !
+            WHERE (MY_PHASE .EQ. IPHASE)
+                !
+                CRSS_SAT = CRYSTAL_PARM(4, IPHASE)
+                !
+            END WHERE
+            !
+        END IF
         !
         CALL FIND_INDICES(NUMIND, IPHASE, MY_PHASE(N-1,:), INDICES)
         !
-        IF (CRYSTAL_PARM(2,IPHASE) .EQ. 0.D0)  THEN          
+        IF (CRYSTAL_PARM(2,IPHASE) .EQ. 0.D0) THEN
             !
             CRSS(:,:,INDICES) = CRSS_0(:,:,INDICES)
             !        
@@ -400,13 +416,6 @@ CONTAINS
         WHERE(DONE) CONVERGED(ISLIP,:,:) = .TRUE.
         !      
     ENDDO
-    !
-    ! This section is wrong for model with limiting hardness. - Still true?
-    !
-    ! where ((crss_0 .eq. crss_sat) .and. (.not. done))
-    !  crss = crss_0
-    !  converged = .true.
-    ! endwhere
     !
     NM = N * M
     !
@@ -517,7 +526,7 @@ CONTAINS
             !
             CALL CRYSTALTYPEGET(CTYPE(IPHASE))
             N_SLIP=CTYPE(IPHASE)%NUMSLIP
-            !            
+            !           
             DO ISLIP = 0, N_SLIP-1
                 !
                 ! Converged_all set to false only when one slip system is false
@@ -529,6 +538,17 @@ CONTAINS
                 WHERE(.NOT. NEWTON_OK(ISLIP,:,:)) NEWTON_OK_ALL=.FALSE.
                 !            
             ENDDO
+            !
+            ! If all slip systems for a given element are converged, then
+            ! update the per-element arrays as needed. We limit the first index
+            ! to the slip systems available for the given phase as above.
+            !
+            DO I = 0, M - 1
+                !
+                IF (ALL(CONVERGED(0:N_SLIP-1,:,I))) CONVERGED_ALL(:,I) = .TRUE.
+                IF (ALL(NEWTON_OK(0:N_SLIP-1,:,I))) NEWTON_OK_ALL(:,I) = .TRUE.
+                !            
+            END DO
             !
         ENDDO
         !

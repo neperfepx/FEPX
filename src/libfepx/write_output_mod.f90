@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE WRITE_OUTPUT_MOD
@@ -10,8 +10,6 @@ MODULE WRITE_OUTPUT_MOD
 !
 ! General printing and handling of field variable data:
 ! PRINT_STEP: Print variables on a given load step
-! CALC_EQSTRESS: Calculate elemental von Mises stress
-! STRAIN_TO_SAMPLE: Converts crystal-frame strains to sample-frame
 !
 ! Handling the post.report, post.forceX, and post.conv files
 ! WRITE_REPORT_FILE_HEADER: Writes preamble information about the simulation
@@ -57,9 +55,10 @@ PUBLIC
 !
 CONTAINS
     !
-    SUBROUTINE PRINT_STEP(STEP, PROB_TYPE, CRD, VEL, ORIENT, WTS, HARD, ELVOL,&
+    SUBROUTINE PRINT_STEP(STEP, PROB_TYPE, CRD, VEL, ORIENT, HARD, ELVOL,&
         & ELAS, S3X3, DEFF, EQSTRAIN, DPEFF, EQPLSTRAIN, VGRAD, DP_HAT, &
-        & WP_HAT, GAMMA, GAMMADOT, WORK, WORKP, D_TOT)
+        & WP_HAT, GAMMA, GAMMADOT, WORK, WORKP, D_TOT, WORKRATE, WORKRATEP, &
+        & EQELSTRAIN, PLSTRAIN, TOTSTRAIN)
     !
     ! Print variables on a given load step
     !
@@ -71,8 +70,8 @@ CONTAINS
     ! CRD: Nodal coordinates
     ! VEL: Nodal velocities
     ! ORIENT: Elemental orientation tensors (to be converted)
-    ! WTS: Grain weights - This is legacy and can likely be removed.
     ! HARD: Elemental CRSS values
+    ! ELVOL: Elemental volume
     ! ELAS: Elemental elastic strain tensors (upper triangle, i.e. 6-vector)
     ! S3X3: Elemental stress tensors (3x3 matrix)
     ! DEFF: Elemental effective deformation rate (scalar)
@@ -86,17 +85,20 @@ CONTAINS
     ! WORK: Elemental total work (scalar)
     ! WORKP: Elemental plastic work (scalar)
     ! D_TOT: Elemental total deformation rate tensor (3x3 matrix)
-    ! ELVOL: Elemental volume
+    ! WORKRATE: Elemental total work rate (scalar)
+    ! WORKRATEP: Elemental plastic work rate (scalar)
+    ! EQELSTRAIN: Elemental equivalent elastic strain (scalar)
+    ! PLSTRAIN: Elemental plastic strain tensor (5-vector)
+    ! TOTSTRAIN: Elemental total strain tensor (3x3 matrix)
     !
     INTEGER, INTENT(IN) :: STEP
     INTEGER, INTENT(IN) :: PROB_TYPE
     REAL(RK), INTENT(IN) :: CRD(DOF_SUB1:DOF_SUP1)
     REAL(RK), INTENT(IN) :: VEL(DOF_SUB1:DOF_SUP1)
     REAL(RK), INTENT(IN) :: ORIENT(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK), INTENT(IN) :: WTS(0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: HARD(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN), OPTIONAL :: ELVOL(EL_SUB1:EL_SUP1)
-    REAL(RK), INTENT(IN), OPTIONAL :: ELAS(0:5, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN), OPTIONAL :: ELAS(0:TVEC, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN), OPTIONAL :: S3X3(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN), OPTIONAL :: EQSTRAIN(EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN), OPTIONAL :: DEFF(EL_SUB1:EL_SUP1)
@@ -112,6 +114,12 @@ CONTAINS
     REAL(RK), INTENT(IN), OPTIONAL :: WORK(EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN), OPTIONAL :: WORKP(EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN), OPTIONAL :: D_TOT(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN), OPTIONAL :: WORKRATE(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN), OPTIONAL :: WORKRATEP(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN), OPTIONAL :: EQELSTRAIN(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN), OPTIONAL :: PLSTRAIN(0:TVEC1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN), OPTIONAL :: TOTSTRAIN(0:DIMS1, 0:DIMS1, &
+        & EL_SUB1:EL_SUP1)
     !
     ! Locals:
     ! IO: File control integer
@@ -129,6 +137,8 @@ CONTAINS
     INTEGER :: IO
     INTEGER :: I, J, IGRAIN
     INTEGER :: M_EL
+    LOGICAL :: PFLAG_NODE = .TRUE.
+    LOGICAL :: PFLAG_ELEM = .TRUE.
     REAL(RK) :: ORIENT_INT(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: ANGLE(0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: AXIS(0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
@@ -140,6 +150,9 @@ CONTAINS
     REAL(RK) :: RODS(0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: QUAT(0:DIMS, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: ELAS_SAM(0:5)
+    REAL(RK) :: PLSTRAINMAT(0:DIMS1, 0:DIMS1)
+    REAL(RK) :: PLSTRAIN6(0:5)
+    REAL(RK) :: PLSTRAIN6_SAM(0:5)
     REAL(RK) :: EQSTRESS(EL_SUB1:EL_SUP1)
     REAL(RK) :: DP_HAT_MAT(0:5)
     REAL(RK) :: DP_HAT_SAM(0:5)
@@ -172,9 +185,22 @@ CONTAINS
         WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, DOF_SUB1 + 1, DOF_SUP1 + 1
         WRITE(IO, '(3(e13.7,1x))') (CRD(J), J = DOF_SUB1, DOF_SUP1)
         !
-        CALL ADD_TO_OUTPUT_FILES(STEP, 'coo', NODE_RESULTS)
+        CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'coo', NODE_RESULTS, PFLAG_NODE)
         !
-    ENDIF
+    END IF
+    !
+    ! Nodal displacements
+    !
+    IF (PRINT_OPTIONS%PRINT_DISPLACEMENTS) THEN
+        !
+        IO = OUNITS(DISP_U)
+        WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, DOF_SUB1 + 1, DOF_SUP1 + 1
+        WRITE(IO, '(3(e13.7,1x))') ((CRD(J) - COORDS_ORIG(J)), J = DOF_SUB1, &
+            & DOF_SUP1)
+        !
+        CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'disp', NODE_RESULTS, PFLAG_NODE)
+        !
+    END IF
     !
     ! Nodal velocities
     !
@@ -184,9 +210,9 @@ CONTAINS
         WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, DOF_SUB1 + 1, DOF_SUP1 + 1
         WRITE(IO, '(3(e13.7,1x))') (VEL(J), J = DOF_SUB1, DOF_SUP1)
         !
-        CALL ADD_TO_OUTPUT_FILES(STEP, 'vel', NODE_RESULTS)
+        CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'vel', NODE_RESULTS, PFLAG_NODE)
         !
-    ENDIF
+    END IF
     !
     ! Orientations
     !
@@ -194,7 +220,7 @@ CONTAINS
         !
         IO = OUNITS(ANGLES_U)
         !
-        CALL ADD_TO_OUTPUT_FILES(STEP, 'ori', ELEM_RESULTS)
+        CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'ori', ELEM_RESULTS, PFLAG_ELEM)
         !
         ! Write header
         !
@@ -220,11 +246,11 @@ CONTAINS
                     ORIENT_INT(:, :, IGRAIN, J) = TRANSPOSE(ORIENT(:, :, &
                         & IGRAIN, J))
                     !
-                ENDDO
+                END DO
                 !
-            ENDDO
+            END DO
             !
-        ENDIF
+        END IF
         !
         ! Determine parameterization from orientation options
         !
@@ -241,9 +267,9 @@ CONTAINS
                         & AXIS(1, IGRAIN, J), AXIS(2, IGRAIN, J), &
                         & ANGLE(IGRAIN, J)
                     !
-                ENDDO
+                END DO
                 !
-            ENDDO
+            END DO
             !
         ELSEIF (ORIENTATION_OPTIONS%ORIENTATION_PARAMETERIZATION .EQ. &
             & 'euler-bunge') THEN
@@ -258,9 +284,9 @@ CONTAINS
                     WRITE(IO, '(4(e13.7,1x))') PSI1(IGRAIN, J), &
                         & PHI(IGRAIN, J), PSI2(IGRAIN, J)
                     !
-                ENDDO
+                END DO
                 !
-            ENDDO
+            END DO
             !
         ELSEIF (ORIENTATION_OPTIONS%ORIENTATION_PARAMETERIZATION .EQ. &
             & 'euler-kocks') THEN
@@ -275,9 +301,9 @@ CONTAINS
                     WRITE(IO, '(4(e13.7,1x))') PSI(IGRAIN, J), THE(IGRAIN, J), &
                         & PHI(IGRAIN, J)
                     !
-                ENDDO
+                END DO
                 !
-            ENDDO
+            END DO
             !
         ELSEIF (ORIENTATION_OPTIONS%ORIENTATION_PARAMETERIZATION .EQ. &
             & 'rodrigues') THEN
@@ -291,9 +317,9 @@ CONTAINS
                     WRITE(IO, '(4(e13.7,1x))') (RODS(I, IGRAIN, J), I = 0, &
                         & DIMS1)
                     !
-                ENDDO
+                END DO
                 !
-            ENDDO
+            END DO
             !
         ELSEIF (ORIENTATION_OPTIONS%ORIENTATION_PARAMETERIZATION .EQ. &
             & 'quaternion') THEN
@@ -306,13 +332,13 @@ CONTAINS
                     !
                     WRITE(IO, '(4(e13.7,1x))') (QUAT(I, IGRAIN, J), I = 0, DIMS)
                     !
-                ENDDO
+                END DO
                 !
-            ENDDO
+            END DO
             !
-        ENDIF
+        END IF
         !
-    ENDIF
+    END IF
     !
     ! CRSS Values
     !
@@ -320,7 +346,7 @@ CONTAINS
         !
         IO=OUNITS(CRSS_U)
         !
-        CALL ADD_TO_OUTPUT_FILES(STEP, 'crss', ELEM_RESULTS)
+        CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'crss', ELEM_RESULTS, PFLAG_ELEM)
         !
         WRITE(IO, '(A2,(3(I0,1X)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
         !
@@ -347,7 +373,7 @@ CONTAINS
                         CALL PAR_QUIT('Error  :     > Invalid hardening type &
                             &provided.')
                         !
-                    ENDIF
+                    END IF
                     !
                 ! Else, check if the element is HCP.
                 ELSE IF (CRYS_OPTIONS%CRYSTAL_TYPE(PHASE(J)) .EQ. 3) THEN
@@ -376,15 +402,15 @@ CONTAINS
                         CALL PAR_QUIT('Error  :     > Invalid hardening type &
                             &provided.')
                         !
-                    ENDIF
+                    END IF
                     !
-                ENDIF
+                END IF
                 !
-            ENDDO
+            END DO
             !
-        ENDDO
+        END DO
         !
-    ENDIF
+    END IF
     !
     ! Element volume (scalar)
     !
@@ -392,7 +418,8 @@ CONTAINS
         !
         IO = OUNITS(ELVOL_U)
         !
-        CALL ADD_TO_OUTPUT_FILES(STEP, 'elt-vol', ELEM_RESULTS)
+        CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'elt-vol', ELEM_RESULTS, &
+            & PFLAG_ELEM)
         !
         WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
         !
@@ -400,20 +427,21 @@ CONTAINS
             !
             WRITE(IO, '(e13.7)') ELVOL(I)
             !
-        ENDDO
+        END DO
         !
-    ENDIF
+    END IF
     !
     !
     IF (PROB_TYPE == ANISOTROPIC_EVPS) THEN
         !
         ! Elemental elastic strain tensors (6-vector)
         !
-        IF (PRINT_OPTIONS%PRINT_STRAIN) THEN
+        IF (PRINT_OPTIONS%PRINT_STRAIN_EL) THEN
             !
-            IO = OUNITS(STRAIN_U)
+            IO = OUNITS(ELSTRAIN_U)
             !
-            CALL ADD_TO_OUTPUT_FILES(STEP, 'strain-el', ELEM_RESULTS)
+            CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'strain-el', ELEM_RESULTS, &
+                & PFLAG_ELEM)
             !
             WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
@@ -422,7 +450,7 @@ CONTAINS
                 DO IGRAIN = 0, NGRAIN1
                     !
                     ELAS_SAM = 0.0D0
-                    CALL STRAIN_TO_SAMPLE(ELAS(:, IGRAIN, I), &
+                    CALL VEC6_CRYS_TO_VEC6_SAM(ELAS(:, IGRAIN, I), &
                         & ORIENT(:, :, IGRAIN, I), ELAS_SAM)
                     !
                     ! Written as 11, 22, 33, 23, 13, 12 in sample basis
@@ -431,11 +459,73 @@ CONTAINS
                         & ELAS_SAM(5), ELAS_SAM(4), &
                         & ELAS_SAM(2), ELAS_SAM(1)
                     !
-                ENDDO
+                END DO
                 !
-            ENDDO
+            END DO
             !
-        ENDIF
+        END IF
+        !
+        ! Elemental plastic strain tensors
+        !
+        IF (PRINT_OPTIONS%PRINT_STRAIN_PL) THEN
+            !
+            IO = OUNITS(PLSTRAIN_U)
+            !
+            CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'strain-pl', ELEM_RESULTS, &
+                & PFLAG_ELEM)
+            !
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
+            !
+            DO I = EL_SUB1, EL_SUP1
+                !
+                ! Convert from 5-vec to 3x3 matrix, then to 6-vector
+                !
+                PLSTRAINMAT = 0.0D0
+                PLSTRAIN6 = 0.0D0
+                CALL VEC_MAT_SYMM_SER(PLSTRAIN(:, I), PLSTRAINMAT)
+                PLSTRAIN6 = (/ PLSTRAINMAT(0, 0), PLSTRAINMAT(0, 1), &
+                    & PLSTRAINMAT(0, 2), PLSTRAINMAT(1, 1), PLSTRAINMAT(1, 2), &
+                    & PLSTRAINMAT(2, 2) /)
+                !
+                ! Transform from crystal to sample basis
+                !
+                CALL VEC6_CRYS_TO_VEC6_SAM(PLSTRAIN6, &
+                    & ORIENT(:, :, 0, I), PLSTRAIN6_SAM)
+                !
+                ! Written as 11, 22, 33, 23, 13, 12 in sample basis
+                !
+                WRITE(IO, '(6(e13.7,1x))') PLSTRAIN6_SAM(0), PLSTRAIN6_SAM(3), &
+                    & PLSTRAIN6_SAM(5), PLSTRAIN6_SAM(4), &
+                    & PLSTRAIN6_SAM(2), PLSTRAIN6_SAM(1)
+                !
+            END DO
+            !
+        END IF
+        !
+        ! Elemental total strain tensors
+        !
+        IF (PRINT_OPTIONS%PRINT_STRAIN_TOT) THEN
+            !
+            IO = OUNITS(TOTSTRAIN_U)
+            !
+            CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'strain', ELEM_RESULTS, &
+                & PFLAG_ELEM)
+            !
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
+            !
+            DO I = EL_SUB1, EL_SUP1
+                !
+                !
+                ! Written as 11, 22, 33, 23, 13, 12 in sample basis
+                !
+                WRITE(IO, '(6(e13.7,1x))') TOTSTRAIN(0, 0, I), &
+                    & TOTSTRAIN(1, 1 ,I), TOTSTRAIN(2, 2, I), &
+                    & TOTSTRAIN(1, 2, I), TOTSTRAIN(0, 2, I), &
+                    & TOTSTRAIN(0, 1, I)
+                !
+            END DO
+            !
+        END IF
         !
         ! Elemental stress tensors (3x3 matrix)
         !
@@ -443,7 +533,8 @@ CONTAINS
             !
             IO = OUNITS(STRESS_U)
             !
-            CALL ADD_TO_OUTPUT_FILES(STEP, 'stress', ELEM_RESULTS)
+            CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'stress', ELEM_RESULTS, &
+                & PFLAG_ELEM)
             !
             WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
@@ -451,12 +542,12 @@ CONTAINS
                 !
                 ! Written as 11, 22, 33, 23, 13, 12 in sample basis
                 !
-                WRITE(IO, '(6(e13.7,1x))') S3X3(0,0,I), S3X3(1,1,I), S3X3(2,2,I), &
-                    & S3X3(1,2,I), S3X3(0,2,I), S3X3(0,1,I)
+                WRITE(IO, '(6(e13.7,1x))') S3X3(0,0,I), S3X3(1,1,I), &
+                    & S3X3(2,2,I), S3X3(1,2,I), S3X3(0,2,I), S3X3(0,1,I)
                 !
-            ENDDO
+            END DO
             !
-        ENDIF
+        END IF
         !
         ! Elemental shear rates (gammadot)
         !
@@ -464,7 +555,8 @@ CONTAINS
             !
             IO = OUNITS(GAMMADOT_U)
             !
-            CALL ADD_TO_OUTPUT_FILES(STEP, 'sliprate', ELEM_RESULTS)
+            CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'sliprate', ELEM_RESULTS, &
+                & PFLAG_ELEM)
             !
             WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
@@ -475,21 +567,22 @@ CONTAINS
                     WRITE(IO, '(18(e13.7,1x))') (GAMMADOT(J, IGRAIN, I), &
                         & J = 0, MAXSLIP1)
                     !
-                ENDDO
+                END DO
                 !
-            ENDDO
+            END DO
             !
-        ENDIF
+        END IF
         !
         ! Elemental equivalent stress (scalar)
         !
         IF (PRINT_OPTIONS%PRINT_EQSTRESS) THEN
             !
-            CALL CALC_EQSTRESS(M_EL, S3X3, EQSTRESS)
+            CALL STRESS_EQUIV_3X3(S3X3, EQSTRESS)
             !
             IO = OUNITS(EQSTRESS_U)
             !
-            CALL ADD_TO_OUTPUT_FILES(STEP, 'stress-eq', ELEM_RESULTS)
+            CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'stress-eq', ELEM_RESULTS, &
+                & PFLAG_ELEM)
             !
             WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
@@ -497,9 +590,9 @@ CONTAINS
                 !
                 WRITE(IO, '(e13.7)') EQSTRESS(I)
                 !
-            ENDDO
+            END DO
             !
-        ENDIF
+        END IF
         !
         !
         ! Elemental effective deformation rate (scalar)
@@ -508,7 +601,8 @@ CONTAINS
             !
             IO = OUNITS(DEFF_U)
             !
-            CALL ADD_TO_OUTPUT_FILES(STEP, 'defrate-eq', ELEM_RESULTS)
+            CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'defrate-eq', ELEM_RESULTS, &
+                & PFLAG_ELEM)
             !
             WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
@@ -516,9 +610,9 @@ CONTAINS
                 !
                 WRITE(IO, '(e13.7)') DEFF(I)
                 !
-            ENDDO
+            END DO
             !
-        ENDIF
+        END IF
         !
         ! Elemental equivalent strain (scalar)
         !
@@ -526,7 +620,8 @@ CONTAINS
             !
             IO = OUNITS(EQSTRAIN_U)
             !
-            CALL ADD_TO_OUTPUT_FILES(STEP, 'strain-eq', ELEM_RESULTS)
+            CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'strain-eq', ELEM_RESULTS, &
+                & PFLAG_ELEM)
             !
             WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
@@ -534,9 +629,9 @@ CONTAINS
                 !
                 WRITE(IO, '(e13.7)') EQSTRAIN(I)
                 !
-            ENDDO
+            END DO
             !
-        ENDIF
+        END IF
         !
         ! Elemental effective plastic deformation rate (scalar)
         !
@@ -544,7 +639,8 @@ CONTAINS
             !
             IO = OUNITS(DPEFF_U)
             !
-            CALL ADD_TO_OUTPUT_FILES(STEP, 'defrate-pl-eq', ELEM_RESULTS)
+            CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'defrate-pl-eq', &
+                & ELEM_RESULTS, PFLAG_ELEM)
             !
             WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
@@ -552,9 +648,9 @@ CONTAINS
                 !
                 WRITE(IO, '(e13.7)') DPEFF(I)
                 !
-            ENDDO
+            END DO
             !
-        ENDIF
+        END IF
         !
         ! Elemental equivalent plastic strain (scalar)
         !
@@ -562,7 +658,8 @@ CONTAINS
             !
             IO = OUNITS(EQPLSTRAIN_U)
             !
-            CALL ADD_TO_OUTPUT_FILES(STEP, 'strain-pl-eq', ELEM_RESULTS)
+            CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'strain-pl-eq', &
+                & ELEM_RESULTS, PFLAG_ELEM)
             !
             WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
@@ -570,9 +667,28 @@ CONTAINS
                 !
                 WRITE(IO, '(e13.7)') EQPLSTRAIN(I)
                 !
-            ENDDO
+            END DO
             !
-        ENDIF
+        END IF
+        !
+        ! Elemental equivalent plastic strain (scalar)
+        !
+        IF (PRINT_OPTIONS%PRINT_EQELSTRAIN) THEN
+            !
+            IO = OUNITS(EQELSTRAIN_U)
+            !
+            CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'strain-el-eq', &
+                & ELEM_RESULTS, PFLAG_ELEM)
+            !
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
+            !
+            DO I = EL_SUB1, EL_SUP1
+                !
+                WRITE(IO, '(e13.7)') EQELSTRAIN(I)
+                !
+            END DO
+            !
+        END IF
         !
         ! Elemental velocity gradient (3x3 matrix)
         !
@@ -580,7 +696,8 @@ CONTAINS
             !
             IO = OUNITS(VGRAD_U)
             !
-            CALL ADD_TO_OUTPUT_FILES(STEP, 'velgrad', ELEM_RESULTS)
+            CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'velgrad', ELEM_RESULTS, &
+                & PFLAG_ELEM)
             !
             WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
@@ -590,9 +707,9 @@ CONTAINS
                     & VGRAD(0,2,I), VGRAD(1,0,I), VGRAD(1,1,I), VGRAD(1,2,I), &
                     & VGRAD(2,0,I), VGRAD(2,1,I), VGRAD(2,2,I)
                 !
-            ENDDO
+            END DO
             !
-        ENDIF
+        END IF
         !
         ! Elemental plastic deformation rate (6-vector)
         !
@@ -600,7 +717,8 @@ CONTAINS
             !
             IO = OUNITS(DPHAT_U)
             !
-            CALL ADD_TO_OUTPUT_FILES(STEP, 'defrate-pl', ELEM_RESULTS)
+            CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'defrate-pl', ELEM_RESULTS, &
+                & PFLAG_ELEM)
             !
             WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
@@ -609,10 +727,10 @@ CONTAINS
                 DP_HAT_MAT = 0.0D0
                 DP_HAT_SAM = 0.0D0
                 !
-                ! Convert the transpose of the elemental rotation matrix into 
-                ! an operator on 5-vectors. The transpose outputs QR5X5 in 
+                ! Convert the transpose of the elemental rotation matrix into
+                ! an operator on 5-vectors. The transpose outputs QR5X5 in
                 ! a crystal-to-sample form.
-                ! 
+                !
                 CALL ROT_MAT_SYMM_SER(TRANSPOSE(ORIENT(:, :, 0, I)), QR5X5)
                 !
                 ! LATTICE_DEFORM transforms DP_HAT from crystal to sample frame.
@@ -632,9 +750,9 @@ CONTAINS
                     & DP_HAT_MAT(2), DP_HAT_MAT(3), &
                     & DP_HAT_MAT(4), DP_HAT_MAT(5)
                 !
-            ENDDO
+            END DO
             !
-        ENDIF
+        END IF
         !
         ! Elemental plastic spin rate (3-vector)
         !
@@ -642,16 +760,17 @@ CONTAINS
             !
             IO = OUNITS(WPHAT_U)
             !
-            CALL ADD_TO_OUTPUT_FILES(STEP, 'spinrate', ELEM_RESULTS)
+            CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'spinrate', ELEM_RESULTS, &
+                & PFLAG_ELEM)
             !
             WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
             DO I = EL_SUB1, EL_SUP1
                 !
-                ! Convert the transpose of the elemental rotation matrix into 
-                ! an operator on skew 3-vectors. The transpose outputs QR3X3 in 
+                ! Convert the transpose of the elemental rotation matrix into
+                ! an operator on skew 3-vectors. The transpose outputs QR3X3 in
                 ! a crystal-to-sample form.
-                ! 
+                !
                 CALL ROT_MAT_SKEW_SER(TRANSPOSE(ORIENT(:, :, 0, I)), QR3X3)
                 !
                 ! LATTICE_SPIN transforms WP_HAT from crystal to sample frame.
@@ -659,7 +778,7 @@ CONTAINS
                 ! Skew 3-vector order is maintained here as 21 31 32.
                 !
                 CALL LATTICE_SPIN_SER(QR3X3, WP_HAT(:, I), WP_HAT_SAM)
-                ! 
+                !
                 ! Negative values are output here in order to obtain desired
                 ! order while maintaining skew-symmetry constraints.
                 !
@@ -668,9 +787,9 @@ CONTAINS
                 WRITE(IO, '(3(e13.7,1x))') - WP_HAT_SAM(0), - WP_HAT_SAM(1), &
                     & - WP_HAT_SAM(2)
                 !
-            ENDDO
+            END DO
             !
-        ENDIF
+        END IF
         !
         ! Elemental accumulated shears
         !
@@ -678,7 +797,8 @@ CONTAINS
             !
             IO = OUNITS(GAMMA_U)
             !
-            CALL ADD_TO_OUTPUT_FILES(STEP, 'slip', ELEM_RESULTS)
+            CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'slip', ELEM_RESULTS, &
+                & PFLAG_ELEM)
             !
             WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
@@ -689,11 +809,11 @@ CONTAINS
                     WRITE(IO, '(18(e13.7,1x))') (GAMMA(J, IGRAIN, I), &
                         & J = 0, MAXSLIP1)
                     !
-                ENDDO
+                END DO
                 !
-            ENDDO
+            END DO
             !
-        ENDIF
+        END IF
         !
         ! Elemental total work (scalar)
         !
@@ -701,7 +821,8 @@ CONTAINS
             !
             IO = OUNITS(WORK_U)
             !
-            CALL ADD_TO_OUTPUT_FILES(STEP, 'work', ELEM_RESULTS)
+            CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'work', ELEM_RESULTS, &
+                & PFLAG_ELEM)
             !
             WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
@@ -709,9 +830,9 @@ CONTAINS
                 !
                 WRITE(IO, '(e13.7)') WORK(I)
                 !
-            ENDDO
+            END DO
             !
-        ENDIF
+        END IF
         !
         ! Elemental plastic work (scalar)
         !
@@ -719,7 +840,8 @@ CONTAINS
             !
             IO = OUNITS(WORKP_U)
             !
-            CALL ADD_TO_OUTPUT_FILES(STEP, 'work-pl', ELEM_RESULTS)
+            CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'work-pl', ELEM_RESULTS, &
+                & PFLAG_ELEM)
             !
             WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
@@ -727,9 +849,9 @@ CONTAINS
                 !
                 WRITE(IO, '(e13.7)') WORKP(I)
                 !
-            ENDDO
+            END DO
             !
-        ENDIF
+        END IF
         !
         ! Elemental total deformation rate tensor (3x3 matrix)
         !
@@ -737,7 +859,8 @@ CONTAINS
             !
             IO = OUNITS(DEFRATE_U)
             !
-            CALL ADD_TO_OUTPUT_FILES(STEP, 'defrate', ELEM_RESULTS)
+            CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'defrate', ELEM_RESULTS, &
+                & PFLAG_ELEM)
             !
             WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
             !
@@ -748,152 +871,60 @@ CONTAINS
                 WRITE(IO, '(9(e13.7,1x))') D_TOT(0,0,I), D_TOT(1,1,I), &
                     & D_TOT(2,2,I), D_TOT(1,2,I), D_TOT(0,2,I), D_TOT(0,1,I)
                 !
-            ENDDO
+            END DO
             !
-        ENDIF
+        END IF
         !
-    ENDIF
-    !
-    ! Write output files to the post.result files
-    !
-    CALL WRITE_REPORT_FILE_OUTPUT_FILES(STEP, NODE_RESULTS)
-    CALL WRITE_REPORT_FILE_OUTPUT_FILES(STEP, ELEM_RESULTS)
+        ! Elemental total work rate (scalar)
+        !
+        IF (PRINT_OPTIONS%PRINT_WORKRATE) THEN
+            !
+            IO = OUNITS(WORKRATE_U)
+            !
+            CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'workrate', ELEM_RESULTS, &
+                & PFLAG_ELEM)
+            !
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
+            !
+            DO I = EL_SUB1, EL_SUP1
+                !
+                WRITE(IO, '(e13.7)') WORKRATE(I)
+                !
+            END DO
+            !
+        END IF
+        !
+        ! Elemental plastic work rate (scalar)
+        !
+        IF (PRINT_OPTIONS%PRINT_WORKRATEP) THEN
+            !
+            IO = OUNITS(WORKRATEP_U)
+            !
+            CALL ADD_TO_REPORT_OUTPUT_FILES(STEP, 'workrate-pl', ELEM_RESULTS, &
+                & PFLAG_ELEM)
+            !
+            WRITE(IO, '(a2,(3(i0,1x)))') '% ', STEP, EL_SUB1 + 1, EL_SUP1 + 1
+            !
+            DO I = EL_SUB1, EL_SUP1
+                !
+                WRITE(IO, '(e13.7)') WORKRATEP(I)
+                !
+            END DO
+            !
+        END IF
+        !
+        ! Write output files to the post.result files
+        !
+        CALL WRITE_REPORT_FILE_OUTPUT_FILES(STEP, NODE_RESULTS, PFLAG_NODE)
+        CALL WRITE_REPORT_FILE_OUTPUT_FILES(STEP, ELEM_RESULTS, PFLAG_ELEM)
+        PFLAG_NODE = .FALSE.
+        PFLAG_ELEM = .FALSE.
+        !
+    END IF
     !
     RETURN
     !
     END SUBROUTINE PRINT_STEP
-    !
-    !===========================================================================
-    !
-    SUBROUTINE CALC_EQSTRESS(M, S, EQSTRESS)
-    !
-    ! Calculate the equivalent (von Mises) stress for each element
-    !
-    !---------------------------------------------------------------------------
-    !
-    ! Arugments:
-    ! M: Number of elements
-    ! S3X3: Stress tensor in 3x3 matrix form
-    ! EQSTRESS: Equivalent (von Mises) stress (scalar)
-    !
-    INTEGER, INTENT(IN) :: M
-    REAL(RK), INTENT(IN) :: S(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1)
-    REAL(RK), INTENT(OUT) :: EQSTRESS(EL_SUB1:EL_SUP1)
-    !
-    ! Locals:
-    ! I: Looping index
-    !
-    INTEGER :: I
-    !
-    !---------------------------------------------------------------------------
-    !
-    EQSTRESS = 0.0D0
-    !
-    DO I = EL_SUB1, EL_SUP1
-        !
-        EQSTRESS(I) = SQRT(((S(0, 0, I) - S(1, 1, I)) ** 2) + &
-            & ((S(1, 1, I) - S(2, 2, I)) ** 2) + &
-            & ((S(2, 2, I) - S(0, 0, I)) ** 2) + &
-            & (6 * ((S(0, 1, I) ** 2) + (S(1, 2, I) ** 2) + (S(2, 0, I) ** 2))))
-        !
-        EQSTRESS(I) = EQSTRESS(I) * (1.0D0 / DSQRT(2.0D0))
-        !
-    ENDDO
-    !
-    END SUBROUTINE CALC_EQSTRESS
-    !
-    !===========================================================================
-    !
-    SUBROUTINE STRAIN_TO_SAMPLE(ELAS, ORIENT, ELAS_SAM)
-    !
-    ! Convert the 6 vector of elastic strains in the crystal basis to the sample
-    ! basis.
-    !
-    !---------------------------------------------------------------------------
-    !
-    ! Arugments:
-    ! ELAS: 6-vector of elastic strains in the crystal basis
-    ! ORIENT: 3x3 orientation matrix in the crystal to sample convention
-    ! ELAS_SAM: 6-vector of elastic strains in the sample basis
-    !
-    REAL(RK), INTENT(IN) :: ELAS(0:5)
-    REAL(RK), INTENT(IN) :: ORIENT(0:DIMS1, 0:DIMS1)
-    REAL(RK), INTENT(OUT) :: ELAS_SAM(0:5)
-    !
-    ! Locals:
-    ! I, J, K: Looping indices
-    ! ELAS_33: 3x3 matrix of elastic strains in crystal frame
-    ! TEMP: Matrix of strain*R'
-    ! ELAS_SAM_33: 3x3 matrix of elastic strains in sample frame
-    !
-    INTEGER :: I, J, K
-    REAL(RK) :: ELAS_33(0:DIMS1, 0:DIMS1)
-    REAL(RK) :: TEMP(0:DIMS1, 0:DIMS1)
-    REAL(RK) :: ELAS_SAM_33(0:DIMS1, 0:DIMS1)
-    !
-    !---------------------------------------------------------------------------
-    !
-    ELAS_SAM = 0.0D0
-    ELAS_33 = 0.0D0
-    ELAS_SAM_33 = 0.0D0
-    TEMP = 0.0D0
-    !
-    ! Put 6-vector into 3x3 matrix
-    !
-    ELAS_33(0, 0) = ELAS(0)
-    ELAS_33(0, 1) = ELAS(1)
-    ELAS_33(0, 2) = ELAS(2)
-    ELAS_33(1, 0) = ELAS(1)
-    ELAS_33(1, 1) = ELAS(3)
-    ELAS_33(1, 2) = ELAS(4)
-    ELAS_33(2, 0) = ELAS(2)
-    ELAS_33(2, 1) = ELAS(4)
-    ELAS_33(2, 2) = ELAS(5)
-    !
-    ! Perform strain*R'
-    !
-    DO J = 0, DIMS1
-        !
-        DO K = 0, DIMS1
-            !
-            DO I = 0, DIMS1
-                !
-                TEMP(I, J) = TEMP(I, J) + ELAS_33(I, K) * ORIENT(J, K)
-                !
-            ENDDO
-            !
-        ENDDO
-        !
-    ENDDO
-    !
-    ! Perform R*(strain*R')
-    !
-    DO J = 0, DIMS1
-        !
-        DO K = 0, DIMS1
-            !
-            DO I = 0, DIMS1
-                !
-                ELAS_SAM_33(I, J) = ELAS_SAM_33(I, J) + ORIENT(I, K) * &
-                    & TEMP(K, J)
-                !
-            ENDDO
-            !
-        ENDDO
-        !
-    ENDDO
-    !
-    ! Put into 6-vector of order 11 12 13 22 23 33 to conform with legacy code
-    ! Note: this is reordered before printing, above
-    !
-    ELAS_SAM(0) = ELAS_SAM_33(0,0)
-    ELAS_SAM(1) = ELAS_SAM_33(0,1)
-    ELAS_SAM(2) = ELAS_SAM_33(0,2)
-    ELAS_SAM(3) = ELAS_SAM_33(1,1)
-    ELAS_SAM(4) = ELAS_SAM_33(1,2)
-    ELAS_SAM(5) = ELAS_SAM_33(2,2)
-    !
-    END SUBROUTINE STRAIN_TO_SAMPLE
     !
     !===========================================================================
     !
@@ -928,23 +959,32 @@ CONTAINS
         !
         ! Print number of elements on each partition
         !
-        WRITE(OUNITS(REPORT_U), '(A)', ADVANCE='NO') 'number_of_elements_bypartition '
+        WRITE(OUNITS(REPORT_U), '(A)', ADVANCE='NO') &
+            & 'number_of_elements_bypartition '
         !
         DO I = 0, NUMPROCS-1
             !
-            WRITE(OUNITS(REPORT_U), '(I0, A)', ADVANCE='NO') PART_ARRAY(0,I), ' '
+            WRITE(OUNITS(REPORT_U), '(I0, A)', ADVANCE='NO') PART_ARRAY(0,I), &
+                & ' '
             !
         END DO
         !
         ! Print number of nodes on each partition
         !
-        WRITE(OUNITS(REPORT_U), '(/,A)', ADVANCE='NO') 'number_of_nodes_bypartition '
+        WRITE(OUNITS(REPORT_U), '(/,A)', ADVANCE='NO') &
+            & 'number_of_nodes_bypartition '
         !
         DO I = 0, NUMPROCS-1
             !
-            WRITE(OUNITS(REPORT_U), '(I0, A)', ADVANCE='NO') PART_ARRAY(1,I), ' '
+            WRITE(OUNITS(REPORT_U), '(I0, A)', ADVANCE='NO') PART_ARRAY(1,I), &
+                & ' '
             !
         END DO
+        !
+        ! Print number of phases
+        !
+        WRITE(OUNITS(REPORT_U), '(/,A,I0)', ADVANCE='NO') 'number_of_phases ', &
+            & NUMPHASES
         !
         ! Print number of slip systems and the orientation definition
         !
@@ -952,10 +992,11 @@ CONTAINS
         !
         DO I = 1, NUMPHASES
             !
-            WRITE(OUNITS(REPORT_U), '(I0, A)', ADVANCE='NO') CTYPE(I)%NUMSLIP, ' '
+            WRITE(OUNITS(REPORT_U), '(I0, A)', ADVANCE='NO') CTYPE(I)%NUMSLIP, &
+                & ' '
             !
         END DO
-        !    
+        !
         WRITE(OUNITS(REPORT_U), '(/,A,A,A,A)') 'orientation_definition ', &
             & TRIM(ORIENTATION_OPTIONS%ORIENTATION_PARAMETERIZATION), ':', &
             & TRIM(ORIENTATION_OPTIONS%ORIENTATION_CONVENTION)
@@ -966,9 +1007,9 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE WRITE_REPORT_FILE_OUTPUT_FILES(CURRENT_STEP, INPUT_STRING)
+    SUBROUTINE WRITE_REPORT_FILE_OUTPUT_FILES(CURRENT_STEP, INPUT_STRING, PFLAG)
     !
-    ! This writes the file names of the user-defined output files from the 
+    ! This writes the file names of the user-defined output files from the
     ! simulation.config.
     !
     !---------------------------------------------------------------------------
@@ -976,9 +1017,15 @@ CONTAINS
     ! Arguments:
     ! INPUT_STRING: Character array denoting file name to print.
     ! CURRENT_STEP: Current step at which we are printing information for.
+    ! PFLAG: Determine if printing should happen or not
     !
     CHARACTER(LEN=*), INTENT(IN) :: INPUT_STRING(:)
     INTEGER, INTENT(IN) :: CURRENT_STEP
+    LOGICAL, INTENT(IN) :: PFLAG
+    !
+    ! Locals:
+    ! I: Looping variable for printing of INPUT_STRING
+    !
     INTEGER :: I
     !
     !---------------------------------------------------------------------------
@@ -989,7 +1036,7 @@ CONTAINS
         !
         ! If the first step is being printed then print to the report file.
         ! If the "first" step after restarting a simulation, also print.
-        IF (((CURRENT_STEP .EQ. 1)) .OR. ((OPTIONS%RESTART .EQV. .TRUE.) .AND. &
+        IF ((PFLAG .EQV. .TRUE.) .OR. ((OPTIONS%RESTART .EQV. .TRUE.) .AND. &
             & (CURRENT_STEP .EQ. OPTIONS%RESTART_INITIAL_STEP))) THEN
             !
             WRITE(OUNITS(REPORT_U), '(25(A,1X))') &
@@ -1003,10 +1050,10 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE ADD_TO_OUTPUT_FILES(CURRENT_STEP, INPUT_STRING, &
-        &STRING_ARRAY)
+    SUBROUTINE ADD_TO_REPORT_OUTPUT_FILES(CURRENT_STEP, INPUT_STRING, &
+        &STRING_ARRAY, PFLAG)
     !
-    ! This writes the file names of the user-defined output files from the 
+    ! This writes the file names of the user-defined output files from the
     ! simulation.config.
     !
     !---------------------------------------------------------------------------
@@ -1018,6 +1065,7 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(IN) :: INPUT_STRING
     CHARACTER(LEN=16), INTENT(INOUT), ALLOCATABLE :: STRING_ARRAY(:)
     INTEGER, INTENT(IN) :: CURRENT_STEP
+    LOGICAL, INTENT(IN) :: PFLAG
     !
     CHARACTER(LEN=16), ALLOCATABLE :: TEMP_ARRAY(:)
     INTEGER :: ARRAYSIZE, I
@@ -1030,7 +1078,7 @@ CONTAINS
         !
         ! If the first step is being printed then print to the report file.
         ! If the "first" step after restarting a simulation, also print.
-        IF (((CURRENT_STEP .EQ. 1)) .OR. ((OPTIONS%RESTART .EQV. .TRUE.) .AND. &
+        IF ((PFLAG .EQV. .TRUE.) .OR. ((OPTIONS%RESTART .EQV. .TRUE.) .AND. &
             & (CURRENT_STEP .EQ. OPTIONS%RESTART_INITIAL_STEP))) THEN
             !
             ! Append the INPUT_STRING to the present array and reallocate.
@@ -1055,7 +1103,7 @@ CONTAINS
         !
     END IF
     !
-    END SUBROUTINE ADD_TO_OUTPUT_FILES
+    END SUBROUTINE ADD_TO_REPORT_OUTPUT_FILES
     !
     !===========================================================================
     !
@@ -1111,7 +1159,7 @@ CONTAINS
     !
     SUBROUTINE WRITE_FORCE_FILE_HEADERS(DRIVER_TYPE)
     !
-    ! This writes the file headers for surface force files. Consistent format 
+    ! This writes the file headers for surface force files. Consistent format
     ! across all drivers is maintained here. Assumes that the CALL is wrapped
     ! in `IF (PRINT_OPTIONS%PRINT_FORCES) THEN` logic from where it is called.
     !
@@ -1144,6 +1192,7 @@ CONTAINS
     !---------------------------------------------------------------------------
     !
     ! If restartinbg with appending then we don't need the headers
+    !
     IF (OPTIONS%RESTART_FILE_HANDLING .EQ. 0) THEN
         !
         RETURN
@@ -1193,7 +1242,7 @@ CONTAINS
     SUBROUTINE WRITE_FORCE_FILE_DATA(DRIVER_TYPE, ISTEP, INCR, LOAD_ARRAY, &
         & AREA, TIME, LENGTH)
     !
-    ! This writes the actual data for surface force files. Consistent format 
+    ! This writes the actual data for surface force files. Consistent format
     ! across all drivers is maintained here. Assumes that the CALL is wrapped
     ! in `IF (PRINT_OPTIONS%PRINT_FORCES) THEN` logic from where it is called.
     !
@@ -1239,7 +1288,7 @@ CONTAINS
     ELSE IF (DRIVER_TYPE .EQ. 2) THEN ! triaxial
         !
         ! Print the data to the files
-        WRITE(OUNITS(FORCE_U1), '(2(I8),5(E15.5),E18.8)') ISTEP, INCR, & 
+        WRITE(OUNITS(FORCE_U1), '(2(I8),5(E15.5),E18.8)') ISTEP, INCR, &
             & LOAD_ARRAY(1,:), AREA(1), TIME, LENGTH(1)
         WRITE(OUNITS(FORCE_U2), '(2(I8),5(E15.5),E18.8)') ISTEP, INCR, &
             & LOAD_ARRAY(2,:), AREA(2), TIME, LENGTH(1)
@@ -1260,7 +1309,7 @@ CONTAINS
     !
     SUBROUTINE WRITE_CONV_FILE_HEADERS()
     !
-    ! This writes the file headers for convergence report. Consistent format 
+    ! This writes the file headers for convergence report. Consistent format
     ! across all drivers is maintained here. Assumes that the CALL is wrapped
     ! in `IF (PRINT_OPTIONS%PRINT_CONV) THEN` logic from where it is called.
     !
@@ -1285,7 +1334,7 @@ CONTAINS
     ! Arguments:
     ! INCR: Current total increment value
     ! ITER: Current iteration within step
-    ! ITMETHOD: Flag denoting successive approx. (0) or newton-raphson (1) 
+    ! ITMETHOD: Flag denoting successive approx. (0) or newton-raphson (1)
     ! R_NORM: Residual norm -> sqrt(sum(resid * resid))
     ! RX_NORM: Maximal absolute residual -> maxval(abs(resid))
     ! F_NORM: Force norm -> sqrt(sum(force * force))
@@ -1310,7 +1359,8 @@ CONTAINS
     SUBROUTINE WRITE_RESTART_FIELD(VELOCITY, C0_ANGS, C_ANGS, &
         & RSTAR, RSTAR_N, WTS, CRSS, CRSS_N, &
         & E_ELAS_KK_BAR, SIG_VEC_N, EQSTRAIN, EQPLSTRAIN, GAMMA, &
-        & EL_WORK_N, EL_WORKP_N, EL_WORK_RATE_N, EL_WORKP_RATE_N)
+        & EL_WORK_N, EL_WORKP_N, EL_WORK_RATE_N, EL_WORKP_RATE_N, PLSTRAIN, &
+        & TOTSTRAIN, ISTEP)
     !
     !  Writes field data for restarting simulation
     !
@@ -1319,10 +1369,12 @@ CONTAINS
     ! Arguments:
     !
     REAL(RK), INTENT(IN) :: VELOCITY(DOF_SUB1:DOF_SUP1)
-    REAL(RK), INTENT(IN) :: C0_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: C0_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: C_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: RSTAR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK), INTENT(IN) :: RSTAR_N(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: RSTAR_N(0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: WTS(0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: CRSS(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: CRSS_N(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
@@ -1335,28 +1387,65 @@ CONTAINS
     REAL(RK), INTENT(IN) :: EL_WORKP_N(EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: EL_WORK_RATE_N(EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: EL_WORKP_RATE_N(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: PLSTRAIN(0:TVEC1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: TOTSTRAIN(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1)
+    INTEGER, INTENT(IN) :: ISTEP
     !
     ! Locals:
     !
     INTEGER :: MYUNIT
     CHARACTER(LEN=8) :: CHARID ! assumes less than 10,000 processes
+    INTEGER :: RST_NUM
+    LOGICAL :: FILE_EXISTS
+    CHARACTER(LEN=8) :: RST_NUM_STR
+    CHARACTER(LEN=64) :: FILENAME
     !
     INTRINSIC :: TRIM
     !
-    !----------------------------------------------------------------------
+    !---------------------------------------------------------------------------
     !
     MYUNIT = NEWUNITNUMBER()
     WRITE(CHARID, '(I0)') MYID + 1
     !
-    OPEN(UNIT=MYUNIT, FILE=TRIM(OPTIONS%RSFIELD_BASE_OUT)//'.core'//TRIM(CHARID), &
-         &   FORM ='UNFORMATTED', ACTION ='WRITE')
+    RST_NUM = 1000
+    FILE_EXISTS = .FALSE.
     !
-    !  Velocity and coordinates.
+    DO WHILE (.NOT. FILE_EXISTS)
+        !
+        WRITE(RST_NUM_STR, '(I0)') RST_NUM
+        !
+        FILENAME = 'rst'//TRIM(RST_NUM_STR)//'.control'
+        !
+        INQUIRE(FILE = FILENAME, EXIST = FILE_EXISTS)
+        RST_NUM = RST_NUM - 1
+        !
+        ! If we are on the first simulation, non-restart
+        !
+        IF (RST_NUM .EQ. -2) THEN
+            !
+            FILE_EXISTS = .TRUE.
+            RST_NUM = -2
+            !
+        END IF
+        !
+    END DO
+    !
+    IF (ISTEP .EQ. 1) THEN
+        !
+        RST_NUM = RST_NUM + 2
+        WRITE(RST_NUM_STR, '(I0)') RST_NUM
+        !
+    END IF
+    !
+    FILENAME = 'rst'//TRIM(RST_NUM_STR)//'.field.core'//TRIM(CHARID)
+    OPEN(UNIT = MYUNIT, FILE = FILENAME, FORM = 'UNFORMATTED', ACTION = 'WRITE')
+    !
+    ! Velocity and coordinates.
     !
     WRITE(MYUNIT) COORDS
-    WRITE(MYUNIT) VELOCITY  
+    WRITE(MYUNIT) VELOCITY
     !
-    !  Orientations, weights and hardnesses.
+    ! Orientations, weights and hardnesses.
     !
     WRITE(MYUNIT) C0_ANGS
     WRITE(MYUNIT) C_ANGS
@@ -1366,7 +1455,7 @@ CONTAINS
     WRITE(MYUNIT) CRSS
     WRITE(MYUNIT) CRSS_N
     !
-    !  Elastic Strains.
+    ! Elastic Strains.
     !
     WRITE(MYUNIT) GELA_KK_BAR
     WRITE(MYUNIT) GSIG_VEC_N
@@ -1375,18 +1464,23 @@ CONTAINS
     WRITE(MYUNIT) E_ELAS_KK_BAR
     WRITE(MYUNIT) SIG_VEC_N
     !
-    !  Equivalent Strains
+    ! Equivalent Strains
     !
     WRITE(MYUNIT) EQSTRAIN
     WRITE(MYUNIT) EQPLSTRAIN
     WRITE(MYUNIT) GAMMA
     !
-    !  Total work, plastic work, and rates.
+    ! Total work, plastic work, and rates.
     !
     WRITE(MYUNIT) EL_WORK_N
     WRITE(MYUNIT) EL_WORKP_N
     WRITE(MYUNIT) EL_WORK_RATE_N
     WRITE(MYUNIT) EL_WORKP_RATE_N
+    !
+    ! Other integrated quantities
+    !
+    WRITE(MYUNIT) PLSTRAIN
+    WRITE(MYUNIT) TOTSTRAIN
     !
     CLOSE(MYUNIT)
     !
@@ -1394,8 +1488,9 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE WRITE_UNIAXIAL_RESTART(INCR, TIME, LOAD, PREV_LOAD, AREA, &
-        & AREA0, CURRENT_STEP, PREVIOUS_LOAD, STEP_COMPLETE, DTIME_OLD)
+    SUBROUTINE WRITE_UNIAXIAL_RESTART(INCR, TIME, LOAD, AREA, &
+        & AREA0, CURRENT_STEP, PREVIOUS_LOAD, STEP_COMPLETE, DTIME_OLD, &
+        & PREV_STRAIN, CURR_STRAIN, ISTEP)
     !
     ! WRITE uniaxial control restart information.
     !
@@ -1411,18 +1506,25 @@ CONTAINS
     INTEGER,  INTENT(IN) :: INCR
     REAL(RK), INTENT(IN) :: TIME
     REAL(RK), INTENT(IN) :: LOAD(NSURFACES,3)
-    REAL(RK), INTENT(IN) :: PREV_LOAD
-    REAL(RK), INTENT(IN) :: AREA(NSURFACES), AREA0(NSURFACES)
+    REAL(RK), INTENT(IN) :: AREA(NSURFACES)
+    REAL(RK), INTENT(IN) :: AREA0(NSURFACES)
     INTEGER,  INTENT(IN) :: CURRENT_STEP
     REAL(RK), INTENT(IN) :: PREVIOUS_LOAD(:)
     LOGICAL,  INTENT(IN) :: STEP_COMPLETE
     REAL(RK), INTENT(IN) :: DTIME_OLD
+    REAL(RK), INTENT(IN) :: PREV_STRAIN
+    REAL(RK), INTENT(IN) :: CURR_STRAIN
+    INTEGER, INTENT(IN) :: ISTEP
     !
     ! Locals:
     ! MYUNIT: Current unit number to open restart file.
     ! ISURF: Generic loop index to loop over mesh surfaces.
     !
     INTEGER :: MYUNIT
+    INTEGER :: RST_NUM
+    LOGICAL :: FILE_EXISTS
+    CHARACTER(LEN=8) :: RST_NUM_STR
+    CHARACTER(LEN=64) :: FILENAME
     INTEGER :: ISURF
     !
     !---------------------------------------------------------------------------
@@ -1431,8 +1533,40 @@ CONTAINS
         !
         MYUNIT = NEWUNITNUMBER()
         !
-        OPEN(UNIT=MYUNIT, FILE=TRIM(OPTIONS%RSCTRL_OUT),&
-            & FORM='UNFORMATTED', ACTION='WRITE')
+        RST_NUM = 1000
+        FILE_EXISTS = .FALSE.
+        !
+        DO WHILE (.NOT. FILE_EXISTS)
+            !
+            WRITE(RST_NUM_STR, '(I0)') RST_NUM
+            !
+            FILENAME = 'rst'//TRIM(RST_NUM_STR)//'.control'
+            !
+            INQUIRE(FILE = FILENAME, EXIST = FILE_EXISTS)
+            RST_NUM = RST_NUM - 1
+            !
+            ! If we are on the first simulation, non-restart
+            !
+            IF (RST_NUM .EQ. -2) THEN
+                !
+                FILE_EXISTS = .TRUE.
+                RST_NUM = -2
+                !
+            END IF
+            !
+        END DO
+        !
+        IF (ISTEP .EQ. 1) THEN
+            !
+            RST_NUM = RST_NUM + 2
+            WRITE(RST_NUM_STR, '(I0)') RST_NUM
+            !
+        END IF
+        !
+        FILENAME = 'rst'//TRIM(RST_NUM_STR)//'.control'
+        OPEN(UNIT = MYUNIT, FILE = FILENAME, FORM = 'UNFORMATTED', &
+            & ACTION = 'WRITE')
+        !
         !
         WRITE(MYUNIT) CURRENT_STEP
         WRITE(MYUNIT) PREVIOUS_LOAD
@@ -1445,15 +1579,16 @@ CONTAINS
             !
             WRITE(MYUNIT) LOAD(ISURF,:)
             !
-        ENDDO
-        !    
-        WRITE(MYUNIT) PREV_LOAD
+        END DO
+        !
         WRITE(MYUNIT) AREA
         WRITE(MYUNIT) AREA0
+        WRITE(MYUNIT) PREV_STRAIN
+        WRITE(MYUNIT) CURR_STRAIN
         !
         CLOSE(MYUNIT)
         !
-    ENDIF
+    END IF
     !
     RETURN
     !
@@ -1475,8 +1610,8 @@ CONTAINS
     LOGICAL, INTENT(IN)  :: STEP_COMPLETE
     INTEGER, INTENT(IN)  :: ISTEP
     INTEGER, INTENT(IN)  :: INCR
-    REAL(RK), INTENT(IN) :: CURR_LOAD(3), PREV_LOAD(3)  
-    REAL(RK), INTENT(IN) :: DTIME, TIME    
+    REAL(RK), INTENT(IN) :: CURR_LOAD(3), PREV_LOAD(3)
+    REAL(RK), INTENT(IN) :: DTIME, TIME
     REAL(RK), INTENT(IN) :: SURF_LOAD_ARRAY(NSURFACES,3)
     REAL(RK), INTENT(IN) :: AREA(NSURFACES), AREA0(NSURFACES)
     REAL(RK), INTENT(IN) :: LENGTH(3), LENGTH0(3)
@@ -1488,6 +1623,10 @@ CONTAINS
     ! ISURF: Generic loop index to loop over mesh surfaces.
     !
     INTEGER :: MYUNIT
+    INTEGER :: RST_NUM
+    LOGICAL :: FILE_EXISTS
+    CHARACTER(LEN=8) :: RST_NUM_STR
+    CHARACTER(LEN=64) :: FILENAME
     INTEGER :: ISURF
     !
     !---------------------------------------------------------------------------
@@ -1495,9 +1634,40 @@ CONTAINS
     IF (MYID .EQ. 0) THEN
         !
         MYUNIT = NEWUNITNUMBER()
-        !       
-        OPEN(UNIT=MYUNIT, FILE=TRIM(OPTIONS%RSCTRL_OUT), &
-            & FORM='UNFORMATTED', ACTION='WRITE')
+        !
+        RST_NUM = 1000
+        FILE_EXISTS = .FALSE.
+        !
+        DO WHILE (.NOT. FILE_EXISTS)
+            !
+            WRITE(RST_NUM_STR, '(I0)') RST_NUM
+            !
+            FILENAME = 'rst'//TRIM(RST_NUM_STR)//'.control'
+            !
+            INQUIRE(FILE = FILENAME, EXIST = FILE_EXISTS)
+            RST_NUM = RST_NUM - 1
+            !
+            ! If we are on the first simulation, non-restart
+            !
+            IF (RST_NUM .EQ. -2) THEN
+                !
+                FILE_EXISTS = .TRUE.
+                RST_NUM = -2
+                !
+            END IF
+            !
+        END DO
+        !
+        IF (ISTEP - 1 .EQ. 1) THEN
+            !
+            RST_NUM = RST_NUM + 2
+            WRITE(RST_NUM_STR, '(I0)') RST_NUM
+            !
+        END IF
+        !
+        FILENAME = 'rst'//TRIM(RST_NUM_STR)//'.control'
+        OPEN(UNIT = MYUNIT, FILE = FILENAME, FORM = 'UNFORMATTED', &
+            & ACTION = 'WRITE')
         !
         WRITE(MYUNIT) ISTEP
         WRITE(MYUNIT) CURR_LOAD
@@ -1508,10 +1678,10 @@ CONTAINS
         WRITE(MYUNIT) TIME
         !
         DO ISURF = 1, NSURFACES
-            !        
+            !
             WRITE(MYUNIT) SURF_LOAD_ARRAY(ISURF,:)
             !
-        ENDDO
+        END DO
         !
         WRITE(MYUNIT) AREA
         WRITE(MYUNIT) AREA0
@@ -1522,8 +1692,8 @@ CONTAINS
         WRITE(MYUNIT) T_PERT_MAG
         !
         CLOSE(MYUNIT)
-        !    
-    ENDIF
+        !
+    END IF
     !
     RETURN
     !
@@ -1560,6 +1730,10 @@ CONTAINS
     ! Locals:
     !
     INTEGER :: MYUNIT
+    INTEGER :: RST_NUM
+    LOGICAL :: FILE_EXISTS
+    CHARACTER(LEN=8) :: RST_NUM_STR
+    CHARACTER(LEN=64) :: FILENAME
     INTEGER :: ISURF
     !
     !---------------------------------------------------------------------------
@@ -1567,8 +1741,40 @@ CONTAINS
     IF (MYID .EQ. 0) THEN
         !
         MYUNIT = NEWUNITNUMBER()
-        OPEN(UNIT = MYUNIT, FILE = TRIM(OPTIONS%RSCTRL_OUT), &
-            & FORM = 'UNFORMATTED', ACTION = 'WRITE')
+        !
+        RST_NUM = 1000
+        FILE_EXISTS = .FALSE.
+        !
+        DO WHILE (.NOT. FILE_EXISTS)
+            !
+            WRITE(RST_NUM_STR, '(I0)') RST_NUM
+            !
+            FILENAME = 'rst'//TRIM(RST_NUM_STR)//'.control'
+            !
+            INQUIRE(FILE = FILENAME, EXIST = FILE_EXISTS)
+            RST_NUM = RST_NUM - 1
+            !
+            ! If we are on the first simulation, non-restart
+            !
+            IF (RST_NUM .EQ. -2) THEN
+                !
+                FILE_EXISTS = .TRUE.
+                RST_NUM = -2
+                !
+            END IF
+            !
+        END DO
+        !
+        IF (ISTEP - 1 .EQ. 1) THEN
+            !
+            RST_NUM = RST_NUM + 2
+            WRITE(RST_NUM_STR, '(I0)') RST_NUM
+            !
+        END IF
+        !
+        FILENAME = 'rst'//TRIM(RST_NUM_STR)//'.control'
+        OPEN(UNIT = MYUNIT, FILE = FILENAME, FORM = 'UNFORMATTED', &
+            & ACTION = 'WRITE')
         !
         WRITE(MYUNIT) ISTEP
         WRITE(MYUNIT) CURR_LOAD
@@ -1581,7 +1787,7 @@ CONTAINS
             !
             WRITE(MYUNIT) SURF_LOAD_ARRAY(ISURF, :)
             !
-        ENDDO
+        END DO
         WRITE(MYUNIT) AREA
         WRITE(MYUNIT) AREA0
         WRITE(MYUNIT) LENGTH
@@ -1594,7 +1800,7 @@ CONTAINS
         !
         CLOSE(MYUNIT)
         !
-    ENDIF
+    END IF
     !
     RETURN
     !

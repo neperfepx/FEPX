@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE ANISO_EVPS_MOD
@@ -44,10 +44,12 @@ CONTAINS
     REAL(RK), INTENT(OUT) :: DETV(EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN)  :: DTIME
     REAL(RK), INTENT(IN)  :: KEINV(0:TVEC1,1:NUMPHASES)
-    REAL(RK), INTENT(IN)  :: C_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN)  :: C_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN)  :: SIG_VEC(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN)  :: CRSS(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK), INTENT(IN)  :: RSTAR_N(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN)  :: RSTAR_N(0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN)  :: RSTAR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN)  :: E_BAR_VEC(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN)  :: WTS(0:NGRAIN1, EL_SUB1:EL_SUP1)
@@ -232,7 +234,6 @@ CONTAINS
                 !
             END IF
             !
-            ! 
             ! In order to remove one dimension from my_phase (the dimension over
             ! `ngrain'), we add a loop over that dimension here. - hritz 9/15/05
             !
@@ -245,9 +246,8 @@ CONTAINS
                         !
                         WHERE (MY_PHASE .EQ. IPHASE)
                             !
-                            TAN_STIF_VP(I, J, K, :) = TAN_STIF_VP(I, J, K, :) +&
-                                & COMP(K,:) * &
-                                & P_HAT_VEC(I+1, ISLIP+1) * &
+                            TAN_STIF_VP(I, J, K, :) = TAN_STIF_VP(I, J, K, :) &
+                                & + COMP(K,:) * P_HAT_VEC(I+1, ISLIP+1) * &
                                 & P_HAT_VEC(J+1, ISLIP+1)
                             !
                         ENDWHERE

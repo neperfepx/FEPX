@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE HARDENING_MOD
@@ -44,7 +44,6 @@ PUBLIC :: HARD_LAW
 INTEGER, PARAMETER :: HARD_LAW_VOCE = 2
 INTEGER, PARAMETER :: EVAL_RATE = 1
 INTEGER, PARAMETER :: EVAL_RATE_DER = 2
-INTEGER :: N_SLIP
 !
 CONTAINS
     !
@@ -59,7 +58,7 @@ CONTAINS
     ! FUNC: Array of computed hardening rates
     ! DFUNC: Array of computed hardening rate derivatives
     ! CRSS: Array of critical resolved shear stress (hardness)
-    ! CRSS_SAT: Array of satuRATIOn CRSS
+    ! CRSS_SAT: Array of saturation CRSS
     ! SHEAR: Shear values
     ! SHRATE: Shear rates
     ! EPSEFF:
@@ -84,16 +83,8 @@ CONTAINS
     !   individual subroutines...
     ! 
     REAL(RK) :: MYSIGN(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
-    REAL(RK) :: RATIO(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
-    INTEGER :: NUMIND
-    INTEGER :: N_SLIP
-    INTEGER, POINTER :: INDICES(:)=>NULL()
-    INTEGER :: IPHASE
     INTEGER :: ISLIP
     INTEGER :: MY_PHASE(0:(M - 1))
-    REAL(RK) :: C3
-    REAL(RK) :: C2
-    REAL(RK) :: C10
     !
     !---------------------------------------------------------------------------
     !
@@ -131,21 +122,22 @@ CONTAINS
     IF (OPTIONS%HARD_TYPE .EQ. 'isotropic') THEN
         !
         CALL ISOTROPIC_HARDENING(FUNC, DFUNC, CRSS, CRSS_SAT, SHRATE, ICODE, &
-            & IHARD, N, M, MYSIGN, MY_PHASE)
+            & N, M, MYSIGN, MY_PHASE)
         !
     ELSEIF (OPTIONS%HARD_TYPE .EQ. 'cyclic_isotropic') THEN
         !
-        CALL CYCLIC_HARDENING(FUNC, DFUNC, CRSS, CRSS_SAT, SHEAR, SHRATE, &
-            & EPSEFF, ICODE, IHARD, N, M, MYSIGN, MY_PHASE)
+        CALL CYCLIC_HARDENING(FUNC, DFUNC, CRSS, CRSS_SAT, SHEAR, EPSEFF, &
+            & ICODE, N, M, MYSIGN, MY_PHASE)
         !
     ELSEIF (OPTIONS%HARD_TYPE .EQ. 'cyclic_anisotropic') THEN
         !
-        CALL PAR_QUIT('Error  :     > Anisotropic cyclic hardening is not currently supported.')
+        CALL PAR_QUIT('Error  :     > Anisotropic cyclic hardening is not &
+            &currently supported.')
         !
     ELSEIF (OPTIONS%HARD_TYPE .EQ. 'latent') THEN
         !
-        CALL ANISOTROPIC_HARDENING(FUNC, DFUNC, CRSS, CRSS_SAT,ICODE, IHARD, &
-            & N, M, MYSIGN, MY_PHASE)
+        CALL ANISOTROPIC_HARDENING(FUNC, DFUNC, CRSS, CRSS_SAT,ICODE, N, M, &
+            & MYSIGN, MY_PHASE)
         !
     ELSE
         !
@@ -158,7 +150,7 @@ CONTAINS
     !===========================================================================
     !
     SUBROUTINE ISOTROPIC_HARDENING(FUNC, DFUNC, CRSS, CRSS_SAT, SHRATE, ICODE, &
-        & IHARD, N, M, MYSIGN, MY_PHASE)
+        & N, M, MYSIGN, MY_PHASE)
     !
     ! Isotropic hardening assumption
     !
@@ -168,10 +160,9 @@ CONTAINS
     ! FUNC: Array of computed hardening rates
     ! DFUNC: Array of computed hardening rate derivatives
     ! CRSS: Array of critical resolved shear stress (hardness)
-    ! CRSS_SAT: Array of satuRATIOn CRSS
+    ! CRSS_SAT: Array of saturation CRSS
     ! SHRATE: Shear rates
     ! ICODE: Hardening law
-    ! IHARD: Flag determining calculation of rate or derivative of rate
     ! N, M: Array dimensions
     ! MYSIGN:
     ! MY_PHASE:
@@ -182,7 +173,6 @@ CONTAINS
     REAL(RK), INTENT(IN) :: CRSS_SAT(0:(N - 1), 0:(M - 1))
     REAL(RK), INTENT(IN) :: SHRATE(0:(N - 1), 0:(M - 1))
     INTEGER, INTENT(IN) :: ICODE
-    INTEGER, INTENT(IN) :: IHARD
     INTEGER, INTENT(IN) :: N
     INTEGER, INTENT(IN) :: M
     REAL(RK), INTENT(IN) :: MYSIGN(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
@@ -195,10 +185,8 @@ CONTAINS
     INTEGER :: N_SLIP
     INTEGER, POINTER :: INDICES(:)=>NULL()
     INTEGER :: IPHASE
-    INTEGER :: ISLIP
     REAL(RK) :: C3
     REAL(RK) :: C2
-    REAL(RK) :: C10
     !
     !---------------------------------------------------------------------------
     !
@@ -213,56 +201,32 @@ CONTAINS
         !
         CALL FIND_INDICES(NUMIND, IPHASE, MY_PHASE, INDICES)
         !
-        ! RC: All of the slip systems are just looped over instead of just the
-        !   one. Since only the isotropic CASE is being examined here it should
-        !   be possible to do only one computation of the slip system and THEN
-        !   assign all the other slip systems that value. Future update should
-        !   look into that implementation.
+        RATIO(0, :, INDICES) = (CRSS_SAT(:, INDICES) - &
+            & CRSS(0, :, INDICES)) / (CRSS_SAT(:, INDICES) - C3)
         !
-        DO ISLIP = 0, N_SLIP-1
+        SELECT CASE(ICODE)
+        !
+        CASE (EVAL_RATE)
             !
-            IF (ISLIP==0) THEN
-                !
-                RATIO(ISLIP, :, INDICES) = (CRSS_SAT(:, INDICES) - &
-                    & CRSS(ISLIP, :, INDICES)) / (CRSS_SAT(:, INDICES) - C3)
-                !
-                SELECT CASE(ICODE)
-                !
-                CASE (EVAL_RATE)
-                    !
-                    FUNC(ISLIP,:, INDICES) = SHRATE(:, INDICES) * &
-                        & MYSIGN(ISLIP, :, INDICES) * C2 * &
-                        & RATIO(ISLIP, :, INDICES) **N_VOCE(IPHASE)
-                    !
-                CASE (EVAL_RATE_DER)
-                    !
-                    DFUNC(ISLIP, : , INDICES) = -C2 /(CRSS_SAT(:, INDICES) - &
-                        & CRYSTAL_PARM(3, IPHASE)) * SHRATE(:, INDICES) * &
-                        & MYSIGN(ISLIP, :, INDICES) * N_VOCE(IPHASE)
-                    !
-                CASE DEFAULT
-                    !
-                END SELECT
-                !
-            ELSE
-                !
-                SELECT CASE(ICODE)
-                !
-                CASE (EVAL_RATE)
-                    !
-                    FUNC(ISLIP, :, INDICES) = FUNC(0, :, INDICES)
-                    !
-                CASE (EVAL_RATE_DER)
-                    !
-                    DFUNC(ISLIP, :, INDICES) = DFUNC(0, :, INDICES)
-                    !
-                CASE DEFAULT
-                    !
-                END SELECT
-                !
-            END IF
+            FUNC(0,:, INDICES) = SHRATE(:, INDICES) * &
+                & MYSIGN(0, :, INDICES) * C2 * &
+                & RATIO(0, :, INDICES) ** N_VOCE(IPHASE)
             !
-        END DO !N_SLIP
+            FUNC(1:N_SLIP-1, :, INDICES) = SPREAD(FUNC(0, :, INDICES), DIM=1, &
+                & NCOPIES = (N_SLIP-2))
+            !
+        CASE (EVAL_RATE_DER)
+            !
+            DFUNC(0, : , INDICES) = -C2 /(CRSS_SAT(:, INDICES) - &
+                & CRYSTAL_PARM(3, IPHASE)) * SHRATE(:, INDICES) * &
+                & MYSIGN(0, :, INDICES) * N_VOCE(IPHASE)
+            !
+            DFUNC(1:N_SLIP-1, :, INDICES) = SPREAD(DFUNC(0, :, INDICES), &
+                & DIM = 1, NCOPIES = (N_SLIP-2))
+            !
+        CASE DEFAULT
+            !
+        END SELECT
         !
         DEALLOCATE(INDICES)
         !
@@ -272,8 +236,8 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE CYCLIC_HARDENING(FUNC, DFUNC, CRSS, CRSS_SAT, SHEAR, SHRATE, &
-        & EPSEFF, ICODE, IHARD, N, M, MYSIGN, MY_PHASE)
+    SUBROUTINE CYCLIC_HARDENING(FUNC, DFUNC, CRSS, CRSS_SAT, SHEAR, EPSEFF, &
+        & ICODE, N, M, MYSIGN, MY_PHASE)
     !
     ! Cyclic hardening assumption
     !
@@ -285,10 +249,8 @@ CONTAINS
     ! CRSS: Array of critical resolved shear stress (hardness)
     ! CRSS_SAT: Array of satuRATIOn CRSS
     ! SHEAR: Shear values
-    ! SHRATE: Shear rates
     ! EPSEFF:
     ! ICODE: Hardening law
-    ! IHARD: Flag determining calculation of rate or derivative of rate
     ! N, M: Array dimensions
     ! MYSIGN:
     ! MY_PHASE:
@@ -297,11 +259,9 @@ CONTAINS
     REAL(RK), INTENT(OUT) :: DFUNC(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
     REAL(RK), INTENT(IN) :: CRSS(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
     REAL(RK), INTENT(IN) :: CRSS_SAT(0:(N - 1), 0:(M - 1))
-    REAL(RK), INTENT(IN) :: SHRATE(0:(N - 1), 0:(M - 1))
     REAL(RK), INTENT(IN) :: SHEAR(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
     REAL(RK), INTENT(IN) :: EPSEFF(0:(N - 1), 0:(M - 1))
     INTEGER, INTENT(IN) :: ICODE
-    INTEGER, INTENT(IN) :: IHARD
     INTEGER, INTENT(IN) :: N
     INTEGER, INTENT(IN) :: M
     REAL(RK), INTENT(IN) :: MYSIGN(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
@@ -322,7 +282,6 @@ CONTAINS
     INTEGER :: ISLIP
     REAL(RK) :: C3
     REAL(RK) :: C2
-    REAL(RK) :: C10
     REAL(RK) :: SHR_MAX(0:(N - 1), 0:(M - 1))
     REAL(RK) :: SHR_MIN(0:(N - 1), 0:(M - 1))
     REAL(RK), PARAMETER :: MACH_EPS = 2.22D-16
@@ -450,7 +409,7 @@ CONTAINS
     !===========================================================================
     !
     SUBROUTINE ANISOTROPIC_HARDENING(FUNC, DFUNC, CRSS, CRSS_SAT, ICODE, &
-        & IHARD, N, M, MYSIGN, MY_PHASE)
+        & N, M, MYSIGN, MY_PHASE)
     !
     ! Anisotropic hardening assumption
     !
@@ -460,9 +419,8 @@ CONTAINS
     ! FUNC: Array of computed hardening rates
     ! DFUNC: Array of computed hardening rate derivatives
     ! CRSS: Array of critical resolved shear stress (hardness)
-    ! CRSS_SAT: Array of satuRATIOn CRSS
+    ! CRSS_SAT: Array of saturation CRSS
     ! ICODE: Hardening law
-    ! IHARD: Flag determining calculation of rate or derivative of rate
     ! N, M: Array dimensions
     ! MYSIGN:
     ! MY_PHASE:
@@ -472,7 +430,6 @@ CONTAINS
     REAL(RK), INTENT(IN) :: CRSS(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
     REAL(RK), INTENT(IN) :: CRSS_SAT(0:(N - 1), 0:(M - 1))
     INTEGER, INTENT(IN) :: ICODE
-    INTEGER, INTENT(IN) :: IHARD
     INTEGER, INTENT(IN) :: N
     INTEGER, INTENT(IN) :: M
     REAL(RK), INTENT(IN) :: MYSIGN(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
@@ -482,17 +439,13 @@ CONTAINS
     !
     REAL(RK) :: RATIO(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
     REAL(RK) :: SHRATE(0:MAXSLIP1)
-    INTEGER :: NUMIND
     INTEGER :: NSLIP
     INTEGER :: XTYPE
-    INTEGER, ALLOCATABLE :: INDICES(:)
     INTEGER :: IPHASE
     INTEGER :: IELMS
     INTEGER :: DIM
-    INTEGER :: INDEX
     REAL(RK) :: C3
     REAL(RK) :: C2
-    REAL(RK) :: C10
     LOGICAL :: LOGVEC(0:(M - 1))
     !
     !---------------------------------------------------------------------------

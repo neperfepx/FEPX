@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE MATRIX_OPERATIONS_MOD
@@ -42,10 +42,13 @@ MODULE MATRIX_OPERATIONS_MOD
 ! SYMM_VGR: Compute symmetric part of an array of velocity gradients.
 ! SYMM_VGR_SER: Serial version (one element).
 ! SKEW_VGR: Compute skew part of an array of velocity gradients.
+! STRAIN_EQUIV_3X3: Find the equivalent (scalar) value of strain tensors, 3x3.
+! STRESS_EQUIV_3X3: Find the equivalent (scalar) value for stress tensor, 3x3.
 ! TENSOR3DCOMPOSE: Form matrix from deviatoric, skew, or spherical parts. If no
 !   parts are passed, the matix is zeroed.
-! TESNRO3DDECOMPOSE: Decompose matrix into deviatoric and spherical parts.
+! TENSOR3DDECOMPOSE: Decompose matrix into deviatoric and spherical parts.
 ! VEC5_VEC6: Convert 5-vector to 6-vector of symmetric matrix.
+! VEC6_CRYS_TO_VEC6_SAM: Convert 6-vector from crystal to 6-vector sample basis.
 ! VEC_D_VEC5: Multiply diagonal matrix times array of vectors. (5 dim)
 ! VEC_MAT_SKEW: Convert array of 3-vectors to array of skew matrices.
 ! VEC_MAT_SKEW_GRN: Also considers legacy grains per element.
@@ -82,7 +85,7 @@ REAL(RK), PARAMETER, PRIVATE :: SQ2_I = 1.0D0 / DSQRT(2.0D0)
 REAL(RK), PARAMETER, PRIVATE :: SQ6_I = 1.0D0 / DSQRT(6.0D0)
 REAL(RK), PARAMETER, PRIVATE :: TWOSQ6_I = 2.0D0 * DSQRT(6.0D0)
 !
-CONTAINS 
+CONTAINS
     !
     SUBROUTINE CALC_ELVOL(ELVOL, ECOORDS)
     !
@@ -162,10 +165,8 @@ CONTAINS
     INTEGER, INTENT(IN) :: M
     !
     ! Locals:
-    ! I: Looping index
     ! DETxx: Intermediary calculations
     !
-    INTEGER :: I
     REAL(RK) :: DET11(0:(N - 1), 0:(M - 1))
     REAL(RK) :: DET12(0:(N - 1), 0:(M - 1))
     REAL(RK) :: DET13(0:(N - 1), 0:(M - 1))
@@ -261,7 +262,7 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE GEN_MATRIX_VECTOR_MULT(Y, A, X, I1, I2, I3, I4, IER)
+    SUBROUTINE GEN_MATRIX_VECTOR_MULT(Y, A, X, IER)
     !
     !  Array of matrices times array of vectors: y(i) = A(i)*x(i)
     !
@@ -275,43 +276,30 @@ CONTAINS
     ! Y:
     ! A:
     ! X:
-    ! I1:
-    ! I2:
-    ! I3:
-    ! I4:
     ! IER:
     !
     REAL(RK) :: Y(:,:)
     REAL(RK) :: A(:,:,:)
     REAL(RK) :: X(:,:)
-    INTEGER :: I1
-    INTEGER :: I2
-    INTEGER :: I3
-    INTEGER :: I4
     INTEGER :: IER
     !
     ! Locals:
     !
     INTEGER :: I
     INTEGER :: J
-    INTEGER :: K
-    INTEGER :: AD1
     INTEGER :: AD2
     INTEGER :: AD3
     !
     !---------------------------------------------------------------------------
     !
-    AD1 = UBOUND(A, 1)
     AD2 = UBOUND(A, 2)
     AD3 = UBOUND(A, 3)
     !
-    DO K = 1, AD3
+    DO I = 1, AD3
         !
         DO J = 1, AD2
             !
-            !DO I = 1, AD1
-            Y(:, K) = Y(:, K) + A(:, J, K) * X(J, K)
-            !END DO
+            Y(:, I) = Y(:, I) + A(:, J, I) * X(J, I)
             !
         END DO
         !
@@ -325,7 +313,7 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE GEN_MATRIX_MULT(C, A, B, I1, I2, IER)
+    SUBROUTINE GEN_MATRIX_MULT(C, A, B, IER)
     !
     ! Accumulate Array of matrices times array of matrices: c(i) = a(i) * b(i)
     !
@@ -344,8 +332,6 @@ CONTAINS
     REAL(RK) :: C(:,:,:)
     REAL(RK) :: A(:,:,:)
     REAL(RK) :: B(:,:,:)
-    INTEGER :: I1
-    INTEGER :: I2
     INTEGER :: IER
     !
     ! Locals:
@@ -353,7 +339,6 @@ CONTAINS
     INTEGER :: I
     INTEGER :: J
     INTEGER :: K
-    INTEGER :: M
     INTEGER :: LDA
     INTEGER :: LDB
     INTEGER :: LDC
@@ -370,14 +355,14 @@ CONTAINS
     LTB = UBOUND(B, 2)
     N = UBOUND(A, 3)
     !
-    DO M = 1, N
+    DO I = 1, N
         !
         DO J = 1, LTB
             !
             DO K = 1, LTA
                 !
 !               DO I = 1,LDC
-                C(:, J, M) = C(:, J, M) + A(:, K, M) * B(K, J, M)
+                C(:, J, I) = C(:, J, I) + A(:, K, I) * B(K, J, I)
 !               END DO
                 !
             END DO
@@ -1817,9 +1802,6 @@ CONTAINS
     !  Locals:
     !
     INTEGER :: IER
-    INTEGER :: I
-    INTEGER :: J
-    INTEGER :: IDUMMY
     !
     !---------------------------------------------------------------------------
     !
@@ -1827,12 +1809,11 @@ CONTAINS
     !
     TEMP2 = 0.0D0
     !
-    CALL GEN_MATRIX_VECTOR_MULT(TEMP2, GSTIF, TEMP1, IDUMMY, IDUMMY, IDUMMY, &
-        & IDUMMY, IER)
+    CALL GEN_MATRIX_VECTOR_MULT(TEMP2, GSTIF, TEMP1, IER)
     !
     RES = 0.0D0
     !
-    CALL PART_SCATTER(RES, TEMP2, NP, .FALSE., DTRACE)
+    CALL PART_SCATTER(RES, TEMP2, NP, DTRACE)
     !
     WHERE (BCS)
         !
@@ -1956,6 +1937,101 @@ CONTAINS
     RETURN
     !
     END SUBROUTINE SKEW_VGR
+    !
+    !===========================================================================
+    !
+    SUBROUTINE STRAIN_EQUIV_3X3(E, EQUIV)
+    !
+    ! Find the equivalent value of a strain tensor,
+    !   EQUIV = sqrt(2/3 E_(ij) E_(ij)).
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! E: Array of 3x3 matrices
+    !
+    REAL(RK), INTENT(IN) :: E(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT) :: EQUIV(EL_SUB1:EL_SUP1)
+    !
+    ! Locals:
+    ! I: Looping index
+    ! EDEV: Deviatoric portion of E
+    ! EVOL: Volumetric portion of E
+    !
+    INTEGER :: I
+    REAL(RK) :: EVOL(EL_SUB1:EL_SUP1)
+    REAL(RK) :: EDEV(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1)
+    !
+    !---------------------------------------------------------------------------
+    !
+    EQUIV = 0.0D0
+    EVOL = 0.0D0
+    EDEV = 0.0D0
+    !
+    EVOL(:) = (1.0D0 / 3.0D0) * (E(0, 0, :) + E(1, 1, :) + E(2, 2, :))
+    EDEV = E
+    EDEV(0, 0, :) = EDEV(0, 0, :) - EVOL(:)
+    EDEV(1, 1, :) = EDEV(1, 1, :) - EVOL(:)
+    EDEV(2, 2, :) = EDEV(2, 2, :) - EVOL(:)
+    !
+    DO I = EL_SUB1, EL_SUP1
+        !
+        EQUIV(I) = DSQRT((2.0D0 / 3.0D0) * (EDEV(0, 0, I) * EDEV(0, 0, I) + &
+            & EDEV(0, 1, I) * EDEV(0, 1, I) + EDEV(0, 2, I) * EDEV(0, 2, I) + &
+            & EDEV(1, 0, I) * EDEV(1, 0, I) + EDEV(1, 1, I) * EDEV(1, 1, I) + &
+            & EDEV(1, 2, I) * EDEV(1, 2, I) + EDEV(2, 0, I) * EDEV(2, 0, I) + &
+            & EDEV(2, 1, I) * EDEV(2, 1, I) + EDEV(2, 2, I) * EDEV(2, 2, I)))
+        !
+    END DO
+    !
+    END SUBROUTINE STRAIN_EQUIV_3X3
+    !
+    !===========================================================================
+    !
+    SUBROUTINE STRESS_EQUIV_3X3(S, EQUIV)
+    !
+    ! Find the equivalent value of a strain tensor,
+    !   EQUIV = sqrt(3/2 S_(ij) S_(ij)).
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arugments:
+    ! S3X3: Stress tensor in 3x3 matrix form
+    ! EQUIV: Equivalent (von Mises) stress (scalar)
+    !
+    REAL(RK), INTENT(IN) :: S(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT) :: EQUIV(EL_SUB1:EL_SUP1)
+    !
+    ! Locals:
+    ! I: Looping index
+    !
+    INTEGER :: I
+    REAL(RK) :: SVOL(EL_SUB1:EL_SUP1)
+    REAL(RK) :: SDEV(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1)
+    !
+    !---------------------------------------------------------------------------
+    !
+    EQUIV = 0.0D0
+    SVOL = 0.0D0
+    SDEV = 0.0D0
+    !
+    SVOL(:) = (1.0D0 / 3.0D0) * (S(0, 0, :) + S(1, 1, :) + S(2, 2, :))
+    SDEV = S
+    SDEV(0, 0, :) = SDEV(0, 0, :) - SVOL(:)
+    SDEV(1, 1, :) = SDEV(1, 1, :) - SVOL(:)
+    SDEV(2, 2, :) = SDEV(2, 2, :) - SVOL(:)
+    !
+    DO I = EL_SUB1, EL_SUP1
+        !
+        EQUIV(I) = DSQRT((3.0D0 / 2.0D0) * (SDEV(0, 0, I) * SDEV(0, 0, I) + &
+            & SDEV(0, 1, I) * SDEV(0, 1, I) + SDEV(0, 2, I) * SDEV(0, 2, I) + &
+            & SDEV(1, 0, I) * SDEV(1, 0, I) + SDEV(1, 1, I) * SDEV(1, 1, I) + &
+            & SDEV(1, 2, I) * SDEV(1, 2, I) + SDEV(2, 0, I) * SDEV(2, 0, I) + &
+            & SDEV(2, 1, I) * SDEV(2, 1, I) + SDEV(2, 2, I) * SDEV(2, 2, I)))
+        !
+    END DO
+    !
+    END SUBROUTINE STRESS_EQUIV_3X3
     !
     !===========================================================================
     !
@@ -2169,6 +2245,98 @@ CONTAINS
     !
     !===========================================================================
     !
+    SUBROUTINE VEC6_CRYS_TO_VEC6_SAM(VEC6_CRYS, ORI, VEC6_SAM)
+    !
+    ! Convert the 6 vector of in the crystal basis to the sample basis.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arugments:
+    ! VEC6_CRYS: 6-vector in the crystal basis
+    ! ORI: 3x3 orientation matrix in the crystal to sample convention
+    ! VEC6_SAM: 6-vector in the sample basis
+    !
+    REAL(RK), INTENT(IN) :: VEC6_CRYS(0:5)
+    REAL(RK), INTENT(IN) :: ORI(0:DIMS1, 0:DIMS1)
+    REAL(RK), INTENT(OUT) :: VEC6_SAM(0:5)
+    !
+    ! Locals:
+    ! I, J, K: Looping indices
+    ! MAT33_CRYS: 3x3 matrix in crystal frame
+    ! TEMP: Matrix of strain*R'
+    ! MAT33_SAM: 3x3 matrix in sample frame
+    !
+    INTEGER :: I, J, K
+    REAL(RK) :: MAT33_CRYS(0:DIMS1, 0:DIMS1)
+    REAL(RK) :: TEMP(0:DIMS1, 0:DIMS1)
+    REAL(RK) :: MAT33_SAM(0:DIMS1, 0:DIMS1)
+    !
+    !---------------------------------------------------------------------------
+    !
+    VEC6_SAM = 0.0D0
+    MAT33_CRYS = 0.0D0
+    MAT33_SAM = 0.0D0
+    TEMP = 0.0D0
+    !
+    ! Put 6-vector into 3x3 matrix
+    !
+    MAT33_CRYS(0, 0) = VEC6_CRYS(0)
+    MAT33_CRYS(0, 1) = VEC6_CRYS(1)
+    MAT33_CRYS(0, 2) = VEC6_CRYS(2)
+    MAT33_CRYS(1, 0) = VEC6_CRYS(1)
+    MAT33_CRYS(1, 1) = VEC6_CRYS(3)
+    MAT33_CRYS(1, 2) = VEC6_CRYS(4)
+    MAT33_CRYS(2, 0) = VEC6_CRYS(2)
+    MAT33_CRYS(2, 1) = VEC6_CRYS(4)
+    MAT33_CRYS(2, 2) = VEC6_CRYS(5)
+    !
+    ! Perform strain*R'
+    !
+    DO J = 0, DIMS1
+        !
+        DO K = 0, DIMS1
+            !
+            DO I = 0, DIMS1
+                !
+                TEMP(I, J) = TEMP(I, J) + MAT33_CRYS(I, K) * ORI(J, K)
+                !
+            END DO
+            !
+        END DO
+        !
+    END DO
+    !
+    ! Perform R*(strain*R')
+    !
+    DO J = 0, DIMS1
+        !
+        DO K = 0, DIMS1
+            !
+            DO I = 0, DIMS1
+                !
+                MAT33_SAM(I, J) = MAT33_SAM(I, J) + ORI(I, K) * &
+                    & TEMP(K, J)
+                !
+            END DO
+            !
+        END DO
+        !
+    END DO
+    !
+    ! Put into 6-vector of order 11 12 13 22 23 33 to conform with legacy code
+    ! Note: this is reordered before printing, above
+    !
+    VEC6_SAM(0) = MAT33_SAM(0,0)
+    VEC6_SAM(1) = MAT33_SAM(0,1)
+    VEC6_SAM(2) = MAT33_SAM(0,2)
+    VEC6_SAM(3) = MAT33_SAM(1,1)
+    VEC6_SAM(4) = MAT33_SAM(1,2)
+    VEC6_SAM(5) = MAT33_SAM(2,2)
+    !
+    END SUBROUTINE VEC6_CRYS_TO_VEC6_SAM
+    !
+    !===========================================================================
+    !
     SUBROUTINE VEC_D_VEC5(D, B, C, N, M)
     !
     ! Computes c = d*b where c and b are 5-vectors and d is a diagonal 5x5
@@ -2255,7 +2423,7 @@ CONTAINS
     ! N: Number of grains/element (legacy, always 0:0)
     ! M: Number of elements
     !
-    
+
     REAL(RK), INTENT(IN) :: VEC(0:DIMS1, 0:(N - 1), 0:(M - 1))
     REAL(RK), INTENT(OUT) :: MAT(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(M - 1))
     INTEGER, INTENT(IN) :: N
@@ -2407,6 +2575,42 @@ CONTAINS
     RETURN
     !
     END SUBROUTINE VEC_MAT_SYMM_SER
+    !
+    !===========================================================================
+    !
+    SUBROUTINE VEC6_MAT_SYMM(VEC, MAT, M, N)
+    !
+    ! Convert 6-vector to symmetric matrix: {6} --> [3x3]sym
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! VEC: Array of 6-vectors
+    ! MAT: Array of 3x3 symmetric matrices
+    ! M: number of elements
+    !
+    REAL(RK), INTENT(IN) :: VEC(0:TVEC, 0:N, 0:(M - 1))
+    REAL(RK), INTENT(OUT) :: MAT(0:DIMS1, 0:DIMS1, 0:(M - 1))
+    INTEGER , INTENT(IN) :: M
+    INTEGER , INTENT(IN) :: N
+    !
+    ! Locals:
+    !
+    !----------------------------------------------------------------------
+    !
+    MAT(0, 0, :) = VEC(0, 0, :)
+    MAT(0, 1, :) = VEC(1, 0, :)
+    MAT(0, 2, :) = VEC(2, 0, :)
+    MAT(1, 0, :) = VEC(1, 0, :)
+    MAT(1, 1, :) = VEC(3, 0, :)
+    MAT(1, 2, :) = VEC(4, 0, :)
+    MAT(2, 0, :) = VEC(2, 0, :)
+    MAT(2, 1, :) = VEC(4, 0, :)
+    MAT(2, 2, :) = VEC(5, 0, :)
+    !
+    RETURN
+    !
+    END SUBROUTINE VEC6_MAT_SYMM
     !
     !===========================================================================
     !

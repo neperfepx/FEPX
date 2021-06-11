@@ -1,5 +1,5 @@
 # This file is part of the FEPX software package.
-# Copyright (C) 1996-2020 ACME Lab
+# Copyright (C) 1996-2021 ACME Lab
 # See the COPYING file in the top-level directory.
 
 pdf:

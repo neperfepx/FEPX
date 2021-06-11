@@ -1,7 +1,18 @@
-New in 1.1.2-1 (02 Apr 2021):
-- Updated mesh parsing.
+New in 1.2.0 (11 Jun 2021):
+- Amendments to simulation output: changed definition and calculation of
+  equivalent variables (e.g., equivalent deformation rate). Refer to
+  documentation for full descriptions of output.
+- Additions to simulation output: total strain tensor, plastic strain tensor,
+  equivalent elastic strain, and nodal displacements.
+- Updates to optional inputs: added option for saturation strength evolution.
+- Simulation restart updates: New default naming convention for restart files.
+- Mesh parsing update
+- Updated and improved examples
+- Bug fixes and code improvements
+- Documentation improvements
+* Incompatible changes: some changes require Neper v4.2.0 or greater.
 
-New in 1.1.1 (23 Nov 2021):
+New in 1.1.1 (23 Nov 2020):
 - Major code formatting changes
 - Minor bug fixes
 

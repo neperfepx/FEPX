@@ -3,7 +3,7 @@
 #    instead the postprocess.sh script adds these via `sed'.
 
 set term pngcairo enhanced font 'Latin Modern Roman,18'
-set output '2_normalstraintime.png'
+set output '2_strain_time.png'
 
 set key out vert right center box width 1
 set grid xtics ytics dt 3 lw 1 lc -1

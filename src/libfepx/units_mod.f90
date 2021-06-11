@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE UNITS_MOD
@@ -38,7 +38,7 @@ INTEGER, PUBLIC, PARAMETER :: &
     & COORDS_U = 2, &
     & VEL_U = 3, &
     & STRESS_U = 4, &
-    & STRAIN_U = 5, &
+    & ELSTRAIN_U = 5, &
     & DFLT_U = 6, &
     & EQSTRAIN_U = 7,&
     & DEFF_U = 8, &
@@ -76,7 +76,13 @@ INTEGER, PUBLIC, PARAMETER :: &
     & WORK_U = 40, &
     & WORKP_U = 41, &
     & DEFRATE_U = 42, &
-    & ELVOL_U = 43
+    & ELVOL_U = 43, &
+    & WORKRATE_U = 44, &
+    & WORKRATEP_U = 45, &
+    & EQELSTRAIN_U = 46, &
+    & PLSTRAIN_U = 47, &
+    & TOTSTRAIN_U = 48, &
+    & DISP_U = 49
 !
 !  Input units.
 !
@@ -113,7 +119,6 @@ CONTAINS
     !
     ! Locals:
     !
-    INTEGER :: IOSTATUS
     CHARACTER(LEN=64) :: FILENAME
     CHARACTER(LEN=8)  :: CHARID ! assumes less than 10,000 processes
     LOGICAL :: FILE_EXISTS
@@ -142,32 +147,34 @@ CONTAINS
             !
         CASE (1) ! NEW_FILE
             !
-            FILE_EXISTS = .TRUE.
-            RST_NUM = 1
+            ! Find max value N of rstN.control
             !
-            IF (OPTIONS%RSVAR_BASE_OUT .EQ. 'rst1') THEN
+            RST_NUM = 1000
+            FILE_EXISTS = .FALSE.
+            !
+            DO WHILE (.NOT. FILE_EXISTS)
                 !
-                DO WHILE (FILE_EXISTS)
+                WRITE(RST_NUM_STR, '(I0)') RST_NUM
+                !
+                FILENAME = 'rst'//TRIM(RST_NUM_STR)//'.control'
+                !
+                INQUIRE(FILE = FILENAME, EXIST = FILE_EXISTS)
+                RST_NUM = RST_NUM - 1
+                !
+                IF (RST_NUM .EQ. -2) THEN
                     !
-                    WRITE(RST_NUM_STR, '(I0)') RST_NUM
-                    FILENAME = 'post.log.rst'//TRIM(RST_NUM_STR)&
-                        &//'.core'//CHARID
+                    CALL PAR_QUIT('Error  :     > Restart control file not &
+                        & found.')
                     !
-                    INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                    RST_NUM = RST_NUM + 1
-                    !
-                END DO
+                END IF
                 !
-            ELSE IF (OPTIONS%RSVAR_BASE_OUT .NE. 'rst1') THEN
-                !
-                FILENAME = 'post.log.'//TRIM(OPTIONS%RSVAR_BASE_OUT)&
-                    &//'.core'//CHARID
-                INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                IF (FILE_EXISTS) CALL PAR_QUIT("Error  :     > Restart &
-                    &overwrite was attempted. Modify `rsvar_base&
-                    &_out'.")
-                !
-            END IF
+            END DO
+            !
+            ! Increase N to write new files for next simulation cycle
+            !
+            RST_NUM = RST_NUM + 2
+            WRITE(RST_NUM_STR, '(I0)') RST_NUM
+            FILENAME = 'post.log.rst'//TRIM(RST_NUM_STR)//'.core'//CHARID
             !
             OPEN(OUNITS(LOG_U), FILE = FILENAME)
             !
@@ -213,7 +220,41 @@ CONTAINS
     !  A limit of 10,000 processors is imposed.
     !
     ! Print 1-indexed process numbers
+    !
     WRITE(CHARID, '(i0)') MYID + 1
+    !
+    ! If restarting simulation, get new restart cycle number
+    ! Find max value N of rstN.control
+    !
+    IF (OPTIONS%RESTART) THEN
+        !
+        RST_NUM = 1000
+        FILE_EXISTS = .FALSE.
+        !
+        DO WHILE (.NOT. FILE_EXISTS)
+            !
+            WRITE(RST_NUM_STR, '(I0)') RST_NUM
+            !
+            FILENAME = 'rst'//TRIM(RST_NUM_STR)//'.control'
+            !
+            INQUIRE(FILE = FILENAME, EXIST = FILE_EXISTS)
+            RST_NUM = RST_NUM - 1
+            !
+            IF (RST_NUM .EQ. -2) THEN
+                !
+                CALL PAR_QUIT('Error  :     > Restart control file not &
+                    & found.')
+                !
+            END IF
+            !
+        END DO
+        !
+        ! Increase N to write new files for next simulation cycle
+        !
+        RST_NUM = RST_NUM + 2
+        WRITE(RST_NUM_STR, '(I0)') RST_NUM
+        !
+    END IF
     !
     ! For all processes
     !
@@ -234,33 +275,7 @@ CONTAINS
                 !
             CASE (1) ! NEW_FILE
                 !
-                FILE_EXISTS = .TRUE.
-                RST_NUM = 1
-                !
-                IF (OPTIONS%RSVAR_BASE_OUT .EQ. 'rst1') THEN
-                    !
-                    DO WHILE (FILE_EXISTS)
-                        !
-                        WRITE(RST_NUM_STR, '(I0)') RST_NUM
-                        FILENAME = 'post.coo.rst'//TRIM(RST_NUM_STR)&
-                            &//'.core'//CHARID
-                        !
-                        INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                        RST_NUM = RST_NUM + 1
-                        !
-                    END DO
-                    !
-                ELSE IF (OPTIONS%RSVAR_BASE_OUT .NE. 'rst1') THEN
-                    !
-                    FILENAME = 'post.coo.'//TRIM(OPTIONS%RSVAR_BASE_OUT)&
-                        &//'.core'//CHARID
-                    INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                    IF (FILE_EXISTS) CALL PAR_QUIT("Error  :     > Restart &
-                        &overwrite was attempted. Modify `rsvar_base&
-                        &_out'.")
-                    !
-                END IF
-                !
+                FILENAME = 'post.coo.rst'//TRIM(RST_NUM_STR)//'.core'//CHARID
                 OPEN(OUNITS(COORDS_U), FILE = FILENAME)
                 !
             CASE DEFAULT ! UNSUPPORTED VALUE
@@ -270,7 +285,36 @@ CONTAINS
                 !
         END SELECT
         !
-    ENDIF
+    END IF
+    !
+    IF (PRINT_OPTIONS%PRINT_DISPLACEMENTS) THEN
+        !
+        SELECT CASE (OPTIONS%RESTART_FILE_HANDLING)
+            !
+            CASE (-1) ! NO RESTART - LEGACY BEHAVIOR
+                !
+                FILENAME = 'post.disp.core'//CHARID
+                OPEN(OUNITS(DISP_U), FILE = FILENAME)
+                !
+            CASE (0) ! APPEND
+                !
+                FILENAME = 'post.disp.core'//CHARID
+                OPEN(OUNITS(DISP_U), FILE = FILENAME, &
+                    & STATUS='UNKNOWN', ACCESS='APPEND')
+                !
+            CASE (1) ! NEW_FILE
+                !
+                FILENAME = 'post.disp.rst'//TRIM(RST_NUM_STR)//'.core'//CHARID
+                OPEN(OUNITS(DISP_U), FILE = FILENAME)
+                !
+            CASE DEFAULT ! UNSUPPORTED VALUE
+                !
+                CALL PAR_QUIT('Error  :     > Invalid restart file handling&
+                    & option provided.')
+                !
+        END SELECT
+        !
+    END IF
     !
     IF (PRINT_OPTIONS%PRINT_CRSS) THEN
         !
@@ -289,33 +333,7 @@ CONTAINS
                 !
             CASE (1) ! NEW_FILE
                 !
-                FILE_EXISTS = .TRUE.
-                RST_NUM = 1
-                !
-                IF (OPTIONS%RSVAR_BASE_OUT .EQ. 'rst1') THEN
-                    !
-                    DO WHILE (FILE_EXISTS)
-                        !
-                        WRITE(RST_NUM_STR, '(I0)') RST_NUM
-                        FILENAME = 'post.crss.rst'//TRIM(RST_NUM_STR)&
-                            &//'.core'//CHARID
-                        !
-                        INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                        RST_NUM = RST_NUM + 1
-                        !
-                    END DO
-                    !
-                ELSE IF (OPTIONS%RSVAR_BASE_OUT .NE. 'rst1') THEN
-                    !
-                    FILENAME = 'post.crss.'//TRIM(OPTIONS%RSVAR_BASE_OUT)&
-                        &//'.core'//CHARID
-                    INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                    IF (FILE_EXISTS) CALL PAR_QUIT("Error  :     > Restart &
-                        &overwrite was attempted. Modify `rsvar_base&
-                        &_out'.")
-                    !
-                END IF
-                !
+                FILENAME = 'post.crss.rst'//TRIM(RST_NUM_STR)//'.core'//CHARID
                 OPEN(OUNITS(CRSS_U), FILE = FILENAME)
                 !
             CASE DEFAULT ! UNSUPPORTED VALUE
@@ -325,7 +343,7 @@ CONTAINS
                 !
         END SELECT
         !
-    ENDIF
+    END IF
     !
     IF (PRINT_OPTIONS%PRINT_DEFF) THEN
         !
@@ -344,33 +362,8 @@ CONTAINS
                 !
             CASE (1) ! NEW_FILE
                 !
-                FILE_EXISTS = .TRUE.
-                RST_NUM = 1
-                !
-                IF (OPTIONS%RSVAR_BASE_OUT .EQ. 'rst1') THEN
-                    !
-                    DO WHILE (FILE_EXISTS)
-                        !
-                        WRITE(RST_NUM_STR, '(I0)') RST_NUM
-                        FILENAME = 'post.defrate-eq.rst'//TRIM(RST_NUM_STR)&
-                            &//'.core'//CHARID
-                        !
-                        INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                        RST_NUM = RST_NUM + 1
-                        !
-                    END DO
-                    !
-                ELSE IF (OPTIONS%RSVAR_BASE_OUT .NE. 'rst1') THEN
-                    !
-                    FILENAME = 'post.defrate-eq.'//TRIM(OPTIONS%RSVAR_BASE_OUT)&
-                        &//'.core'//CHARID
-                    INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                    IF (FILE_EXISTS) CALL PAR_QUIT("Error  :     > Restart &
-                        &overwrite was attempted. Modify `rsvar_base&
-                        &_out'.")
-                    !
-                END IF
-                !
+                FILENAME = 'post.defrate-eq.rst'//TRIM(RST_NUM_STR)&
+                    &//'.core'//CHARID
                 OPEN(OUNITS(DEFF_U), FILE = FILENAME)
                 !
             CASE DEFAULT ! UNSUPPORTED VALUE
@@ -380,7 +373,7 @@ CONTAINS
                 !
         END SELECT
         !
-    ENDIF
+    END IF
     !
     IF (PRINT_OPTIONS%PRINT_DPEFF) THEN
         !
@@ -399,33 +392,8 @@ CONTAINS
                 !
             CASE (1) ! NEW_FILE
                 !
-                FILE_EXISTS = .TRUE.
-                RST_NUM = 1
-                !
-                IF (OPTIONS%RSVAR_BASE_OUT .EQ. 'rst1') THEN
-                    !
-                    DO WHILE (FILE_EXISTS)
-                        !
-                        WRITE(RST_NUM_STR, '(I0)') RST_NUM
-                        FILENAME = 'post.defrate-pl-eq.rst'//TRIM(RST_NUM_STR)&
-                            &//'.core'//CHARID
-                        !
-                        INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                        RST_NUM = RST_NUM + 1
-                        !
-                    END DO
-                    !
-                ELSE IF (OPTIONS%RSVAR_BASE_OUT .NE. 'rst1') THEN
-                    !
-                    FILENAME = 'post.defrate-pl-eq.'//TRIM(OPTIONS%RSVAR_BASE_OUT)&
-                        &//'.core'//CHARID
-                    INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                    IF (FILE_EXISTS) CALL PAR_QUIT("Error  :     > Restart &
-                        &overwrite was attempted. Modify `rsvar_base&
-                        &_out'.")
-                    !
-                END IF
-                !
+                FILENAME = 'post.defrate-pl-eq.rst'//TRIM(RST_NUM_STR)&
+                    &//'.core'//CHARID
                 OPEN(OUNITS(DPEFF_U), FILE = FILENAME)
                 !
             CASE DEFAULT ! UNSUPPORTED VALUE
@@ -435,7 +403,7 @@ CONTAINS
                 !
         END SELECT
         !
-    ENDIF
+    END IF
     !
     IF (PRINT_OPTIONS%PRINT_DPHAT) THEN
         !
@@ -454,33 +422,8 @@ CONTAINS
                 !
             CASE (1) ! NEW_FILE
                 !
-                FILE_EXISTS = .TRUE.
-                RST_NUM = 1
-                !
-                IF (OPTIONS%RSVAR_BASE_OUT .EQ. 'rst1') THEN
-                    !
-                    DO WHILE (FILE_EXISTS)
-                        !
-                        WRITE(RST_NUM_STR, '(I0)') RST_NUM
-                        FILENAME = 'post.defrate-pl.rst'//TRIM(RST_NUM_STR)&
-                            &//'.core'//CHARID
-                        !
-                        INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                        RST_NUM = RST_NUM + 1
-                        !
-                    END DO
-                    !
-                ELSE IF (OPTIONS%RSVAR_BASE_OUT .NE. 'rst1') THEN
-                    !
-                    FILENAME = 'post.defrate-pl.'//TRIM(OPTIONS%RSVAR_BASE_OUT)&
-                        &//'.core'//CHARID
-                    INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                    IF (FILE_EXISTS) CALL PAR_QUIT("Error  :     > Restart &
-                        &overwrite was attempted. Modify `rsvar_base&
-                        &_out'.")
-                    !
-                END IF
-                !
+                FILENAME = 'post.defrate-pl.rst'//TRIM(RST_NUM_STR)&
+                    &//'.core'//CHARID
                 OPEN(OUNITS(DPHAT_U), FILE = FILENAME)
                 !
             CASE DEFAULT ! UNSUPPORTED VALUE
@@ -490,7 +433,7 @@ CONTAINS
                 !
         END SELECT
         !
-    ENDIF
+    END IF
     !
     IF (PRINT_OPTIONS%PRINT_ELVOL) THEN
         !
@@ -509,33 +452,8 @@ CONTAINS
                 !
             CASE (1) ! NEW_FILE
                 !
-                FILE_EXISTS = .TRUE.
-                RST_NUM = 1
-                !
-                IF (OPTIONS%RSVAR_BASE_OUT .EQ. 'rst1') THEN
-                    !
-                    DO WHILE (FILE_EXISTS)
-                        !
-                        WRITE(RST_NUM_STR, '(I0)') RST_NUM
-                        FILENAME = 'post.elt-vol.rst'//TRIM(RST_NUM_STR)&
-                            &//'.core'//CHARID
-                        !
-                        INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                        RST_NUM = RST_NUM + 1
-                        !
-                    END DO
-                    !
-                ELSE IF (OPTIONS%RSVAR_BASE_OUT .NE. 'rst1') THEN
-                    !
-                    FILENAME = 'post.elt-vol.'//TRIM(OPTIONS%RSVAR_BASE_OUT)&
-                        &//'.core'//CHARID
-                    INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                    IF (FILE_EXISTS) CALL PAR_QUIT("Error  :     > Restart &
-                        &overwrite was attempted. Modify `rsvar_base&
-                        &_out'.")
-                    !
-                END IF
-                !
+                FILENAME = 'post.elt-vol.rst'//TRIM(RST_NUM_STR)&
+                    &//'.core'//CHARID
                 OPEN(OUNITS(ELVOL_U), FILE = FILENAME)
                 !
             CASE DEFAULT ! UNSUPPORTED VALUE
@@ -545,7 +463,7 @@ CONTAINS
                 !
         END SELECT
         !
-    ENDIF
+    END IF
     !
     IF (PRINT_OPTIONS%PRINT_EQPLSTRAIN) THEN
         !
@@ -564,33 +482,8 @@ CONTAINS
                 !
             CASE (1) ! NEW_FILE
                 !
-                FILE_EXISTS = .TRUE.
-                RST_NUM = 1
-                !
-                IF (OPTIONS%RSVAR_BASE_OUT .EQ. 'rst1') THEN
-                    !
-                    DO WHILE (FILE_EXISTS)
-                        !
-                        WRITE(RST_NUM_STR, '(I0)') RST_NUM
-                        FILENAME = 'post.strain-pl-eq.rst'//TRIM(RST_NUM_STR)&
-                            &//'.core'//CHARID
-                        !
-                        INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                        RST_NUM = RST_NUM + 1
-                        !
-                    END DO
-                    !
-                ELSE IF (OPTIONS%RSVAR_BASE_OUT .NE. 'rst1') THEN
-                    !
-                    FILENAME = 'post.strain-pl-eq.'//TRIM(OPTIONS%RSVAR_BASE_OUT)&
-                        &//'.core'//CHARID
-                    INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                    IF (FILE_EXISTS) CALL PAR_QUIT("Error  :     > Restart &
-                        &overwrite was attempted. Modify `rsvar_base&
-                        &_out'.")
-                    !
-                END IF
-                !
+                FILENAME = 'post.strain-pl-eq.rst'//TRIM(RST_NUM_STR)&
+                    &//'.core'//CHARID
                 OPEN(OUNITS(EQPLSTRAIN_U), FILE = FILENAME)
                 !
             CASE DEFAULT ! UNSUPPORTED VALUE
@@ -600,7 +493,37 @@ CONTAINS
                 !
         END SELECT
         !
-    ENDIF
+    END IF
+    !
+    IF (PRINT_OPTIONS%PRINT_EQELSTRAIN) THEN
+        !
+        SELECT CASE (OPTIONS%RESTART_FILE_HANDLING)
+            !
+            CASE (-1) ! NO RESTART - LEGACY BEHAVIOR
+                !
+                FILENAME = 'post.strain-el-eq.core'//CHARID
+                OPEN(OUNITS(EQELSTRAIN_U), FILE = FILENAME)
+                !
+            CASE (0) ! APPEND
+                !
+                FILENAME = 'post.strain-el-eq.core'//CHARID
+                OPEN(OUNITS(EQELSTRAIN_U), FILE = FILENAME, &
+                    & STATUS='UNKNOWN', ACCESS='APPEND')
+                !
+            CASE (1) ! NEW_FILE
+                !
+                FILENAME = 'post.strain-el-eq.rst'//TRIM(RST_NUM_STR)&
+                    &//'.core'//CHARID
+                OPEN(OUNITS(EQELSTRAIN_U), FILE = FILENAME)
+                !
+            CASE DEFAULT ! UNSUPPORTED VALUE
+                !
+                CALL PAR_QUIT('Error  :     > Invalid restart file handling&
+                    & option provided.')
+                !
+        END SELECT
+        !
+    END IF
     !
     IF (PRINT_OPTIONS%PRINT_EQSTRAIN) THEN
         !
@@ -619,33 +542,8 @@ CONTAINS
                 !
             CASE (1) ! NEW_FILE
                 !
-                FILE_EXISTS = .TRUE.
-                RST_NUM = 1
-                !
-                IF (OPTIONS%RSVAR_BASE_OUT .EQ. 'rst1') THEN
-                    !
-                    DO WHILE (FILE_EXISTS)
-                        !
-                        WRITE(RST_NUM_STR, '(I0)') RST_NUM
-                        FILENAME = 'post.strain-eq.rst'//TRIM(RST_NUM_STR)&
-                            &//'.core'//CHARID
-                        !
-                        INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                        RST_NUM = RST_NUM + 1
-                        !
-                    END DO
-                    !
-                ELSE IF (OPTIONS%RSVAR_BASE_OUT .NE. 'rst1') THEN
-                    !
-                    FILENAME = 'post.strain-eq.'//TRIM(OPTIONS%RSVAR_BASE_OUT)&
-                        &//'.core'//CHARID
-                    INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                    IF (FILE_EXISTS) CALL PAR_QUIT("Error  :     > Restart &
-                        &overwrite was attempted. Modify `rsvar_base&
-                        &_out'.")
-                    !
-                END IF
-                !
+                FILENAME = 'post.strain-eq.rst'//TRIM(RST_NUM_STR)&
+                    &//'.core'//CHARID
                 OPEN(OUNITS(EQSTRAIN_U), FILE = FILENAME)
                 !
             CASE DEFAULT ! UNSUPPORTED VALUE
@@ -655,7 +553,7 @@ CONTAINS
                 !
         END SELECT
         !
-    ENDIF
+    END IF
     !
     IF (PRINT_OPTIONS%PRINT_EQSTRESS) THEN
         !
@@ -674,33 +572,8 @@ CONTAINS
                 !
             CASE (1) ! NEW_FILE
                 !
-                FILE_EXISTS = .TRUE.
-                RST_NUM = 1
-                !
-                IF (OPTIONS%RSVAR_BASE_OUT .EQ. 'rst1') THEN
-                    !
-                    DO WHILE (FILE_EXISTS)
-                        !
-                        WRITE(RST_NUM_STR, '(I0)') RST_NUM
-                        FILENAME = 'post.stress-eq.rst'//TRIM(RST_NUM_STR)&
-                            &//'.core'//CHARID
-                        !
-                        INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                        RST_NUM = RST_NUM + 1
-                        !
-                    END DO
-                    !
-                ELSE IF (OPTIONS%RSVAR_BASE_OUT .NE. 'rst1') THEN
-                    !
-                    FILENAME = 'post.stress-eq.'//TRIM(OPTIONS%RSVAR_BASE_OUT)&
-                        &//'.core'//CHARID
-                    INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                    IF (FILE_EXISTS) CALL PAR_QUIT("Error  :     > Restart &
-                        &overwrite was attempted. Modify `rsvar_base&
-                        &_out'.")
-                    !
-                END IF
-                !
+                FILENAME = 'post.stress-eq.rst'//TRIM(RST_NUM_STR)&
+                    &//'.core'//CHARID
                 OPEN(OUNITS(EQSTRESS_U), FILE = FILENAME)
                 !
             CASE DEFAULT ! UNSUPPORTED VALUE
@@ -710,7 +583,7 @@ CONTAINS
                 !
         END SELECT
         !
-    ENDIF
+    END IF
     !
     IF (PRINT_OPTIONS%PRINT_GAMMA) THEN
         !
@@ -729,33 +602,7 @@ CONTAINS
                 !
             CASE (1) ! NEW_FILE
                 !
-                FILE_EXISTS = .TRUE.
-                RST_NUM = 1
-                !
-                IF (OPTIONS%RSVAR_BASE_OUT .EQ. 'rst1') THEN
-                    !
-                    DO WHILE (FILE_EXISTS)
-                        !
-                        WRITE(RST_NUM_STR, '(I0)') RST_NUM
-                        FILENAME = 'post.slip.rst'//TRIM(RST_NUM_STR)&
-                            &//'.core'//CHARID
-                        !
-                        INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                        RST_NUM = RST_NUM + 1
-                        !
-                    END DO
-                    !
-                ELSE IF (OPTIONS%RSVAR_BASE_OUT .NE. 'rst1') THEN
-                    !
-                    FILENAME = 'post.slip.'//TRIM(OPTIONS%RSVAR_BASE_OUT)&
-                        &//'.core'//CHARID
-                    INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                    IF (FILE_EXISTS) CALL PAR_QUIT("Error  :     > Restart &
-                        &overwrite was attempted. Modify `rsvar_base&
-                        &_out'.")
-                    !
-                END IF
-                !
+                FILENAME = 'post.slip.rst'//TRIM(RST_NUM_STR)//'.core'//CHARID
                 OPEN(OUNITS(GAMMA_U), FILE = FILENAME)
                 !
             CASE DEFAULT ! UNSUPPORTED VALUE
@@ -765,7 +612,7 @@ CONTAINS
                 !
         END SELECT
         !
-    ENDIF
+    END IF
     !
     IF (PRINT_OPTIONS%PRINT_GAMMADOT) THEN
         !
@@ -784,33 +631,8 @@ CONTAINS
                 !
             CASE (1) ! NEW_FILE
                 !
-                FILE_EXISTS = .TRUE.
-                RST_NUM = 1
-                !
-                IF (OPTIONS%RSVAR_BASE_OUT .EQ. 'rst1') THEN
-                    !
-                    DO WHILE (FILE_EXISTS)
-                        !
-                        WRITE(RST_NUM_STR, '(I0)') RST_NUM
-                        FILENAME = 'post.sliprate.rst'//TRIM(RST_NUM_STR)&
-                            &//'.core'//CHARID
-                        !
-                        INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                        RST_NUM = RST_NUM + 1
-                        !
-                    END DO
-                    !
-                ELSE IF (OPTIONS%RSVAR_BASE_OUT .NE. 'rst1') THEN
-                    !
-                    FILENAME = 'post.sliprate.'//TRIM(OPTIONS%RSVAR_BASE_OUT)&
-                        &//'.core'//CHARID
-                    INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                    IF (FILE_EXISTS) CALL PAR_QUIT("Error  :     > Restart &
-                        &overwrite was attempted. Modify `rsvar_base&
-                        &_out'.")
-                    !
-                END IF
-                !
+                FILENAME = 'post.sliprate.rst'//TRIM(RST_NUM_STR)&
+                    &//'.core'//CHARID
                 OPEN(OUNITS(GAMMADOT_U), FILE = FILENAME)
                 !
             CASE DEFAULT ! UNSUPPORTED VALUE
@@ -820,7 +642,7 @@ CONTAINS
                 !
         END SELECT
         !
-    ENDIF
+    END IF
     !
     IF (PRINT_OPTIONS%PRINT_ORIENTATIONS) THEN
         !
@@ -839,33 +661,7 @@ CONTAINS
                 !
             CASE (1) ! NEW_FILE
                 !
-                FILE_EXISTS = .TRUE.
-                RST_NUM = 1
-                !
-                IF (OPTIONS%RSVAR_BASE_OUT .EQ. 'rst1') THEN
-                    !
-                    DO WHILE (FILE_EXISTS)
-                        !
-                        WRITE(RST_NUM_STR, '(I0)') RST_NUM
-                        FILENAME = 'post.ori.rst'//TRIM(RST_NUM_STR)&
-                            &//'.core'//CHARID
-                        !
-                        INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                        RST_NUM = RST_NUM + 1
-                        !
-                    END DO
-                    !
-                ELSE IF (OPTIONS%RSVAR_BASE_OUT .NE. 'rst1') THEN
-                    !
-                    FILENAME = 'post.ori.'//TRIM(OPTIONS%RSVAR_BASE_OUT)&
-                        &//'.core'//CHARID
-                    INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                    IF (FILE_EXISTS) CALL PAR_QUIT("Error  :     > Restart &
-                        &overwrite was attempted. Modify `rsvar_base&
-                        &_out'.")
-                    !
-                END IF
-                !
+                FILENAME = 'post.ori.rst'//TRIM(RST_NUM_STR)//'.core'//CHARID
                 OPEN(OUNITS(ANGLES_U), FILE = FILENAME)
                 !
             CASE DEFAULT ! UNSUPPORTED VALUE
@@ -875,53 +671,27 @@ CONTAINS
                 !
         END SELECT
         !
-    ENDIF
+    END IF
     !
-    IF (PRINT_OPTIONS%PRINT_STRAIN) THEN
+    IF (PRINT_OPTIONS%PRINT_STRAIN_TOT) THEN
         !
         SELECT CASE (OPTIONS%RESTART_FILE_HANDLING)
             !
             CASE (-1) ! NO RESTART - LEGACY BEHAVIOR
                 !
-                FILENAME = 'post.strain-el.core'//CHARID
-                OPEN(OUNITS(STRAIN_U), FILE = FILENAME)
+                FILENAME = 'post.strain.core'//CHARID
+                OPEN(OUNITS(TOTSTRAIN_U), FILE = FILENAME)
                 !
             CASE (0) ! APPEND
                 !
-                FILENAME = 'post.strain-el.core'//CHARID
-                OPEN(OUNITS(STRAIN_U), FILE = FILENAME, &
+                FILENAME = 'post.strain.core'//CHARID
+                OPEN(OUNITS(TOTSTRAIN_U), FILE = FILENAME, &
                     & STATUS='UNKNOWN', ACCESS='APPEND')
                 !
             CASE (1) ! NEW_FILE
                 !
-                FILE_EXISTS = .TRUE.
-                RST_NUM = 1
-                !
-                IF (OPTIONS%RSVAR_BASE_OUT .EQ. 'rst1') THEN
-                    !
-                    DO WHILE (FILE_EXISTS)
-                        !
-                        WRITE(RST_NUM_STR, '(I0)') RST_NUM
-                        FILENAME = 'post.strain-el.rst'//TRIM(RST_NUM_STR)&
-                            &//'.core'//CHARID
-                        !
-                        INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                        RST_NUM = RST_NUM + 1
-                        !
-                    END DO
-                    !
-                ELSE IF (OPTIONS%RSVAR_BASE_OUT .NE. 'rst1') THEN
-                    !
-                    FILENAME = 'post.strain-el.'//TRIM(OPTIONS%RSVAR_BASE_OUT)&
-                        &//'.core'//CHARID
-                    INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                    IF (FILE_EXISTS) CALL PAR_QUIT("Error  :     > Restart &
-                        &overwrite was attempted. Modify `rsvar_base&
-                        &_out'.")
-                    !
-                END IF
-                !
-                OPEN(OUNITS(STRAIN_U), FILE = FILENAME)
+                FILENAME = 'post.strain.rst'//TRIM(RST_NUM_STR)//'.core'//CHARID
+                OPEN(OUNITS(TOTSTRAIN_U), FILE = FILENAME)
                 !
             CASE DEFAULT ! UNSUPPORTED VALUE
                 !
@@ -930,7 +700,67 @@ CONTAINS
                 !
         END SELECT
         !
-    ENDIF
+    END IF
+    !
+    IF (PRINT_OPTIONS%PRINT_STRAIN_EL) THEN
+        !
+        SELECT CASE (OPTIONS%RESTART_FILE_HANDLING)
+            !
+            CASE (-1) ! NO RESTART - LEGACY BEHAVIOR
+                !
+                FILENAME = 'post.strain-el.core'//CHARID
+                OPEN(OUNITS(ELSTRAIN_U), FILE = FILENAME)
+                !
+            CASE (0) ! APPEND
+                !
+                FILENAME = 'post.strain-el.core'//CHARID
+                OPEN(OUNITS(ELSTRAIN_U), FILE = FILENAME, &
+                    & STATUS='UNKNOWN', ACCESS='APPEND')
+                !
+            CASE (1) ! NEW_FILE
+                !
+                FILENAME = 'post.strain-el.rst'//TRIM(RST_NUM_STR)&
+                    &//'.core'//CHARID
+                OPEN(OUNITS(ELSTRAIN_U), FILE = FILENAME)
+                !
+            CASE DEFAULT ! UNSUPPORTED VALUE
+                !
+                CALL PAR_QUIT('Error  :     > Invalid restart file handling&
+                    & option provided.')
+                !
+        END SELECT
+        !
+    END IF
+    !
+    IF (PRINT_OPTIONS%PRINT_STRAIN_PL) THEN
+        !
+        SELECT CASE (OPTIONS%RESTART_FILE_HANDLING)
+            !
+            CASE (-1) ! NO RESTART - LEGACY BEHAVIOR
+                !
+                FILENAME = 'post.strain-pl.core'//CHARID
+                OPEN(OUNITS(PLSTRAIN_U), FILE = FILENAME)
+                !
+            CASE (0) ! APPEND
+                !
+                FILENAME = 'post.strain-pl.core'//CHARID
+                OPEN(OUNITS(PLSTRAIN_U), FILE = FILENAME, &
+                    & STATUS='UNKNOWN', ACCESS='APPEND')
+                !
+            CASE (1) ! NEW_FILE
+                !
+                FILENAME = 'post.strain-pl.rst'//TRIM(RST_NUM_STR)&
+                    &//'.core'//CHARID
+                OPEN(OUNITS(PLSTRAIN_U), FILE = FILENAME)
+                !
+            CASE DEFAULT ! UNSUPPORTED VALUE
+                !
+                CALL PAR_QUIT('Error  :     > Invalid restart file handling&
+                    & option provided.')
+                !
+        END SELECT
+        !
+    END IF
     !
     IF (PRINT_OPTIONS%PRINT_STRESS) THEN
         !
@@ -949,33 +779,7 @@ CONTAINS
                 !
             CASE (1) ! NEW_FILE
                 !
-                FILE_EXISTS = .TRUE.
-                RST_NUM = 1
-                !
-                IF (OPTIONS%RSVAR_BASE_OUT .EQ. 'rst1') THEN
-                    !
-                    DO WHILE (FILE_EXISTS)
-                        !
-                        WRITE(RST_NUM_STR, '(I0)') RST_NUM
-                        FILENAME = 'post.stress.rst'//TRIM(RST_NUM_STR)&
-                            &//'.core'//CHARID
-                        !
-                        INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                        RST_NUM = RST_NUM + 1
-                        !
-                    END DO
-                    !
-                ELSE IF (OPTIONS%RSVAR_BASE_OUT .NE. 'rst1') THEN
-                    !
-                    FILENAME = 'post.stress.'//TRIM(OPTIONS%RSVAR_BASE_OUT)&
-                        &//'.core'//CHARID
-                    INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                    IF (FILE_EXISTS) CALL PAR_QUIT("Error  :     > Restart &
-                        &overwrite was attempted. Modify `rsvar_base&
-                        &_out'.")
-                    !
-                END IF
-                !
+                FILENAME = 'post.stress.rst'//TRIM(RST_NUM_STR)//'.core'//CHARID
                 OPEN(OUNITS(STRESS_U), FILE = FILENAME)
                 !
             CASE DEFAULT ! UNSUPPORTED VALUE
@@ -985,7 +789,7 @@ CONTAINS
                 !
         END SELECT
         !
-    ENDIF
+    END IF
     !
     IF (PRINT_OPTIONS%PRINT_VELOCITIES) THEN
         !
@@ -1004,33 +808,7 @@ CONTAINS
                 !
             CASE (1) ! NEW_FILE
                 !
-                FILE_EXISTS = .TRUE.
-                RST_NUM = 1
-                !
-                IF (OPTIONS%RSVAR_BASE_OUT .EQ. 'rst1') THEN
-                    !
-                    DO WHILE (FILE_EXISTS)
-                        !
-                        WRITE(RST_NUM_STR, '(I0)') RST_NUM
-                        FILENAME = 'post.vel.rst'//TRIM(RST_NUM_STR)&
-                            &//'.core'//CHARID
-                        !
-                        INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                        RST_NUM = RST_NUM + 1
-                        !
-                    END DO
-                    !
-                ELSE IF (OPTIONS%RSVAR_BASE_OUT .NE. 'rst1') THEN
-                    !
-                    FILENAME = 'post.vel.'//TRIM(OPTIONS%RSVAR_BASE_OUT)&
-                        &//'.core'//CHARID
-                    INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                    IF (FILE_EXISTS) CALL PAR_QUIT("Error  :     > Restart &
-                        &overwrite was attempted. Modify `rsvar_base&
-                        &_out'.")
-                    !
-                END IF
-                !
+                FILENAME = 'post.vel.rst'//TRIM(RST_NUM_STR)//'.core'//CHARID
                 OPEN(OUNITS(VEL_U), FILE = FILENAME)
                 !
             CASE DEFAULT ! UNSUPPORTED VALUE
@@ -1040,7 +818,7 @@ CONTAINS
                 !
         END SELECT
         !
-    ENDIF
+    END IF
     !
     IF (PRINT_OPTIONS%PRINT_VGRAD) THEN
         !
@@ -1059,33 +837,8 @@ CONTAINS
                 !
             CASE (1) ! NEW_FILE
                 !
-                FILE_EXISTS = .TRUE.
-                RST_NUM = 1
-                !
-                IF (OPTIONS%RSVAR_BASE_OUT .EQ. 'rst1') THEN
-                    !
-                    DO WHILE (FILE_EXISTS)
-                        !
-                        WRITE(RST_NUM_STR, '(I0)') RST_NUM
-                        FILENAME = 'post.velgrad.rst'//TRIM(RST_NUM_STR)&
-                            &//'.core'//CHARID
-                        !
-                        INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                        RST_NUM = RST_NUM + 1
-                        !
-                    END DO
-                    !
-                ELSE IF (OPTIONS%RSVAR_BASE_OUT .NE. 'rst1') THEN
-                    !
-                    FILENAME = 'post.velgrad.'//TRIM(OPTIONS%RSVAR_BASE_OUT)&
-                        &//'.core'//CHARID
-                    INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                    IF (FILE_EXISTS) CALL PAR_QUIT("Error  :     > Restart &
-                        &overwrite was attempted. Modify `rsvar_base&
-                        &_out'.")
-                    !
-                END IF
-                !
+                FILENAME = 'post.velgrad.rst'//TRIM(RST_NUM_STR)&
+                    &//'.core'//CHARID
                 OPEN(OUNITS(VGRAD_U), FILE = FILENAME)
                 !
             CASE DEFAULT ! UNSUPPORTED VALUE
@@ -1095,7 +848,7 @@ CONTAINS
                 !
         END SELECT
         !
-    ENDIF
+    END IF
     !
     IF (PRINT_OPTIONS%PRINT_WPHAT) THEN
         !
@@ -1114,7 +867,7 @@ CONTAINS
                 !
             CASE (1) ! NEW_FILE
                 !
-                FILENAME = 'post.spinrate.'//TRIM(OPTIONS%RSVAR_BASE_OUT)&
+                FILENAME = 'post.spinrate.rst'//TRIM(RST_NUM_STR)&
                     &//'.core'//CHARID
                 OPEN(OUNITS(WPHAT_U), FILE = FILENAME)
                 !
@@ -1125,7 +878,7 @@ CONTAINS
                 !
         END SELECT
         !
-    ENDIF
+    END IF
     !
     IF (PRINT_OPTIONS%PRINT_WORK) THEN
         !
@@ -1144,33 +897,7 @@ CONTAINS
                 !
             CASE (1) ! NEW_FILE
                 !
-                FILE_EXISTS = .TRUE.
-                RST_NUM = 1
-                !
-                IF (OPTIONS%RSVAR_BASE_OUT .EQ. 'rst1') THEN
-                    !
-                    DO WHILE (FILE_EXISTS)
-                        !
-                        WRITE(RST_NUM_STR, '(I0)') RST_NUM
-                        FILENAME = 'post.work.rst'//TRIM(RST_NUM_STR)&
-                            &//'.core'//CHARID
-                        !
-                        INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                        RST_NUM = RST_NUM + 1
-                        !
-                    END DO
-                    !
-                ELSE IF (OPTIONS%RSVAR_BASE_OUT .NE. 'rst1') THEN
-                    !
-                    FILENAME = 'post.work.'//TRIM(OPTIONS%RSVAR_BASE_OUT)&
-                        &//'.core'//CHARID
-                    INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                    IF (FILE_EXISTS) CALL PAR_QUIT("Error  :     > Restart &
-                        &overwrite was attempted. Modify `rsvar_base&
-                        &_out'.")
-                    !
-                END IF
-                !
+                FILENAME = 'post.work.rst'//TRIM(RST_NUM_STR)//'.core'//CHARID
                 OPEN(OUNITS(WORK_U), FILE = FILENAME)
                 !
             CASE DEFAULT ! UNSUPPORTED VALUE
@@ -1180,7 +907,7 @@ CONTAINS
                 !
         END SELECT
         !
-    ENDIF
+    END IF
     !
     IF (PRINT_OPTIONS%PRINT_WORKP) THEN
         !
@@ -1199,33 +926,8 @@ CONTAINS
                 !
             CASE (1) ! NEW_FILE
                 !
-                FILE_EXISTS = .TRUE.
-                RST_NUM = 1
-                !
-                IF (OPTIONS%RSVAR_BASE_OUT .EQ. 'rst1') THEN
-                    !
-                    DO WHILE (FILE_EXISTS)
-                        !
-                        WRITE(RST_NUM_STR, '(I0)') RST_NUM
-                        FILENAME = 'post.work-pl.rst'//TRIM(RST_NUM_STR)&
-                            &//'.core'//CHARID
-                        !
-                        INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                        RST_NUM = RST_NUM + 1
-                        !
-                    END DO
-                    !
-                ELSE IF (OPTIONS%RSVAR_BASE_OUT .NE. 'rst1') THEN
-                    !
-                    FILENAME = 'post.work-pl.'//TRIM(OPTIONS%RSVAR_BASE_OUT)&
-                        &//'.core'//CHARID
-                    INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                    IF (FILE_EXISTS) CALL PAR_QUIT("Error  :     > Restart &
-                        &overwrite was attempted. Modify `rsvar_base&
-                        &_out'.")
-                    !
-                END IF
-                !
+                FILENAME = 'post.work-pl.rst'//TRIM(RST_NUM_STR)&
+                    &//'.core'//CHARID
                 OPEN(OUNITS(WORKP_U), FILE = FILENAME)
                 !
             CASE DEFAULT ! UNSUPPORTED VALUE
@@ -1235,7 +937,7 @@ CONTAINS
                 !
         END SELECT
         !
-    ENDIF
+    END IF
     !
     IF (PRINT_OPTIONS%PRINT_DEFRATE) THEN
         !
@@ -1254,33 +956,8 @@ CONTAINS
                 !
             CASE (1) ! NEW_FILE
                 !
-                FILE_EXISTS = .TRUE.
-                RST_NUM = 1
-                !
-                IF (OPTIONS%RSVAR_BASE_OUT .EQ. 'rst1') THEN
-                    !
-                    DO WHILE (FILE_EXISTS)
-                        !
-                        WRITE(RST_NUM_STR, '(I0)') RST_NUM
-                        FILENAME = 'post.defrate.rst'//TRIM(RST_NUM_STR)&
-                            &//'.core'//CHARID
-                        !
-                        INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                        RST_NUM = RST_NUM + 1
-                        !
-                    END DO
-                    !
-                ELSE IF (OPTIONS%RSVAR_BASE_OUT .NE. 'rst1') THEN
-                    !
-                    FILENAME = 'post.defrate.'//TRIM(OPTIONS%RSVAR_BASE_OUT)&
-                        &//'.core'//CHARID
-                    INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                    IF (FILE_EXISTS) CALL PAR_QUIT("Error  :     > Restart &
-                        &overwrite was attempted. Modify `rsvar_base&
-                        &_out'.")
-                    !
-                END IF
-                !
+                FILENAME = 'post.defrate.rst'//TRIM(RST_NUM_STR)&
+                    &//'.core'//CHARID
                 OPEN(OUNITS(DEFRATE_U), FILE = FILENAME)
                 !
             CASE DEFAULT ! UNSUPPORTED VALUE
@@ -1290,7 +967,67 @@ CONTAINS
                 !
         END SELECT
         !
-    ENDIF
+    END IF
+    !
+    IF (PRINT_OPTIONS%PRINT_WORKRATE) THEN
+        !
+        SELECT CASE (OPTIONS%RESTART_FILE_HANDLING)
+            !
+            CASE (-1) ! NO RESTART - LEGACY BEHAVIOR
+                !
+                FILENAME = 'post.workrate.core'//CHARID
+                OPEN(OUNITS(WORKRATE_U), FILE = FILENAME)
+                !
+            CASE (0) ! APPEND
+                !
+                FILENAME = 'post.workrate.core'//CHARID
+                OPEN(OUNITS(WORKRATE_U), FILE = FILENAME, &
+                    & STATUS='UNKNOWN', ACCESS='APPEND')
+                !
+            CASE (1) ! NEW_FILE
+                !
+                FILENAME = 'post.workrate.rst'//TRIM(RST_NUM_STR)&
+                    &//'.core'//CHARID
+                OPEN(OUNITS(WORKRATE_U), FILE = FILENAME)
+                !
+            CASE DEFAULT ! UNSUPPORTED VALUE
+                !
+                CALL PAR_QUIT('Error  :     > Invalid restart file handling&
+                    & option provided.')
+                !
+        END SELECT
+        !
+    END IF
+    !
+    IF (PRINT_OPTIONS%PRINT_WORKRATEP) THEN
+        !
+        SELECT CASE (OPTIONS%RESTART_FILE_HANDLING)
+            !
+            CASE (-1) ! NO RESTART - LEGACY BEHAVIOR
+                !
+                FILENAME = 'post.workrate-pl.core'//CHARID
+                OPEN(OUNITS(WORKRATEP_U), FILE = FILENAME)
+                !
+            CASE (0) ! APPEND
+                !
+                FILENAME = 'post.workrate-pl.core'//CHARID
+                OPEN(OUNITS(WORKRATEP_U), FILE = FILENAME, &
+                    & STATUS='UNKNOWN', ACCESS='APPEND')
+                !
+            CASE (1) ! NEW_FILE
+                !
+                FILENAME = 'post.workrate-pl.rst'//TRIM(RST_NUM_STR)&
+                    &//'.core'//CHARID
+                OPEN(OUNITS(WORKRATEP_U), FILE = FILENAME)
+                !
+            CASE DEFAULT ! UNSUPPORTED VALUE
+                !
+                CALL PAR_QUIT('Error  :     > Invalid restart file handling&
+                    & option provided.')
+                !
+        END SELECT
+        !
+    END IF
     !
     ! Only for main process
     !
@@ -1314,11 +1051,11 @@ CONTAINS
                         IF (IOSTATUS .NE. 0) THEN
                             !
                             WRITE(MESSAGE, '(a,a,a)') 'Error  :     > IO &
-                                &Failure to open post.force.&
-                                &', TRIM(FASET(I)) ,' file'
+                                &Failure to open post.force.', &
+                                & TRIM(FASET(I)) ,' file'
                             CALL PAR_QUIT(TRIM(ADJUSTL(MESSAGE)))
                             !
-                        ENDIF
+                        END IF
                         !
                     END DO
                     !
@@ -1336,11 +1073,11 @@ CONTAINS
                         IF (IOSTATUS .NE. 0) THEN
                             !
                             WRITE(MESSAGE, '(a,a,a)') 'Error  :     > IO &
-                                &Failure to open post.force.&
-                                &', TRIM(FASET(I)) ,' file'
+                                &Failure to open post.force.', &
+                                & TRIM(FASET(I)) ,' file'
                             CALL PAR_QUIT(TRIM(ADJUSTL(MESSAGE)))
                             !
-                        ENDIF
+                        END IF
                         !
                     END DO
                     !
@@ -1348,33 +1085,8 @@ CONTAINS
                     !
                     DO I = 1, 6
                         !
-                        FILE_EXISTS = .TRUE.
-                        RST_NUM = 1
-                        !
-                        IF (OPTIONS%RSVAR_BASE_OUT .EQ. 'rst1') THEN
-                            !
-                            DO WHILE (FILE_EXISTS)
-                                !
-                                WRITE(RST_NUM_STR, '(I0)') RST_NUM
-                                FILENAME = 'post.force.'//TRIM(RST_NUM_STR)&
-                                    &//'.'//FASET(I)
-                                !
-                                INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                                RST_NUM = RST_NUM + 1
-                                !
-                            END DO
-                            !
-                        ELSE IF (OPTIONS%RSVAR_BASE_OUT .NE. 'rst1') THEN
-                            !
-                            FILENAME = 'post.force.'//&
-                                &TRIM(OPTIONS%RSVAR_BASE_OUT)//'.'//FASET(I)
-                            INQUIRE(FILE=FILENAME, EXIST=FILE_EXISTS)
-                            IF (FILE_EXISTS) CALL PAR_QUIT("Error  :     > &
-                                &Restart overwrite was attempted. &
-                                &Modify `rsvar_base_out'.")
-                            !
-                        END IF
-                        !
+                        FILENAME = 'post.force.rst'//TRIM(RST_NUM_STR)&
+                            &//'.'//FASET(I)
                         OPEN(OUNITS((FORCE_U1-1) + I), &
                             & FILE=FILENAME, IOSTAT=IOSTATUS)
                         !
@@ -1384,7 +1096,7 @@ CONTAINS
                                 &Failure to open ', TRIM(FILENAME) ,' file.'
                             CALL PAR_QUIT(TRIM(ADJUSTL(MESSAGE)))
                             !
-                        ENDIF
+                        END IF
                         !
                     END DO
                     !
@@ -1405,30 +1117,114 @@ CONTAINS
             !
             ! CALL PAR_QUIT('Error  :     > IO Failure to open post.stats file.')
             !
-        ! ENDIF
+        ! END IF
+        !
+        ! post.conv
         !
         IF (PRINT_OPTIONS%PRINT_CONV) THEN
             !
-            OPEN(OUNITS(CONV_U), FILE='post.conv',IOSTAT=IOSTATUS)
-            !
-            IF (IOSTATUS .NE. 0) THEN
+            SELECT CASE (OPTIONS%RESTART_FILE_HANDLING)
                 !
-                CALL PAR_QUIT('Error  :     > IO Failure to open post.conv &
-                    &file.')
-                !
-            ENDIF
+                CASE (-1) ! NO RESTART - LEGACY BEHAVIOR
+                    !
+                    FILENAME = 'post.conv'
+                    OPEN(OUNITS(CONV_U), FILE = FILENAME, IOSTAT = IOSTATUS)
+                    !
+                    IF (IOSTATUS .NE. 0) THEN
+                        !
+                        WRITE(MESSAGE, '(a,a,a)') 'Error  :     > IO &
+                            &Failure to open ', TRIM(FILENAME) ,' file.'
+                        CALL PAR_QUIT(TRIM(ADJUSTL(MESSAGE)))
+                        !
+                    END IF
+                    !
+                CASE (0) ! APPEND
+                    !
+                    FILENAME = 'post.conv'
+                    OPEN(OUNITS(CONV_U), FILE = FILENAME, IOSTAT = IOSTATUS)
+                    !
+                    IF (IOSTATUS .NE. 0) THEN
+                        !
+                        WRITE(MESSAGE, '(a,a,a)') 'Error  :     > IO &
+                            &Failure to open ', TRIM(FILENAME) ,' file.'
+                        CALL PAR_QUIT(TRIM(ADJUSTL(MESSAGE)))
+                        !
+                    END IF
+                    !
+                CASE (1) ! NEW_FILE
+                    !
+                    FILENAME = 'post.conv.rst'//TRIM(RST_NUM_STR)
+                    OPEN(OUNITS(CONV_U), FILE = FILENAME, IOSTAT = IOSTATUS)
+                    !
+                    IF (IOSTATUS .NE. 0) THEN
+                        !
+                        WRITE(MESSAGE, '(a,a,a)') 'Error  :     > IO &
+                            &Failure to open ', TRIM(FILENAME) ,' file.'
+                        CALL PAR_QUIT(TRIM(ADJUSTL(MESSAGE)))
+                        !
+                    END IF
+                    !
+                CASE DEFAULT ! UNSUPPORTED VALUE
+                    !
+                    CALL PAR_QUIT('Error  :     > Invalid restart file handling&
+                        & option provided.')
+                    !
+            END SELECT
             !
         END IF
         !
-        OPEN(OUNITS(REPORT_U), FILE='post.report',IOSTAT=IOSTATUS)
         !
-        IF (IOSTATUS .NE. 0) THEN
-            !
-            CALL PAR_QUIT('Error  :     > IO Failure to open post.report file.')
-            !
-        ENDIF
+        ! post.report
         !
-    ENDIF
+        SELECT CASE (OPTIONS%RESTART_FILE_HANDLING)
+            !
+            CASE (-1) ! NO RESTART - LEGACY BEHAVIOR
+                !
+                FILENAME = 'post.report'
+                OPEN(OUNITS(REPORT_U), FILE = FILENAME, IOSTAT = IOSTATUS)
+                !
+                IF (IOSTATUS .NE. 0) THEN
+                    !
+                    WRITE(MESSAGE, '(a,a,a)') 'Error  :     > IO &
+                        &Failure to open ', TRIM(FILENAME) ,' file.'
+                    CALL PAR_QUIT(TRIM(ADJUSTL(MESSAGE)))
+                    !
+                END IF
+                !
+            CASE (0) ! APPEND
+                !
+                FILENAME = 'post.report'
+                OPEN(OUNITS(REPORT_U), FILE = FILENAME, IOSTAT = IOSTATUS)
+                !
+                IF (IOSTATUS .NE. 0) THEN
+                    !
+                    WRITE(MESSAGE, '(a,a,a)') 'Error  :     > IO &
+                        &Failure to open ', TRIM(FILENAME) ,' file.'
+                    CALL PAR_QUIT(TRIM(ADJUSTL(MESSAGE)))
+                    !
+                END IF
+                !
+            CASE (1) ! NEW_FILE
+                !
+                FILENAME = 'post.report.rst'//TRIM(RST_NUM_STR)
+                OPEN(OUNITS(REPORT_U), FILE = FILENAME, IOSTAT = IOSTATUS)
+                !
+                IF (IOSTATUS .NE. 0) THEN
+                    !
+                    WRITE(MESSAGE, '(a,a,a)') 'Error  :     > IO &
+                        &Failure to open ', TRIM(FILENAME) ,' file.'
+                    CALL PAR_QUIT(TRIM(ADJUSTL(MESSAGE)))
+                    !
+                END IF
+                !
+            CASE DEFAULT ! UNSUPPORTED VALUE
+                !
+                CALL PAR_QUIT('Error  :     > Invalid restart file handling&
+                    & option provided.')
+                !
+        END SELECT
+        !
+    END IF
     !
     END SUBROUTINE OPEN_OUTPUT_FILES
     !

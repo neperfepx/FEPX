@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE FIBER_AVERAGE_MOD
@@ -573,7 +573,7 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE INITIALIZE_FIBER_AVERAGE(INPUT_UNIT, DTRACE)
+    SUBROUTINE INITIALIZE_FIBER_AVERAGE(INPUT_UNIT)
     !
     ! Read and process input data in fiber average file, open files for
     ! output, initialize symmetry operations
@@ -582,16 +582,13 @@ CONTAINS
     !
     ! Arguments:
     ! INPUT_UNIT: Unit for input file
-    ! DTRACE: Gather/scatter traces
     !
     INTEGER :: INPUT_UNIT
-    TYPE(TRACE) :: DTRACE
     !
     ! Locals:
     ! IFIB/IELEM: Generic looping indices
     ! IVOL: Element volume read in from file `simulation.vol'
     ! IINT: Interior element logical read in from file `simulation.int'
-    ! ECOORDS: Coordinates of elemental nodal points
     ! FILENAME: Output file name string for per-core data
     ! IOFILE: Input file names for data read in
     ! CHARID: Local processor ID (1-indexed) appended to FILENAME
@@ -601,7 +598,6 @@ CONTAINS
     INTEGER :: IELEM
     INTEGER :: IERR
     INTEGER :: IINT
-    REAL(RK) :: ECOORDS(0:KDIM1, EL_SUB1:EL_SUP1)
     CHARACTER*128 FILENAME, IOFILE
     CHARACTER*4 CHARID      ! Assumes less than 10,000 processes
     INTEGER  :: IOSTATUS

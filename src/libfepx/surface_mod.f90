@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE SURFACE_MOD
@@ -219,7 +219,8 @@ CONTAINS
                     !
                 ELSE
                     !
-                    CALL PAR_QUIT('Error  :     > Surface normal zero magnitude.')
+                    CALL PAR_QUIT('Error  :     > Surface normal zero &
+                        &magnitude.')
                     !
                 END IF
                 !
@@ -266,20 +267,18 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE UPD_SURF(UNIT, COORDS, SIG_ALL, LOAD_OUT, AREA_OUT)
+    SUBROUTINE UPD_SURF(COORDS, SIG_ALL, LOAD_OUT, AREA_OUT)
     !
     ! Update surface information.
     !
     !---------------------------------------------------------------------------
     !
     ! Arguments:
-    ! UNIT:
     ! COORDS: Coordinates
     ! SIG_ALL: Stresses
     ! LOAD_OUT: Output loads (enters as 0)
     ! AREA_OUT: Output area (enters as 0)
     !
-    INTEGER :: UNIT !--> DEBUG_U
     REAL(RK), INTENT(IN) :: COORDS(:)
     REAL(RK), INTENT(IN) :: SIG_ALL (:)
     REAL(RK), INTENT(INOUT) :: LOAD_OUT(NSURFACES,3)
@@ -287,13 +286,12 @@ CONTAINS
     !
     ! Locals:
     !
-    INTEGER :: i
+    INTEGER :: I
     INTEGER :: IEL
     INTEGER :: JQ
     INTEGER :: JN
     INTEGER :: JDOF
     INTEGER :: ILOAD
-    INTEGER :: j
     REAL(RK) :: TANGENT(3, 2, MAXQP2D)
     REAL(RK) :: NORMAL(3, MAXQP2D)
     REAL(RK) :: NMAG
@@ -307,11 +305,8 @@ CONTAINS
     !
     !----------------------------------------------------------------------
     !
-    ! write(UNIT,*) 'Updating surface info.'
-    !
     LOAD_OUT = 0.0D0
     AREA_OUT = 0.0D0
-    !
     !
     DO I = 1, NSURFACES
         !
@@ -376,16 +371,14 @@ CONTAINS
                     !
                 ELSE
                     !
-                    CALL PAR_QUIT('Error  :     > Surface normal zero magnitude.')
+                    CALL PAR_QUIT('Error  :     > Surface normal zero &
+                        &magnitude.')
                     !
                 END IF
                 !
             END DO
             !
-            !write(UNIT, *) 'element: ', IEL
-            !write(UNIT, '(3e14.4)') NORMAL
-            !
-            LOAD = 0.0d0
+            LOAD = 0.0D0
             !
             DO JQ = 1, NQP2D
                 !
@@ -413,12 +406,6 @@ CONTAINS
         END DO
         !
         CALL PAR_SUM(P_AREA, AREA)
-        !
-        !IF (myid .eq. 0) THEN
-        !  write(UNIT, '(a9,i3,a1)', ADVANCE='NO') 'LOAD surf', i, ':'
-        !  write(UNIT, '(5x,3e14.4)') TOTAL_LOAD
-        !  write(UNIT, *) 'AREA = ', AREA
-        !endif
         !
         LOAD_OUT(I, :) = TOTAL_LOAD
         AREA_OUT(I) = AREA

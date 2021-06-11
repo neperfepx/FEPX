@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE STIFFNESS_EVPS_MOD
@@ -108,8 +108,6 @@ CONTAINS
     ! Locals:
     !
     INTEGER :: IQPT
-    INTEGER :: JQPT
-    INTEGER :: KQPT
     INTEGER :: M_EL
     INTEGER :: IPHASE
     INTEGER :: NUMIND
@@ -243,13 +241,15 @@ CONTAINS
                 !
                 IF (DET(I, IQPT) .LT. 0.0D0) THEN
                     !
-                    WRITE(DFLT_U, *) 'Error  :       . Element: ',i,', determinant: ',DET(I, IQPT)
+                    WRITE(DFLT_U, *) 'Error  :       . Element: ',i,', &
+                        &determinant: ',DET(I, IQPT)
                     !
                 END IF
                 !
             END DO
             !
-            CALL PAR_QUIT('Error  :       . ELEMENT_STIF_EVPS: Negative Jacobian(s)', ABORT = .TRUE.)
+            CALL PAR_QUIT('Error  :       . ELEMENT_STIF_EVPS: Negative &
+                &Jacobian(s)', ABORT = .TRUE.)
             !
         END IF
         !
@@ -302,10 +302,9 @@ CONTAINS
             TEMP1 = 0.0D0
             TEMP3 = 0.0D0
             !
-            CALL GEN_MATRIX_MULT(TEMP1, XNI, C(:, :, :, IQPT), 1, 2, IER)
+            CALL GEN_MATRIX_MULT(TEMP1, XNI, C(:, :, :, IQPT), IER)
             !
-            IF (NR) CALL GEN_MATRIX_MULT(TEMP3, XNI, C_TAN(:,:,:,IQPT), 1, 2, &
-                & IER)
+            IF (NR) CALL GEN_MATRIX_MULT(TEMP3, XNI, C_TAN(:,:,:,IQPT), IER)
             !
             DO J = 0, I
                 !
@@ -332,9 +331,9 @@ CONTAINS
                 TEMP2 = 0.0D0
                 TEMP4 = 0.0D0
                 !
-                CALL GEN_MATRIX_MULT(TEMP2, TEMP1, XNJ, 1, 2, IER)
+                CALL GEN_MATRIX_MULT(TEMP2, TEMP1, XNJ, IER)
                 !
-                IF (NR) CALL GEN_MATRIX_MULT(TEMP4, TEMP3, XNJ, 1, 2, IER)
+                IF (NR) CALL GEN_MATRIX_MULT(TEMP4, TEMP3, XNJ, IER)
                 !
                 ! Assemble secant + volumentric stiffness
                 !

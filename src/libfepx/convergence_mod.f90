@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE CONVERGENCE_MOD
@@ -58,7 +58,7 @@ TYPE(CONVOPTIONSTYPE) :: CV_OPTIONS
 !
 CONTAINS
     !
-    FUNCTION CONVERGENCEKEYWORDINPUT(CMDLINE, INUNIT, STATUS) RESULT(MATCH)
+    FUNCTION CONVERGENCEKEYWORDINPUT(CMDLINE, STATUS) RESULT(MATCH)
     !
     !  Keyword input for this module.
     !
@@ -66,12 +66,10 @@ CONTAINS
     !
     ! Arguments:
     ! CMDLINE: Input command line
-    ! INUNIT: Input unit for further data if necessary
     ! STATUS: Command status if command line was matched
     ! MATCH: (Result) true if the command line was matched
     !
     CHARACTER(LEN=*), INTENT(IN) :: CMDLINE
-    INTEGER, INTENT(IN) :: INUNIT
     INTEGER, INTENT(OUT) :: STATUS
     LOGICAL :: MATCH
     !

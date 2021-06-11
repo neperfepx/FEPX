@@ -1,5 +1,5 @@
 @c This file is part of the FEPX software package.
-@c Copyright (C) 1996-2020 ACME Lab
+@c Copyright (C) 1996-2021 ACME Lab
 @c See the COPYING file in the top-level directory.
 
 @node Running a Simulation
@@ -21,7 +21,7 @@ A simulation may be run in parallel utilizing MPI,
 @com{mpirun -np @var{N} fepx}
 @inputfilefoot
 
-where @var{N} refers to the number of MPI processes desired. Note that your local installation of MPI may not utilize @samp{mpirun} and instead an alternative MPI command may be required. 
+where @var{N} refers to the number of MPI processes desired. Note that your local installation of MPI may not utilize @samp{mpirun} and instead an alternative MPI command may be required.
 
 @node Submitting FEPX to a Job Scheduling Program
 @section Submitting FEPX to a Job Scheduling Program
@@ -72,47 +72,42 @@ would be run by entering @command{qsub runtorque.sh} into the terminal from with
 @node Restarting a Simulation
 @section Restarting a Simulation
 
-A simulation may be restarted only if the restart files are written as simulation output (@pxref{Restart Output}). Printing restart files will output, by default, a single @samp{post.restart.control} file and a @samp{post.restart.field.core*} file for each individual core where @samp{*} denotes the ID of the core on which the data is being printed. These restart files must be included in the simulation directory along with the configuration file, the mesh file, and any external files included with the simulation. 
+A simulation may be restarted only if the restart files were printed as
+simulation output on the previous run (@pxref{Restart Output}). Printing restart files outputs
+a single @samp{rst@var{N}.control} file and a
+@samp{rst@var{N}.field.core@var{#}} file for each individual core, where
+@samp{@var{N}} refers to the restart ID (0 indexing), and @samp{@var{#}} denotes the
+ID of the core on which the data is being printed. These restart files must be
+included in the simulation directory along with the configuration file, the
+mesh file, and any external files included with the simulation.
 
-A simulation may be restarted by adding the following lines to the @file{simulation.config} file:
-
-@inputfilehead
-@example
-restart @var{file_handling_option}
-@end example
-@inputfilefoot
-
-where @code{@var{file_handling_option}} is the style of file handling desired for a restarted simulation with respect to requested output variable printing. Options for @code{@var{file_handling_option}} are: @samp{append} and @samp{new_file}. When @samp{append} is selected, the restarted simulation will attempt to append output variable data to the existing files in the local directory. If @samp{append} is selected and output variable files are not present in the local directory, the restarted simulation will write new files as needed. When @samp{new_file} is selected, the restarted simulation will write output variable data to a new set of files, by default, as @samp{post.var.rst1.core*} where @code{@var{var}} is the requested output variable name and @code{@var{rst1}} is the restart label applied to all new output variable files.
-
-To modify the default restart file label, @code{@var{rst1}}, for the @samp{restart new_file} option:
+A simulation may be restarted by adding the following line to the
+@file{simulation.config} file:
 
 @inputfilehead
 @example
-rsvar_base_out @var{restart_label}
+restart on
 @end example
 @inputfilefoot
 
-where @code{@var{restart_label}} is the desired restart file label of the new restart output variable files. Automatic options for @code{@var{restart_label}} are: @samp{@{date@}} and @samp{@{date_time@}}. The option @samp{@{date@}} will use the current calendar date in the @code{YYYYMMDD} format and @samp{@{date_time@}} will use the current calendar date and time in the @code{YYYYMMDD-HHMM} format. Note that, although @samp{rst1} is the default @code{@var{restart_label}}, if @samp{restart new_file} is enabled while  @samp{post.var.rst1.core*} files are present in the local directory, the restarted simulation will automatically increment the integer value in the label to avoid potentially overwriting data files. For example, if the files @samp{post.var.rst1.core*} and @samp{post.var.rst2.core*} are present in the local directory, the restarted simulation will write to new files labeled @samp{post.var.rst3.core*}. Likewise, if a user-defined @code{@var{restart_label}} is utilized while files with the same label exist in the local directory, the restarted simulation will abort to avoid potentially overwriting local data files.
+When a simulation restarts, it will attempt to find the simulation restart
+files with the highest index, @code{@var{N}}. It will write output variable data to
+a new set of files, @samp{post.@var{var}.rst@var{N}+1.core*}, where @samp{@var{var}}
+is the requested output variable name and @samp{rst@var{N}+1} is the restart
+label applied to all new output variable files. Likewise, if restart files are
+again printed, their index will increase to @code{@var{N}+2} (the previous
+restart's files will not be overwritten).
 
-Additionally, the names of these restart files may be adjusted upon writing or before reading by adding optional commands to the @file{simulation.config} file.
+A simulation restart must be performed with the same number of cores that were
+used to run the original simulation. Restart files are always written at the
+end of a successful step and not at individual increments.
 
-To modify the file names of the input restart (control/field) files:
-@inputfilehead
-@example
-rsctrl_in @var{control_file_name}
-rsfield_base_in @var{field_file_name}
-@end example
-@inputfilefoot
+Each restarted simulation is considered a new simulation, albeit with
+initialized field variables as written in the restart files. Step and increment
+indices, as well as the simulation time, are all reset to 0.
 
-To modify the file names of the output restart (control/field) files:
-@inputfilehead
-@example
-rsctrl_out @var{control_file_name}
-rsfield_base_out @var{field_file_name}
-@end example
-@inputfilefoot
-
-where @code{@var{control_file_name}} is the desired file name of the restart control file and @code{@var{field_file_name}} is the desired @dfn{base} string for the file name(s) of the restart field data files (@code{@var{field_file_name}} will always have the @samp{.core*} string appended on the defined string). @c For example, if the @code{@var{field_file_name}} is set to @samp{rsfield_example} the output restart field data file(s) will be named @samp{rsfield_example.core*}.
-
-Any restarted simulation must be rerun with the same number of cores that were used to run the original simulation. FEPX will automatically begin the simulation at the beginning of the step after the restart files were written. Restart files are always written at the end of a successful step and not at individual increments. Note that when a simulation is restarted, the new output files will overwrite any present output data in the local directory as defined in the @file{simulation.config} file. If this behavior is undesirable, it is recommended that the restart files, configuration file, mesh file, and any external files be copied to a new directory before restarting the simulation proper.
-
+When restarting a simulation, the prescribed deformation history
+(@pxref{Deformation History}) should include only additional steps. The
+restarted simulation will attempt to follow the entire deformation history as
+prescribed in the @file{simulation.config} file, and will not consider steps
+that were completed in the initial simulation.

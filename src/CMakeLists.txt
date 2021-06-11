@@ -1,11 +1,11 @@
 # This file is part of the FEPX software package.
-# Copyright (C) 1996-2020, DPLab, ACME Lab.
+# Copyright (C) 1996-2021, DPLab, ACME Lab.
 # See the COPYING file in the top-level directory.
 
 # Top-level CMakeLists.txt for building FEPX
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0)
 project(fepx Fortran)
-set(FEPX_VERSION \"1.1.1\")
+set(FEPX_VERSION \"1.1.2-161-devel\")
 
 # Prepare CMake for Fortran and locate MPI package
 enable_language(Fortran)
@@ -16,6 +16,7 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build: Debug Release" FORCE)
 endif()
 
+# Option for verbose build
 option(VERBOSE "Build verbose Makefiles" OFF)
 if(VERBOSE)
     set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -23,12 +24,20 @@ else(VERBOSE)
     set(CMAKE_VERBOSE_MAKEFILE OFF)
 endif(VERBOSE)
 
-option(IEEE_SUPPRESS "Suppress IEEE signals on program exit" OFF)
+# Option to suppress IEEE warnings on program exit
+option(IEEE_SUPPRESS "Suppress IEEE signals on program exit" ON)
 if(IEEE_SUPPRESS)
     set(CMAKE_Fortran_FLAGS "-ffpe-summary='none'")
 else(IEEE_SUPPRESS)
     set(CMAKE_Fortran_FLAGS "")
 endif(IEEE_SUPPRESS)
+
+# Code to silence warnings from RANLIB on OSX
+# From https://stackoverflow.com/questions/4929255/building-static-libraries-on-mac-using-cmake-and-gcc
+if (APPLE)
+  SET(CMAKE_Fortran_ARCHIVE_CREATE   "<CMAKE_AR> Scr <TARGET> <LINK_FLAGS> <OBJECTS>")
+  SET(CMAKE_Fortran_ARCHIVE_FINISH   "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
+endif ()
 
 # Check that this machine supports F90 compilation
 if(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)

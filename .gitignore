@@ -4,36 +4,58 @@
 *.x
 *~
 *.x.dSYM
-*.cp* 
-*.fn* 
-*.ky* 
-*.pg* 
-*.tp* 
-*.vr* 
+*.cp*
+*.fn*
+*.ky*
+*.pg*
+*.tp*
+*.vr*
 *.mv*
 *.dvi
 *.info
 *.swp
 
+# Ignore FEPX build files
 /lib/libf95/modules
 /lib/libparallel/modules_serial
 /lib/libparallel/modules_parallel
 /src/build/
+/build/
 
 # Ignore AppleDouble files and Mac .DS_Store files
 ._*
 .DS_Store
 
-# Ignore LaTeX auxilliary files
+# Ignore LaTeX auxilliary files and made PDFs
 *.aux
 *.log
 *.out
 *.synctex.gz
 *.toc
-
 fepx.pdf
 
 # Ignore sed -e files
 VERSIONS-e
 *.f90-e
 *.texi-e
+
+# Ignore meld backups
+*_BACKUP_*
+*_BASE_*
+*_LOCAL_*
+*_REMOTE_*
+*.orig
+
+# Ignore simulation post files
+/examples/1_uniaxial/post.*
+/examples/1_uniaxial.sim/
+/examples/2_triaxCSR/post.*
+/examples/2_triaxCSR.sim/
+/examples/3_triaxCLR/post.*
+/examples/3_triaxCLR.sim/
+/examples/4_restart/cycle1/
+/examples/4_restart/cycle1.sim/
+/examples/4_restart/cycle2/
+/examples/4_restart/cycle2.sim/
+/examples/5_external/post.*
+/examples/5_external.sim/

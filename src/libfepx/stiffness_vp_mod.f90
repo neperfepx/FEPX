@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE STIFFNESS_VP_MOD
@@ -38,7 +38,7 @@ PUBLIC :: ADD_TO_STIFFNESS
 CONTAINS
     !
     SUBROUTINE ELEMENT_STIF_VP(ITYPE, GSTIFF, GCOORDS, GVEL, PSCALE, PCNST, &
-        & QR5X5, WTS, EQPLAS, EPSEFF, DTIME, INCR)
+        & EPSEFF)
     !
     !     Form elemental stiffness matrix for viscoplastic problem.
     !
@@ -51,12 +51,7 @@ CONTAINS
     ! GVEL:
     ! PSCALE:
     ! PCNST:
-    ! QR5X5:
-    ! WTS:
-    ! EQPLAS:
     ! EPSEFF:
-    ! DTIME:
-    ! INCR: Current increment
     !
     INTEGER :: ITYPE
     REAL(RK) :: GSTIFF(0:KDIM1, 0:KDIM1, EL_SUB1:EL_SUP1)
@@ -64,17 +59,11 @@ CONTAINS
     REAL(RK) :: GVEL(0:KDIM1, EL_SUB1:EL_SUP1)
     REAL(RK) :: PSCALE(EL_SUB1:EL_SUP1)
     REAL(RK) :: PCNST(0:KDIM1, EL_SUB1:EL_SUP1)
-    REAL(RK) :: QR5X5(0:TVEC1, 0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK) :: WTS(0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK) :: EQPLAS(EL_SUB1:EL_SUP1), EPSEFF(EL_SUB1:EL_SUP1)
-    REAL(RK) :: DTIME
-    INTEGER :: INCR
+    REAL(RK) :: EPSEFF(EL_SUB1:EL_SUP1)
     !
     ! Locals:
     !
     INTEGER :: IQPT
-    INTEGER :: JQPT
-    INTEGER :: KQPT
     INTEGER :: I
     INTEGER :: J
     INTEGER :: I1
@@ -121,8 +110,7 @@ CONTAINS
     CALL SFDER_HPAR(LOC0, LOC1, LOC2, GCOORDS, DNDX, DNDY, DNDZ, DET, S11, &
         & S12, S13, S21, S22, S23, S31, S32, S33)
     !
-    CALL MATERIAL_MATRIX_VP(ITYPE, c, DNDX, DNDY, DNDZ, GVEL, SCLFAC, QR5X5, &
-        & WTS, EPSEFF, DTIME, INCR)
+    CALL MATERIAL_MATRIX_VP(ITYPE, C, DNDX, DNDY, DNDZ, GVEL, SCLFAC, EPSEFF)
     !
     T11 = 0.0D0
     !
@@ -169,7 +157,7 @@ CONTAINS
             !
             TEMP1 = 0.0D0
             !
-            CALL GEN_MATRIX_MULT(TEMP1, XNI, C, 1, 2, IER)
+            CALL GEN_MATRIX_MULT(TEMP1, XNI, C, IER)
             !
             DO J = 0, I
                 !
@@ -195,7 +183,7 @@ CONTAINS
                 !
                 TEMP2 = 0.0D0
                 !
-                CALL GEN_MATRIX_MULT(TEMP2, TEMP1, XNJ,1, 2, IER)
+                CALL GEN_MATRIX_MULT(TEMP2, TEMP1, XNJ, IER)
                 !
                 S11 = TEMP2(1, 1, :) * DET
                 S12 = TEMP2(1, 2, :) * DET

@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE DRIVER_UTILITIES_MOD
@@ -8,9 +8,9 @@ MODULE DRIVER_UTILITIES_MOD
 !
 ! Contains subroutines:
 ! CALC_MESH_DIM: Calculate mesh dimensions.
-! CALC_STRESS_STRAIN: Calculate elemental stress/strain, mesh surface areas, 
+! CALC_STRESS_STRAIN: Calculate elemental stress/strain, mesh surface areas,
 !   and macroscopic loads.
-! EST_AVG_MOD: Estimate bulk elastic moduli. Assumes a uniform texture and 
+! EST_AVG_MOD: Estimate bulk elastic moduli. Assumes a uniform texture and
 !   equal valued element volumes.
 ! TEMP_UPDATE_STATE_EVPS: Temporarily updates state at center of element only.
 ! UPDATE_STATE_EVPS: Update crystal states for entire mesh.
@@ -52,7 +52,7 @@ CONTAINS
     SUBROUTINE CALC_MESH_DIM(LENGTH, INDX, INDY, INDZ)
     !
     ! Calculate mesh dimensions for triaxial loading.
-    !      
+    !
     !---------------------------------------------------------------------------
     !
     ! Arguments:
@@ -72,9 +72,9 @@ CONTAINS
     !
     REAL(RK) :: PART_XMAX, PART_YMAX, PART_ZMAX
     REAL(RK) :: LENGTH_X, LENGTH_Y, LENGTH_Z
-    !      
+    !
     !---------------------------------------------------------------------------
-    !     
+    !
     ! Locate maximum coordinate values of the domain.
     !
     PART_XMAX = MAXVAL(COORDS(INDX))
@@ -137,14 +137,14 @@ CONTAINS
     INTEGER :: M_EL, EL_DOF_MIN, EL_DOF_MAX, IDOF, I, J, K
     INTEGER :: IPHASE, NUMIND
     INTEGER, POINTER :: INDICES(:) => NULL()
-    ! 
+    !
     ! Notes:
     ! 'MY_PHASE' here is 0-based because it is used only once for the local
     ! variable(POINTER): e_elas_vec_dev_TMP(0:TVEC1,0:NGRAIN1,0:(NUMIND-1))
     ! which is zero-based.
-    ! 
+    !
     ! SIG_VEC, SIG_KK input as Kirchhoff stresses and output as Cauchy stresses.
-    !      
+    !
     !---------------------------------------------------------------------------
     !
     MY_PHASE(:) = PHASE(EL_SUB1:EL_SUP1)
@@ -166,8 +166,8 @@ CONTAINS
         IF (ASSOCIATED(E_ELAS_VEC_DEV_TMP)) THEN
             !
             DEALLOCATE(E_ELAS_VEC_DEV_TMP)
-            !        
-        ENDIF
+            !
+        END IF
         !
         ALLOCATE(E_ELAS_VEC_DEV_TMP(0:TVEC1, 0:NGRAIN1, 0:(NUMIND - 1)))
         !
@@ -238,7 +238,7 @@ CONTAINS
             DO I = 0,TVEC1
                 !
                 SIG_VEC(I, J, K) = SIG_VEC(I, J, K) / DETERM_V(J, K)
-                !            
+                !
             END DO
             !
         END DO
@@ -266,11 +266,11 @@ CONTAINS
     ! Get weighted average
     !
     DO I = 0, TVEC1
-        !    
+        !
         S_AVG(I, :) = SUM(SIG_SM(I, :, :) * WTS, DIM = 1)
-        !      
+        !
     END DO
-    !      
+    !
     S_AVG_KK = SUM(S_KK_GRN * WTS, DIM = 1)
     !
     ! Deviatoric stress:
@@ -289,11 +289,11 @@ CONTAINS
     !
     EL_DOF_MIN = 6*EL_SUB1
     EL_DOF_MAX = 6*EL_SUP1 + 5
-    !    
+    !
     ALLOCATE(SIG_AVG_ALL(EL_DOF_MIN:EL_DOF_MAX))
     !
     DO I=EL_SUB1, EL_SUP1
-        !    
+        !
         IDOF = 6*I
         SIG_AVG_ALL(IDOF)   = S_AVG_3X3(0,0,I)
         SIG_AVG_ALL(IDOF+1) = S_AVG_3X3(1,0,I)
@@ -301,17 +301,17 @@ CONTAINS
         SIG_AVG_ALL(IDOF+3) = S_AVG_3X3(1,1,I)
         SIG_AVG_ALL(IDOF+4) = S_AVG_3X3(2,1,I)
         SIG_AVG_ALL(IDOF+5) = S_AVG_3X3(2,2,I)
-        !      
+        !
     END DO
     !
     ! Update areas and loads
     !
-    CALL UPD_SURF(OUNITS(DEBUG_U), COORDS, SIG_AVG_ALL, LOAD, AREA)
+    CALL UPD_SURF(COORDS, SIG_AVG_ALL, LOAD, AREA)
     !
     DEALLOCATE(SIG_AVG_ALL)
     !
     RETURN
-    !    
+    !
     END SUBROUTINE CALC_STRESS_STRAIN
     !
     !===========================================================================
@@ -320,7 +320,7 @@ CONTAINS
     !
     ! Estimate Voigt-averaged bulk elastic moduli (Hosford p22)
     ! Assumes uniform texture and equal element volumes.
-    !      
+    !
     !---------------------------------------------------------------------------
     !
     ! Arguments:
@@ -359,7 +359,7 @@ CONTAINS
     REAL(RK) :: F
     REAL(RK) :: G
     REAL(RK) :: H
-    !      
+    !
     !---------------------------------------------------------------------------
     !
     MY_PHASE(:) = PHASE(EL_SUB1:EL_SUP1)
@@ -370,13 +370,13 @@ CONTAINS
     DO IPHASE = 1, NUMPHASES
         !
         PART_NUMEL_PHASE = 0.0D0
-        !        
+        !
         DO I = EL_SUB1, EL_SUP1
             !
             IF (MY_PHASE(I) .EQ. IPHASE) THEN
                 !
                 PART_NUMEL_PHASE = PART_NUMEL_PHASE + 1.0
-                !          
+                !
             END IF
             !
         END DO
@@ -424,15 +424,15 @@ CONTAINS
     END DO
     !
     RETURN
-    !  
+    !
     END SUBROUTINE EST_AVG_MOD
     !
     !===========================================================================
     !
     SUBROUTINE TEMP_UPDATE_STATE_EVPS(VELOCITY, DTRACE, C0_ANGS, C_ANGS, &
         & SIG_VEC_N, SIG_VEC, CRSS_N, CRSS, RSTAR_N, RSTAR, E_BAR_VEC, &
-        & E_ELAS_KK_BAR, E_ELAS_KK, SIG_KK, KEINV, WTS, DTIME, &
-        & CONVERGED_SOLUTION, AUTO_TIME)
+        & E_ELAS_KK_BAR, E_ELAS_KK, SIG_KK, KEINV, DTIME, CONVERGED_SOLUTION, &
+        & AUTO_TIME)
     !
     ! Temporarily updates state at center of element only.
     ! This subroutine is employed when iterating on velocity boundary
@@ -461,7 +461,6 @@ CONTAINS
     REAL(RK), INTENT(OUT) :: E_ELAS_KK(EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(OUT) :: SIG_KK(EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: KEINV(0:TVEC1,1:NUMPHASES)
-    REAL(RK), INTENT(IN) :: WTS(0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: DTIME
     LOGICAL, INTENT(INOUT) :: CONVERGED_SOLUTION
     INTEGER, INTENT(IN) :: AUTO_TIME
@@ -469,7 +468,7 @@ CONTAINS
     ! Locals:
     !
     REAL(RK), POINTER :: E_BAR_VEC_TMP(:,:,:) => NULL()
-    INTEGER :: I, J, M_EL, IQPT
+    INTEGER :: M_EL
     INTEGER :: JITER_STATE(0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: S11(EL_SUB1:EL_SUP1), S12(EL_SUB1:EL_SUP1), S13(EL_SUB1:EL_SUP1)
     REAL(RK) :: S21(EL_SUB1:EL_SUP1), S22(EL_SUB1:EL_SUP1), S23(EL_SUB1:EL_SUP1)
@@ -491,8 +490,7 @@ CONTAINS
     REAL(RK) :: ECOORDS(0:KDIM1, EL_SUB1:EL_SUP1)
     REAL(RK) :: EVEL(0:KDIM1, EL_SUB1:EL_SUP1)
     REAL(RK) :: SQR2, SQR32
-    REAL(RK) :: ALPHA(TVEC), ELAPSED
-    INTEGER :: E1, E2, M, IPHASE, NUMIND
+    INTEGER :: IPHASE, NUMIND
     INTEGER, POINTER :: INDICES(:) => NULL()
     INTEGER :: MY_PHASE(0:(EL_SUP1-EL_SUB1))
     !
@@ -533,7 +531,7 @@ CONTAINS
             !
             DEALLOCATE(E_BAR_VEC_TMP)
             !
-        ENDIF
+        END IF
         !
         ALLOCATE(E_BAR_VEC_TMP(0:TVEC1, 0:NGRAIN1, 0:(NUMIND - 1)))
         !
@@ -545,7 +543,7 @@ CONTAINS
         DEALLOCATE(E_BAR_VEC_TMP)
         DEALLOCATE(INDICES)
         !
-    ENDDO
+    END DO
     !
     ! Compute quadrature quantities given a set of local coordinates
     !
@@ -568,7 +566,7 @@ CONTAINS
     !
     CALL MAT_VEC_SYMM(D, D_VEC, M_EL)
     CALL MAT_VEC_SKEW(W, W_VEC, M_EL)
-    CALL EFF_DEF(DEFF, D, DTIME, M_EL)
+    CALL EFF_DEF(DEFF, D, M_EL)
     !
     ! Variables @(t+dt):
     ! RSTAR [3x3]
@@ -579,15 +577,15 @@ CONTAINS
     ! E_ELAS_KK (1)
     !
     CALL POLYCRYSTAL_RESPONSE_EVPS_QP(D_VEC, W_VEC, C0_ANGS, C_ANGS, &
-        & SIG_VEC_N, SIG_VEC, CRSS_N, CRSS, RSTAR_N, RSTAR, E_BAR_VEC, WTS, &
-        & DEFF, D_KK, SIG_KK, E_ELAS_KK_BAR, E_ELAS_KK, JITER_STATE, KEINV, &
-        & 9999, DTIME, CONVERGED_SOLUTION, AUTO_TIME)
+        & SIG_VEC_N, SIG_VEC, CRSS_N, CRSS, RSTAR_N, RSTAR, E_BAR_VEC, DEFF, &
+        & D_KK, SIG_KK, E_ELAS_KK_BAR, E_ELAS_KK, JITER_STATE, KEINV, 9999, &
+        & DTIME, CONVERGED_SOLUTION, AUTO_TIME)
     !
     IF (.NOT. CONVERGED_SOLUTION .AND. AUTO_TIME .EQ. 1) THEN
         !
         CALL PAR_QUIT('Error  :     > No converged solution found.')
         !
-    ENDIF
+    END IF
     !
     RETURN
     !
@@ -597,8 +595,8 @@ CONTAINS
     !
     SUBROUTINE UPDATE_STATE_EVPS(VELOCITY, DTRACE, C0_ANGS, C_ANGS, &
         & SIG_VEC_N, SIG_VEC, CRSS_N, CRSS, RSTAR_N, RSTAR, E_BAR_VEC, &
-        & E_ELAS_KK_BAR, E_ELAS_KK, SIG_KK, KEINV, WTS, DEFF, DTIME, STIF, FE, &
-        & D, D_VEC, VGRAD, CONVERGED_SOLUTION, AUTO_TIME)
+        & E_ELAS_KK_BAR, E_ELAS_KK, SIG_KK, KEINV, DEFF, DTIME, STIF, FE, D, &
+        & D_VEC, VGRAD, CONVERGED_SOLUTION, AUTO_TIME)
     !
     !---------------------------------------------------------------------------
     !
@@ -623,7 +621,6 @@ CONTAINS
     REAL(RK), INTENT(OUT) :: E_ELAS_KK(EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(OUT) :: SIG_KK(EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: KEINV(0:TVEC1, 1:NUMPHASES)
-    REAL(RK), INTENT(IN) :: WTS(0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(OUT) :: DEFF(EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: DTIME
     REAL(RK), INTENT(OUT) :: STIF(TVEC, TVEC, EL_SUB1:EL_SUP1)
@@ -655,7 +652,7 @@ CONTAINS
     REAL(RK) :: ECOORDS(0:KDIM1, EL_SUB1:EL_SUP1)
     REAL(RK) :: EVEL(0:KDIM1, EL_SUB1:EL_SUP1)
     REAL(RK) :: SQR2, SQR32
-    REAL(RK) :: ALPHA(TVEC), ELAPSED
+    REAL(RK) :: ALPHA(TVEC)
     REAL(RK) :: D_VEC_Q(0:TVEC1, EL_SUB1:EL_SUP1, 0:NQPT1)
     REAL(RK) :: W_VEC_Q(0:DIMS1, EL_SUB1:EL_SUP1, 0:NQPT1)
     REAL(RK) :: C_ANGS_Q(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
@@ -673,7 +670,7 @@ CONTAINS
     REAL(RK) :: SHEAR(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: SHRATE(0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: WP_SS(0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    INTEGER :: E1, E2, M, IPHASE, NUMIND
+    INTEGER :: IPHASE, NUMIND
     INTEGER, POINTER :: INDICES(:) => NULL()
     INTEGER :: MY_PHASE(0:(EL_SUP1-EL_SUB1))
     !
@@ -723,7 +720,7 @@ CONTAINS
                 !
                 DEALLOCATE(E_BAR_VEC_TMP)
                 !
-            ENDIF
+            END IF
             !
             ALLOCATE(E_BAR_VEC_TMP(0:TVEC1 ,0:NGRAIN1, 0:(NUMIND - 1)))
             !
@@ -735,7 +732,7 @@ CONTAINS
            DEALLOCATE(E_BAR_VEC_TMP)
            DEALLOCATE(INDICES)
            !
-        ENDDO !NUMPHASES
+        END DO !NUMPHASES
         !
         ! Compute quadrature quantities given a set of local coordinates.
         !
@@ -759,7 +756,7 @@ CONTAINS
         CALL MAT_VEC_SYMM(d, D_VEC_Q(:,:,IQPT), M_EL)
         CALL MAT_VEC_SKEW(w, W_VEC_Q(:,:,IQPT), M_EL)
         !
-        CALL EFF_DEF(DEFF_Q(:,IQPT), D, DTIME, M_EL)
+        CALL EFF_DEF(DEFF_Q(:,IQPT), D, M_EL)
         !
         ! Variables @(t+dt):
         ! RSTAR [3x3]
@@ -769,19 +766,18 @@ CONTAINS
         ! SIG_KK (1)
         ! E_ELAS_KK (1)
         !
-    ENDDO ! loop over quad points
+    END DO ! loop over quad points
     !
     CALL POLYCRYSTAL_RESPONSE_EVPS(D_VEC_Q, W_VEC_Q, C0_ANGS, C_ANGS_Q, &
         & SIG_VEC_N_Q, SIG_VEC_Q, CRSS_N, CRSS_Q, RSTAR_N, RSTAR_Q, &
-        & E_BAR_VEC_Q, WTS, DEFF_Q, D_KK_Q, SIG_KK_Q, E_ELAS_KK_BAR_Q, &
-        & E_ELAS_KK_Q, JITER_STATE, KEINV, 9999, DTIME, CONVERGED_SOLUTION, &
-        & AUTO_TIME)
+        & E_BAR_VEC_Q, DEFF_Q, D_KK_Q, SIG_KK_Q, E_ELAS_KK_BAR_Q, E_ELAS_KK_Q, &
+        & JITER_STATE, KEINV, 9999, DTIME, CONVERGED_SOLUTION, AUTO_TIME)
     !
     IF (.NOT. CONVERGED_SOLUTION .AND. AUTO_TIME .EQ. 1) THEN
         !
         CALL PAR_QUIT('Error  :     > No converged solution found.')
         !
-    ENDIF
+    END IF
     !
     DO I = 0, NQPT1
         !
@@ -793,7 +789,7 @@ CONTAINS
         GACCUMSHEAR(:, 0, :, I) = GACCUMSHEAR(:, 0, :, I) + &
             & DABS(SHEAR(: ,0, :)) * DTIME
         !
-    ENDDO
+    END DO
     !
     ! Update _n variables
     !
@@ -825,7 +821,7 @@ CONTAINS
             !
             DEALLOCATE(E_BAR_VEC_TMP)
             !
-        ENDIF
+        END IF
         !
         ALLOCATE(E_BAR_VEC_TMP(0:TVEC1, 0:NGRAIN1, 0:(NUMIND - 1)))
         CALL VEC_D_VEC5(KEINV(:, IPHASE), SIG_VEC_N(:, :, INDICES), &
@@ -835,7 +831,7 @@ CONTAINS
         DEALLOCATE(E_BAR_VEC_TMP)
         DEALLOCATE(INDICES)
         !
-    ENDDO
+    END DO
     !
     ! Compute quadrature quantities given a set of local coordinates.
     !
@@ -844,7 +840,7 @@ CONTAINS
     !
     ! Compute velocity gradient (VGRAD) and his sym. (d) and skew (w) parts.
     !
-    CALL vel_gradient(VGRAD, DNDX, DNDY, DNDZ, EVEL)
+    CALL VEL_GRADIENT(VGRAD, DNDX, DNDY, DNDZ, EVEL)
     !
     ! D_KK: mean/volumetric part of the symmetric part of the velocity gradient
     ! D: deviatoric part of the symmetric part of the velocity gradient
@@ -859,7 +855,7 @@ CONTAINS
     CALL MAT_VEC_SYMM(D, D_VEC, M_EL)
     CALL MAT_VEC_SKEW(W, W_VEC, M_EL)
     !
-    CALL EFF_DEF(DEFF, d, DTIME, M_EL)
+    CALL EFF_DEF(DEFF, D, M_EL)
     !
     ! Variables @(t+dt):
     ! RSTAR [3x3]
@@ -872,15 +868,15 @@ CONTAINS
     ACCUMSHEAR = ACCUMSHEAR_CEN
     !
     CALL POLYCRYSTAL_RESPONSE_EVPS_QP(D_VEC, W_VEC, C0_ANGS, C_ANGS, &
-        & SIG_VEC_N, SIG_VEC, CRSS_N, CRSS, RSTAR_N, RSTAR, E_BAR_VEC, WTS, &
-        & DEFF, D_KK, SIG_KK, E_ELAS_KK_BAR, E_ELAS_KK, JITER_STATE, KEINV, &
-        & 9999, DTIME, CONVERGED_SOLUTION, AUTO_TIME)
+        & SIG_VEC_N, SIG_VEC, CRSS_N, CRSS, RSTAR_N, RSTAR, E_BAR_VEC, DEFF, &
+        & D_KK, SIG_KK, E_ELAS_KK_BAR, E_ELAS_KK, JITER_STATE, KEINV, 9999, &
+        & DTIME, CONVERGED_SOLUTION, AUTO_TIME)
     !
     IF (.NOT. CONVERGED_SOLUTION .AND. AUTO_TIME .EQ. 1) THEN
         !
         CALL PAR_QUIT('Error  :     > No converged solution found.')
         !
-    ENDIF
+    END IF
     !
     DEFF_G(:,:) = SPREAD(DEFF, DIM = 1, NCOPIES = NGRAIN)
     !
@@ -915,9 +911,9 @@ CONTAINS
             !
             STIF(I, J, :) = ALPHA(I) * STIF(I, J, :) * ALPHA(J)
             !
-        ENDDO
+        END DO
         !
-    ENDDO
+    END DO
     !
     RETURN
     !
@@ -925,11 +921,10 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE VELOCITY_ITERATION(BCS, PFORCE, VELOCITY, ELPRESS, EVEL, LOAD, &
-        & DTRACE, NTRACE, C0_ANGS, C_ANGS, SIG_VEC_N, SIG_VEC, CRSS_N, CRSS, &
-        & RSTAR_N, RSTAR, TRSTAR, KEINV, E_ELAS_KK_BAR, E_ELAS_KK, SIG_KK, &
-        & JITER_STATE, WTS, EPSEFF, DTIME, INCR, E_BAR_VEC, &
-        & CONVERGED_SOLUTION, AUTO_TIME, ITERNL)
+    SUBROUTINE VELOCITY_ITERATION(BCS, PFORCE, VELOCITY, EVEL, LOAD, DTRACE, &
+        & C0_ANGS, C_ANGS, SIG_VEC_N, SIG_VEC, CRSS_N, CRSS, RSTAR_N, RSTAR, &
+        & TRSTAR, KEINV, E_ELAS_KK_BAR, E_ELAS_KK, SIG_KK, JITER_STATE, WTS, &
+        & DTIME, INCR, E_BAR_VEC, CONVERGED_SOLUTION, AUTO_TIME, ITERNL)
     !
     ! Perform velocity iteration
     !
@@ -940,11 +935,9 @@ CONTAINS
     LOGICAL, INTENT(IN) :: BCS(DOF_SUB1:DOF_SUP1)
     REAL(RK), INTENT(IN) :: PFORCE(DOF_SUB1:DOF_SUP1)
     REAL(RK), INTENT(INOUT) :: VELOCITY(DOF_SUB1:DOF_SUP1)
-    REAL(RK), INTENT(OUT) :: ELPRESS(EL_SUB1:EL_SUP1)
     REAL(RK) :: EVEL(0:KDIM1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(OUT) :: LOAD(3)
     TYPE(TRACE) :: DTRACE
-    TYPE(TRACE) :: NTRACE
     REAL(RK), INTENT(IN) :: C0_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
         & EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: C_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
@@ -963,9 +956,8 @@ CONTAINS
     REAL(RK), INTENT(OUT) :: SIG_KK(EL_SUB1:EL_SUP1)
     INTEGER, INTENT(OUT) :: JITER_STATE(0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: WTS(0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK), INTENT(OUT) :: EPSEFF(EL_SUB1:EL_SUP1)
     REAL(RK) :: DTIME
-    INTEGER, INTENT(IN) :: INCR   ! current load INCRement
+    INTEGER, INTENT(IN) :: INCR
     REAL(RK), INTENT(OUT) :: E_BAR_VEC(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     LOGICAL, INTENT(OUT) :: CONVERGED_SOLUTION
     INTEGER :: AUTO_TIME
@@ -1008,10 +1000,10 @@ CONTAINS
     ! Iterate on velocity field
     !
     IER = ITMETHOD_EVPS(BCS, PFORCE, VELOCITY, ELPRESS_Q, EVEL, DTRACE, &
-        & NTRACE, C0_ANGS, C_ANGS, SIG_VEC_N_Q, SIG_VEC_Q, CRSS_N, CRSS_Q, &
-        & RSTAR_N, TRSTAR, KEINV, E_ELAS_KK_BAR_Q, E_ELAS_KK_Q, SIG_KK_Q, &
-        & JITER_STATE, WTS, EPSEFF_Q, DTIME, INCR, E_BAR_VEC_Q, &
-        & CONVERGED_SOLUTION, AUTO_TIME, ITERNL)
+        & C0_ANGS, C_ANGS, SIG_VEC_N_Q, SIG_VEC_Q, CRSS_N, CRSS_Q, RSTAR_N, &
+        & TRSTAR, KEINV, E_ELAS_KK_BAR_Q, E_ELAS_KK_Q, SIG_KK_Q, JITER_STATE, &
+        & WTS, EPSEFF_Q, DTIME, INCR, E_BAR_VEC_Q, CONVERGED_SOLUTION, &
+        & AUTO_TIME, ITERNL)
     !
     ! Evaluate convergence of velocity field and material state
     !
@@ -1019,10 +1011,10 @@ CONTAINS
         !
         CALL PAR_QUIT('Error  :     > Failure to converge.')
         !
-    ENDIF
+    END IF
     !
-    IF (.NOT. CONVERGED_SOLUTION) WRITE(DFLT_U,'(A)') 'Warning:     > AUTO_TIME&
-        & .ne. 1 with CONVERGED_SOLUTION = false'
+    !IF (.NOT. CONVERGED_SOLUTION) WRITE(DFLT_U,'(A)') 'Warning:     > &
+    !    &AUTO_TIME .ne. 1 with CONVERGED_SOLUTION = false'
     !
     ! Temporatily update coordinates
     !
@@ -1031,8 +1023,8 @@ CONTAINS
     !
     CALL TEMP_UPDATE_STATE_EVPS(VELOCITY, DTRACE, C0_ANGS, TC_ANGS, &
         & TSIG_VEC_N, SIG_VEC, CRSS_N, CRSS, RSTAR_N, TRSTAR, E_BAR_VEC, &
-        & E_ELAS_KK_BAR, E_ELAS_KK, SIG_KK, KEINV, WTS, DTIME, &
-        & CONVERGED_SOLUTION, AUTO_TIME)
+        & E_ELAS_KK_BAR, E_ELAS_KK, SIG_KK, KEINV, DTIME, CONVERGED_SOLUTION, &
+        & AUTO_TIME)
     !
     ! Compute load
     !
@@ -1048,7 +1040,7 @@ CONTAINS
     COORDS = TCOORDS
     !
     RETURN
-    ! 
+    !
     END SUBROUTINE VELOCITY_ITERATION
     !
 END MODULE DRIVER_UTILITIES_MOD

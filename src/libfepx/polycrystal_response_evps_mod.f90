@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE POLYCRYSTAL_RESPONSE_EVPS_MOD
@@ -44,9 +44,9 @@ PUBLIC :: POLYCRYSTAL_RESPONSE_EVPS_QP
 CONTAINS
     !
     SUBROUTINE POLYCRYSTAL_RESPONSE_EVPS(D_VEC, W_VEC, C0_ANGS, C_ANGS, &
-        & SIG_VEC_N, SIG_VEC, CRSS_N, CRSS, RSTAR_N, RSTAR, E_BAR_VEC, WTS, &
-        & EPSEFF, D_KK, SIG_KK, E_ELAS_KK_BAR, E_ELAS_KK, JITER_STATE, KEINV, &
-        & INCR, DTIME, CONVERGED_SOLUTION, AUTO_TIME)
+        & SIG_VEC_N, SIG_VEC, CRSS_N, CRSS, RSTAR_N, RSTAR, E_BAR_VEC, EPSEFF, &
+        & D_KK, SIG_KK, E_ELAS_KK_BAR, E_ELAS_KK, JITER_STATE, KEINV, INCR, &
+        & DTIME, CONVERGED_SOLUTION, AUTO_TIME)
     !
     ! EVPS response for polycrystals
     !
@@ -64,7 +64,6 @@ CONTAINS
     ! RSTAR_N:
     ! RSTAR:
     ! E_BAR_VEC:
-    ! WTS:
     ! EPSEFF:
     ! D_KK:
     ! SIG_KK:
@@ -80,15 +79,21 @@ CONTAINS
     REAL(RK), INTENT(IN) :: D_VEC(0:TVEC1, EL_SUB1:EL_SUP1, 0:NQPT1)
     REAL(RK), INTENT(IN) :: W_VEC(0:DIMS1, EL_SUB1:EL_SUP1, 0:NQPT1)
     REAL(RK), INTENT(IN) :: C0_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK), INTENT(INOUT) :: C_ANGS (0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK), INTENT(IN) :: SIG_VEC_N(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK), INTENT(OUT) :: SIG_VEC(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK), INTENT(INOUT) :: C_ANGS (0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK), INTENT(IN) :: SIG_VEC_N(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, &
+        & 0:NQPT1)
+    REAL(RK), INTENT(OUT) :: SIG_VEC(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, &
+        & 0:NQPT1)
     REAL(RK), INTENT(IN) :: CRSS_N(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK), INTENT(OUT) :: CRSS(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK), INTENT(IN) :: RSTAR_N(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK), INTENT(INOUT) :: RSTAR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK), INTENT(IN) :: E_BAR_VEC(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK), INTENT(IN) :: WTS(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT) :: CRSS(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1, &
+        & 0:NQPT1)
+    REAL(RK), INTENT(IN) :: RSTAR_N(0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(INOUT) :: RSTAR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK), INTENT(IN) :: E_BAR_VEC(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, &
+        & 0:NQPT1)
     REAL(RK), INTENT(IN) :: EPSEFF(EL_SUB1:EL_SUP1, 0:NQPT1)
     REAL(RK), INTENT(IN) :: D_KK(EL_SUB1:EL_SUP1, 0:NQPT1)
     REAL(RK), INTENT(OUT) :: SIG_KK(EL_SUB1:EL_SUP1, 0:NQPT1)
@@ -145,8 +150,7 @@ CONTAINS
     !
     CALL SOLVE_STATE_DEV_EVPS(D_VEC_GRN, W_VEC_GRN,  C0_ANGS, C_ANGS, &
         & SIG_VEC_N, SIG_VEC, CRSS_N, CRSS, RSTAR_N, RSTAR, E_BAR_VEC, KEINV, &
-        & WTS, EPSEFF_LAT, JITER_STATE, INCR, DTIME, CONVERGED_SOLUTION, &
-        &AUTO_TIME)
+        & EPSEFF_LAT, JITER_STATE, INCR, DTIME, CONVERGED_SOLUTION, AUTO_TIME)
     !
     IF (.NOT. CONVERGED_SOLUTION .AND. AUTO_TIME .EQ. 1) RETURN
     !
@@ -164,8 +168,8 @@ CONTAINS
     !===========================================================================
     !
     SUBROUTINE SOLVE_STATE_DEV_EVPS(D_VEC, W_VEC, C0_ANGS, C_ANGS, SIG_LAT_N, &
-        & SIG_LAT, CRSS_N, CRSS, RSTAR_N, RSTAR, E_BAR_VEC, KEINV, WTS, &
-        & EPSEFF, JITER_STATE, INCR, DTIME, CONVERGED_SOLUTION, AUTO_TIME)
+        & SIG_LAT, CRSS_N, CRSS, RSTAR_N, RSTAR, E_BAR_VEC, KEINV, EPSEFF, &
+        & JITER_STATE, INCR, DTIME, CONVERGED_SOLUTION, AUTO_TIME)
     !
     ! Solves for the deviatoric state
     !
@@ -184,7 +188,6 @@ CONTAINS
     ! RSTAR:
     ! E_BAR_VEC:
     ! KEINV:
-    ! WTS:
     ! EPSEFF:
     ! JITER_STATE:
     ! INCR:
@@ -212,7 +215,6 @@ CONTAINS
     REAL(RK), INTENT(IN) :: E_BAR_VEC(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, &
         & 0:NQPT1)
     REAL(RK), INTENT(IN) :: KEINV(0:TVEC1, 1:NUMPHASES)
-    REAL(RK), INTENT(IN) :: WTS(0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: EPSEFF(0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
     INTEGER, INTENT(OUT) :: JITER_STATE(0:NGRAIN1, EL_SUB1:EL_SUP1)
     INTEGER :: INCR
@@ -245,7 +247,6 @@ CONTAINS
     INTEGER :: IPHASE
     INTEGER :: I
     INTEGER :: J
-    INTEGER :: K
     INTEGER :: MY_PHASE(0:(EL_SUP1-EL_SUB1))
     !
     !---------------------------------------------------------------------------
@@ -408,13 +409,13 @@ CONTAINS
             END WHERE
             !
             !
-            DO K = 0, NGRAIN - 1
+            DO J = 0, NGRAIN - 1
                 !
                 DO IPHASE = 1, NUMPHASES
                     !
                     CALL CRYSTALTYPEGET(CTYPE(IPHASE))
                     !
-                    N_SLIP=CTYPE(IPHASE)%NUMSLIP
+                    N_SLIP = CTYPE(IPHASE)%NUMSLIP
                     !
                     DO ISLIP = 0, N_SLIP - 1
                         !
@@ -422,15 +423,15 @@ CONTAINS
                         !   the simple latent hardening model but might end up
                         !   getting rid of it later versions
                         !
-                        WHERE((.NOT. DONE(K, :, I))  .AND. &
+                        WHERE((.NOT. DONE(J, :, I))  .AND. &
                             & (MY_PHASE .EQ. IPHASE) .AND. &
-                            & (DIFF_NORM_S(K, :, I) .LT. (TOLER_STATE * &
+                            & (DIFF_NORM_S(J, :, I) .LT. (TOLER_STATE * &
                                 & CRYSTAL_PARM(3, IPHASE))) .AND. &
-                            & (DIFF_CRSS(ISLIP,k,:,I) .LT. (TOLER_STATE * &
+                            & (DIFF_CRSS(ISLIP, J, :, I) .LT. (TOLER_STATE * &
                                 & CRYSTAL_PARM(3, IPHASE))))
                             !
-                            DONE(K, :, I) = .TRUE.
-                            JITER_STATE(K, :) = ITER_STATE
+                            DONE(J, :, I) = .TRUE.
+                            JITER_STATE(J, :) = ITER_STATE
                             !
                         END WHERE
                         !
@@ -462,9 +463,9 @@ CONTAINS
         IF (ANY(.NOT. DONE(:, :, I))) THEN
             !
             CONVERGED_STATE(I) = .FALSE.
-            WRITE(DFLT_U, *) 'Warning:       . Not all crystals converged.'
-            WRITE(DFLT_U, *) 'Warning:       . Crystals = ', NGRAIN * M_EL, ', &
-                &converged = ', count(DONE(:, :, I))
+            WRITE(DFLT_U, '(A)') 'Warning:       . Not all crystals converged.'
+            !WRITE(DFLT_U, *) 'Warning:       . Crystals = ', NGRAIN * M_EL, ', &
+            !    &converged = ', count(DONE(:, :, I))
             !
         END IF
         !
@@ -527,7 +528,7 @@ CONTAINS
     !===========================================================================
     !
     SUBROUTINE POLYCRYSTAL_RESPONSE_EVPS_QP(D_VEC, W_VEC, C0_ANGS, C_ANGS, &
-        & SIG_VEC_N, SIG_VEC, CRSS_N, CRSS, RSTAR_N, RSTAR, E_BAR_VEC, WTS, &
+        & SIG_VEC_N, SIG_VEC, CRSS_N, CRSS, RSTAR_N, RSTAR, E_BAR_VEC, &
         & EPSEFF, D_KK, SIG_KK, E_ELAS_KK_BAR, E_ELAS_KK, JITER_STATE, KEINV, &
         & INCR, DTIME, CONVERGED_SOLUTION, AUTO_TIME)
     !
@@ -547,7 +548,6 @@ CONTAINS
     ! RSTAR_N:
     ! RSTAR:
     ! E_BAR_VEC:
-    ! WTS:
     ! EPSEFF:
     ! D_KK:
     ! SIG_KK:
@@ -562,16 +562,19 @@ CONTAINS
     !
     REAL(RK), INTENT(IN) :: D_VEC(0:TVEC1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: W_VEC(0:DIMS1, EL_SUB1:EL_SUP1)
-    REAL(RK), INTENT(IN) :: C0_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK), INTENT(INOUT) :: C_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: C0_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(INOUT) :: C_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: SIG_VEC_N(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(OUT) :: SIG_VEC(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: CRSS_N(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(OUT) :: CRSS(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK), INTENT(IN) :: RSTAR_N(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK), INTENT(INOUT) :: RSTAR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: RSTAR_N(0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(INOUT) :: RSTAR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: E_BAR_VEC(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK), INTENT(IN) :: WTS(0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: EPSEFF(EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: D_KK(EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(OUT) :: SIG_KK(EL_SUB1:EL_SUP1)
@@ -621,8 +624,7 @@ CONTAINS
     !
     CALL SOLVE_STATE_DEV_EVPS_QP(D_VEC_GRN, W_VEC_GRN, C0_ANGS, C_ANGS, &
         & SIG_VEC_N, SIG_VEC, CRSS_N, CRSS, RSTAR_N, RSTAR, E_BAR_VEC, KEINV, &
-        & WTS, EPSEFF_LAT, JITER_STATE, INCR, DTIME, CONVERGED_SOLUTION, &
-        & AUTO_TIME)
+        & EPSEFF_LAT, JITER_STATE, INCR, DTIME, CONVERGED_SOLUTION, AUTO_TIME)
     !
     IF (.NOT. CONVERGED_SOLUTION .AND. AUTO_TIME .EQ. 1) RETURN
     !
@@ -637,7 +639,7 @@ CONTAINS
     !
     SUBROUTINE SOLVE_STATE_DEV_EVPS_QP(D_VEC, W_VEC, C0_ANGS, C_ANGS, &
         & SIG_LAT_N, SIG_LAT, CRSS_N, CRSS, RSTAR_N, RSTAR, E_BAR_VEC, KEINV, &
-        & WTS, EPSEFF, JITER_STATE, INCR, DTIME, CONVERGED_SOLUTION, AUTO_TIME)
+        & EPSEFF, JITER_STATE, INCR, DTIME, CONVERGED_SOLUTION, AUTO_TIME)
     !
     ! Solves for the deviatoric state at quad points
     !
@@ -656,7 +658,6 @@ CONTAINS
     ! RSTAR:
     ! E_BAR_VEC:
     ! KEINV:
-    ! WTS:
     ! EPSEFF:
     ! JITER_STATE:
     ! INCR:
@@ -666,17 +667,20 @@ CONTAINS
     !
     REAL(RK), INTENT(IN) :: D_VEC(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: W_VEC(0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK), INTENT(IN) :: C0_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK), INTENT(INOUT) :: C_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: C0_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(INOUT) :: C_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: SIG_LAT_N(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(OUT) :: SIG_LAT(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: CRSS_N(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(OUT) :: CRSS(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK), INTENT(IN) :: RSTAR_N(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK), INTENT(INOUT) :: RSTAR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: RSTAR_N(0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(INOUT) :: RSTAR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: E_BAR_VEC(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: KEINV(0:TVEC1, 1:NUMPHASES)
-    REAL(RK), INTENT(IN) :: WTS(0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: EPSEFF(0:NGRAIN1, EL_SUB1:EL_SUP1)
     INTEGER, INTENT(OUT) :: JITER_STATE(0:NGRAIN1, EL_SUB1:EL_SUP1)
     INTEGER :: INCR
@@ -781,7 +785,7 @@ CONTAINS
     ! Iterate for the material state
     !
     ITER_STATE = 1
-
+    !
     DO WHILE ((ANY(.NOT. DONE)) .AND. (ITER_STATE .LE. &
         & CV_OPTIONS%SX_MAX_ITERS_STATE))
         !
@@ -894,9 +898,9 @@ CONTAINS
     IF (ANY(.NOT. DONE)) THEN
         !
         CONVERGED_STATE = .FALSE.
-        WRITE(DFLT_U, *) 'Warning:       . Not all crystals converged.'
-        WRITE(DFLT_U, *) 'Warning:       . Crystals = ', NGRAIN * M_EL, ', &
-            &converged = ', COUNT(DONE)
+        WRITE(DFLT_U, '(A)') 'Warning:       . Not all crystals converged.'
+        !WRITE(DFLT_U, *) 'Warning:       . Crystals = ', NGRAIN * M_EL, ', &
+        !    &converged = ', COUNT(DONE)
         !
     END IF
     !

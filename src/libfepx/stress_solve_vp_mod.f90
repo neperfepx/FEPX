@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE STRESS_SOLVE_VP_MOD
@@ -179,8 +179,6 @@ CONTAINS
     ! Locals:
     !
     INTEGER :: I
-    INTEGER :: J
-    INTEGER :: K
     !
     !---------------------------------------------------------------------------
     !
@@ -587,12 +585,9 @@ CONTAINS
     !
     LOGICAL :: NEWTON_OK(0:(N - 1), 0:(M - 1))
     !
-    INTEGER :: I
     INTEGER :: ITER
     INTEGER :: NM
     INTEGER :: INEWTON
-    INTEGER :: K
-    INTEGER :: W
     !
     REAL(RK) :: RES(0:(N - 1), 0:(M - 1))
     REAL(RK) :: RES_N(0:(N - 1), 0:(M - 1))
@@ -648,8 +643,9 @@ CONTAINS
                 !
                 IF (VP_LOG .AND. (MYID .EQ. 0)) THEN
                     !
-                    WRITE(DFLT_U, '(A)') 'Warning:       . SOLVE_NEWTON_VP: Line &
-                        &search failure for ', COUNT(FACT .LT. 0.001D0), ' grains.'
+                    WRITE(DFLT_U, '(A)') 'Warning:       . SOLVE_NEWTON_VP: &
+                        &Line search failure for ', COUNT(FACT .LT. 0.001D0), &
+                        & ' grains.'
                     !
                 END IF
                 !
@@ -703,8 +699,9 @@ CONTAINS
             !
             IF ((INEWTON .GT. 0) .AND. VP_LOG) THEN
                 !
-                WRITE(DFLT_U,'(A)') 'Info   :     > SOLVE_NEWTON_VP: Converged = ', &
-                    & COUNT(CONVERGED), ' remaining = ', INEWTON, ' minval res = ',&
+                WRITE(DFLT_U,'(A)') 'Info   :     > SOLVE_NEWTON_VP: &
+                    &Converged = ', COUNT(CONVERGED), ' remaining = ', &
+                    & INEWTON, ' minval res = ', &
                     & MINVAL(RES, MASK = CONVERGED), ' maxval res = ', &
                     & MAXVAL(RES, MASK = CONVERGED)
                 !
@@ -759,10 +756,8 @@ CONTAINS
     REAL(RK), POINTER :: P(:, :)=>NULL()
     INTEGER :: ISLIP
     INTEGER :: J
-    INTEGER :: K
     INTEGER :: IPHASE
     INTEGER :: NUMIND
-    INTEGER :: I
     REAL(RK) :: XM_FAKE
     !
     !---------------------------------------------------------------------------
@@ -852,10 +847,9 @@ CONTAINS
     INTEGER :: N_SLIP
     REAL(RK), POINTER :: P(:, :)=>NULL()
     INTEGER :: MY_PHASE(0:(N - 1),0:(M - 1))
-    INTEGER :: I
+    INTEGER :: ISLIP
     INTEGER :: J
     INTEGER :: K
-    INTEGER :: ISLIP
     INTEGER :: IPHASE
     INTEGER :: NUMIND
     INTEGER, POINTER :: INDICES(:)=>NULL()
@@ -879,7 +873,6 @@ CONTAINS
         DO ISLIP = 0, (N_SLIP - 1)
             !
             XM_FAKE = 0.4D0
-            !XM_FAKE=0.02d0
             !
             CALL COMPLIANCE(COMP, RSS(ISLIP, :, :), SHEAR(ISLIP, :, :), CRSS, &
                 & XM_FAKE, T_MIN(IPHASE), N, M, NUMIND, INDICES)
@@ -941,7 +934,6 @@ CONTAINS
     REAL(RK) :: AT(0:(N - 1), 0:(NUMIND - 1))
     REAL(RK) :: ALOG(0:(N - 1), 0:(NUMIND - 1))
     REAL(RK) :: BLOG(0:(N - 1), 0:(NUMIND - 1))
-    INTEGER :: I
     !
     !---------------------------------------------------------------------------
     !
@@ -951,7 +943,7 @@ CONTAINS
     WHERE (AT .GT. T_MIN)
         !
         ALOG = DLOG(AT)
-        BLOG = p * ALOG
+        BLOG = P * ALOG
         POWER_TMP = A_0 * T(:, INDICES) * DEXP(BLOG)
         !
     ELSE WHERE
@@ -1212,7 +1204,6 @@ CONTAINS
     !
     INTEGER :: I
     INTEGER :: J
-    INTEGER :: K
     INTEGER :: NUMIND
     INTEGER :: IPHASE
     INTEGER, POINTER :: INDICES(:)

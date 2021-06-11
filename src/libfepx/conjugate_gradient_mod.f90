@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE CONJUGATE_GRADIENT_MOD
@@ -71,8 +71,6 @@ CONTAINS
     INTEGER :: I
     INTEGER :: J
     REAL(RK) :: EDIAGONALS(0:(NNPE - 1), ESUB:ESUP)
-    REAL(RK) :: DIAGMIN
-    REAL(RK) :: DIAGMAX
     !
     !---------------------------------------------------------------------------
     !
@@ -90,7 +88,7 @@ CONTAINS
     !
     DIAGONALS = 0.0D0
     !
-    CALL PART_SCATTER(DIAGONALS, EDIAGONALS, NP, .FALSE., DTRACE)
+    CALL PART_SCATTER(DIAGONALS, EDIAGONALS, NP, DTRACE)
     !
     DIAGONALS = 1.0D0 / DIAGONALS
     !
@@ -143,12 +141,7 @@ CONTAINS
     ! Locals:
     !
     REAL(RK) :: PART_RES_NORM
-    INTEGER :: ITER
     INTEGER :: N_ITER
-    INTEGER :: IER
-    INTEGER :: I
-    INTEGER :: J
-    REAL(RK) :: ELAPSED
     REAL(RK) :: ZU (NSUB:NSUP)
     REAL(RK) :: RU(NSUB:NSUP)
     REAL(RK) :: APU(NSUB:NSUP)
@@ -196,7 +189,8 @@ CONTAINS
         !
         IF (N_ITER .GT. MAX_ITER) THEN
             !
-            CALL PAR_quit('ERROR  :       . CG_SOLVER_EBE: Convergence failure.')
+            CALL PAR_quit('ERROR  :       . CG_SOLVER_EBE: Convergence &
+                &failure.')
             !
         END IF
         !

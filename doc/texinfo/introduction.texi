@@ -1,5 +1,5 @@
 @c This file is part of the FEPX software package.
-@c Copyright (C) 1996-2020, DPLab, ACME Lab.
+@c Copyright (C) 1996-2021, DPLab, ACME Lab.
 @c See the COPYING file in the top-level directory.
 
 @node Introduction
@@ -22,7 +22,7 @@ FEPX is a finite element software package for polycrystal plasticity. It is well
 
 @end itemize
 
-FEPX strives to be a user-friendly, efficient, and robust tool. All of the input data are prescribed non-interactively, using ASCII files. FEPX works hand in hand with Neper (@url{http://neper.info}), which can be used for both generating the input polycrystal mesh and post-processing the simulation results. Currently, FEPX is designed to provide solutions on rectangular prismatic domains (or right cuboids).
+FEPX strives to be a user-friendly, efficient, and robust tool. All of the input data are prescribed non-interactively, using ASCII files. FEPX works hand in hand with Neper (@url{https://neper.info}), which can be used for both generating the input polycrystal mesh and post-processing the simulation results. Currently, FEPX is designed to provide solutions on rectangular prismatic domains (or right cuboids).
 
 @node Resources and Support
 @section Resources and Support
@@ -37,15 +37,24 @@ Several complementary resources describing FEPX are available:
 
 @item The FEPX website, @url{https://fepx.info}, gives a general introduction to FEPX with illustrative examples.
 
-@end itemize
+@item The FEPX GitHub repository, @url{https://github.com/acmelab-ua/FEPX}, is where the latest version is available and where user interactions take place:
 
-The latest development version of FEPX is available from the development repository, @url{https://github.com/acmelab-ua/FEPX}. The best way to get and keep up-to-date with development versions is to clone the repository, using
+@itemize
+@item To get and keep up-to-date with the latest version, clone the repository using
 
 @com{git clone https://github.com/acmelab-ua/FEPX.git}
 
-which gives access to the latest stable development release on the default, @code{main}, branch. To update your local repository, run @command{git pull} from within the repository. The best way to report bugs within FEPX is directly through the GitHub issue tracker, @url{http://github.com/acmelab-ua/FEPX/issues}. When reporting bugs, please provide a minimal working example and any relevant FEPX terminal output. Any feature requests to the program should also be made within the issue tracker and marked with the appropriate labeling. 
+which gives access to the latest stable development release on the default, @code{main} branch. To update your local repository, run @command{git pull} from within the repository.
 
-Resources for Neper can be accessed from @url{http://neper.info}.
+@item To report bugs, use the issue tracker, @url{https://github.com/acmelab-ua/FEPX/issues}. When reporting bugs, please provide a minimal working example and the FEPX terminal output.
+
+@item To ask questions, share comments or request new features, use discussions, @url{https://github.com/acmelab-ua/FEPX/discussions}.
+
+@end itemize
+
+@end itemize
+
+Resources for Neper can be accessed from @url{https://neper.info}.
 
 @node Installing FEPX
 @section Installing FEPX
@@ -71,7 +80,7 @@ FEPX is written in Fortran, and it can run on any Unix-like system (including Ma
 
 @end itemize
 
-This procedure uses the default configuration options and should work out-of-the-box if you have a Fortran compiler, OpenMPI, and CMake installed. Testing is performed on GFortran @w{version 6} and greater, and OpenMPI @w{version 2} and greater (other Fortran compilers and MPI distributions may also work, though they are not explicitly supported or tested by ACME Lab). A minimum version of CMake @w{version 2.8} is required to utilize the build system.
+This procedure uses the default configuration options and should work out-of-the-box if you have a Fortran compiler, OpenMPI, and CMake installed. Testing is performed on GFortran @w{version 6} and greater, and OpenMPI @w{version 2} and greater (other Fortran compilers and MPI distributions may also work, though they are not explicitly supported or tested by ACME Lab). A minimum version of CMake @w{version 3.0} is required to utilize the build system.
 
 @node Getting Started
 @section Getting Started

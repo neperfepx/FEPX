@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE ITERATE_STRESS_VP_MOD
@@ -47,7 +47,7 @@ PUBLIC :: ITMETHOD_VP
 CONTAINS
     !
     INTEGER FUNCTION ITMETHOD_VP(ITYPE, BCS, PFORCE, VEL, ELPRESS, EVEL, &
-        & DOF_TRACE, NP_TRACE, QR5X5, WTS, EPSEFF, DTIME, INCR)
+        & DOF_TRACE, EPSEFF)
     !
     ! Driver for the viscoplastic iteration required for a single time
     !   increment
@@ -62,12 +62,7 @@ CONTAINS
     ! ELPRESS:
     ! EVEL:
     ! DOF_TRACE:
-    ! NP_TRACE:
-    ! QR5X5:
-    ! WTS:
     ! EPSEFF:
-    ! DTIME:
-    ! INCR:
     !
     INTEGER :: ITYPE
     LOGICAL :: BCS(DOF_SUB1:DOF_SUP1)
@@ -76,22 +71,13 @@ CONTAINS
     REAL(RK) :: ELPRESS(EL_SUB1:EL_SUP1)
     REAL(RK) :: EVEL(0:KDIM1, EL_SUB1:EL_SUP1)
     TYPE(TRACE) :: DOF_TRACE
-    TYPE(TRACE) :: NP_TRACE
-    REAL(RK) :: QR5X5(0:TVEC1, 0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK) :: WTS(0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: EPSEFF(EL_SUB1:EL_SUP1)
-    REAL(RK) :: DTIME
-    INTEGER  :: INCR
     !
     ! Locals:
     !
-    INTEGER :: N_SLIP
-    INTEGER :: N_EDGE
-    REAL(RK) :: CRSS(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     INTEGER :: ITER
     INTEGER :: IDIV
     INTEGER :: I
-    INTEGER :: J
     INTEGER :: CG_ITER_OUT
     INTEGER :: CG_MAX_ITERS
     REAL(RK) :: CG_TOL
@@ -148,7 +134,7 @@ CONTAINS
         EQPLAS_TR = 0.0D0
         !
         CALL ELEMENT_STIF_VP(ITYPE, ESTIFF, ECOORDS, EVEL, PSCALE, PCNST, &
-            & QR5X5, WTS, EQPLAS_TR, EPSEFF, DTIME, INCR)
+            & EPSEFF)
         !
         DO I = 0, KDIM1
             !
@@ -158,7 +144,7 @@ CONTAINS
         !
         ! EFORCE --> FORCE
         !
-        CALL PART_SCATTER(FORCE, EFORCE, NODES, .FALSE., DOF_TRACE)
+        CALL PART_SCATTER(FORCE, EFORCE, NODES, DOF_TRACE)
         !
         ! Zero the forces WHERE velocities are specified
         !
@@ -249,7 +235,7 @@ CONTAINS
     !
     ! EFORCE --> FORCE
     !
-    CALL PART_SCATTER(FORCE, EFORCE, NODES, .FALSE., DOF_TRACE)
+    CALL PART_SCATTER(FORCE, EFORCE, NODES, DOF_TRACE)
     !
     ! Zero the forces where velocities are specified
     !
@@ -271,7 +257,7 @@ CONTAINS
     !
     CALL PAR_SUM(PART_U_NORM, U_NORM)
     !
-    U_NORM = SQRT(U_NORM)
+    U_NORM = DSQRT(U_NORM)
     DEL = ABS(VEL_O)
     PART_DELOMAX = MAXVAL(DEL)
     !

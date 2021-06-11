@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE KINEMATICS_MOD
@@ -416,21 +416,18 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE EFF_DEF(EPSEFF, D, DTIME, M)
+    SUBROUTINE EFF_DEF(DEFF, D, M)
     !
-    ! Compute the effective deformation rate and accumulated deformation
-    !   (strain) from the deformation rate tensor.
+    ! Compute the effective deformation rate from the deformation rate tensor.
     !
     !---------------------------------------------------------------------------
     !
     ! Arguments:
-    ! EPSEFF:
+    ! DEFF:
     ! D:
-    ! DTIME:
     ! M:
-    REAL(RK), INTENT(OUT) :: EPSEFF(0:(M - 1))
+    REAL(RK), INTENT(OUT) :: DEFF(0:(M - 1))
     REAL(RK), INTENT(IN) :: D(0:DIMS1, 0:DIMS1, 0:(M - 1))
-    REAL(RK), INTENT(IN) :: DTIME
     INTEGER, INTENT(IN) :: M
     !
     ! Locals:
@@ -443,8 +440,8 @@ CONTAINS
     ! Effective deformation rate
     DO I = 0, M - 1
         !
-        EPSEFF(I) = DSQRT(TWOTHIRDS * (D(0, 0, I) * D(0, 0, I) + D(1, 1, I) * &
-            & D(1, 1, I) + D(2, 2, I) * D(2, 2, I) + 2.0 * ( D(0, 1, I) * &
+        DEFF(I) = DSQRT(TWOTHIRDS * (D(0, 0, I) * D(0, 0, I) + D(1, 1, I) * &
+            & D(1, 1, I) + D(2, 2, I) * D(2, 2, I) + 2.0D0 * ( D(0, 1, I) * &
             & D(0, 1, I) + D(0, 2, I) * D(0, 2, I) + D(1, 2, I) * D(1, 2, I))))
         !
     END DO
@@ -562,7 +559,7 @@ CONTAINS
     ! Locals:
     !
     INTEGER :: MY_PHASE(0:(M_EL - 1))
-    INTEGER :: ISLIP, I, J, K, IPHASE, NUMIND, N_SLIP
+    INTEGER :: ISLIP, I, IPHASE, NUMIND, N_SLIP
     INTEGER, POINTER  :: INDICES(:)  => NULL()
     REAL(RK), POINTER :: P_HAT_VEC(:, :) => NULL()
     REAL(RK), POINTER :: Q_HAT_VEC(:, :) => NULL()

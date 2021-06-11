@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE GATHER_SCATTER_MOD
@@ -124,8 +124,8 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    CALL  PART_GATHER_START(ELMS, Y, CONNECTIVITY, .FALSE., TR)
-    CALL  PART_GATHER_STOP (ELMS, Y, CONNECTIVITY, .FALSE., TR)
+    CALL  PART_GATHER_START(ELMS, Y, CONNECTIVITY, TR)
+    CALL  PART_GATHER_STOP(ELMS, Y, CONNECTIVITY, TR)
     !
     RETURN
     !  
@@ -133,7 +133,7 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE PART_GATHER_START(ELMS, Y, CONNECTIVITY, PERSIST, TR)
+    SUBROUTINE PART_GATHER_START(ELMS, Y, CONNECTIVITY, TR)
     !
     ! Starts PART_GATHER
     !
@@ -143,14 +143,12 @@ CONTAINS
     ! ELMS:
     ! Y:
     ! CONNECTIVITY:
-    ! PERSIST:
     ! TR:
     !
     TYPE (TRACE) :: TR
     REAL(RK) :: ELMS(TR%DIM1_SUB1:TR%DIM1_SUP1, TR%EL_SUB1:TR%EL_SUP1)
     REAL(RK) :: Y(TR%DIM2_SUB1:TR%DIM2_SUP1)
     INTEGER :: CONNECTIVITY(TR%DIM1_SUB1:TR%DIM1_SUP1, TR%EL_SUB1:TR%EL_SUP1)
-    LOGICAL :: PERSIST
     !
     ! Locals:
     !
@@ -205,7 +203,7 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE PART_GATHER_STOP(ELMS, Y, CONNECTIVITY, PERSIST, TR)
+    SUBROUTINE PART_GATHER_STOP(ELMS, Y, CONNECTIVITY, TR)
     !
     ! Stops PART_GATHER
     !
@@ -218,14 +216,12 @@ CONTAINS
     ! ELMS:
     ! Y:
     ! CONNECTIVITY:
-    ! PERSIST:
     ! TR
     !
     TYPE (TRACE) :: TR
     REAL(RK) :: ELMS(TR%DIM1_SUB1:TR%DIM1_SUP1, TR%EL_SUB1:TR%EL_SUP1)
     REAL(RK) :: Y(TR%DIM2_SUB1:TR%DIM2_SUP1)
     INTEGER :: CONNECTIVITY(TR%DIM1_SUB1:TR%DIM1_SUP1, TR%EL_SUB1:TR%EL_SUP1)
-    LOGICAL :: PERSIST
     !
     ! Locals:
     !
@@ -301,7 +297,7 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE PART_SCATTER(Y, ELMS, CONNECTIVITY, PERSIST, TR)
+    SUBROUTINE PART_SCATTER(Y, ELMS, CONNECTIVITY, TR)
     !
     ! Accumulate elemental values into a global nodal array.
     !
@@ -318,14 +314,12 @@ CONTAINS
     ! Y: Nodal array
     ! ELMS: Elemental array to be scattered
     ! CONNECTIVITY: Connectivity array
-    ! PERSIST: Flag for persistent communication
     ! TR: Trace structure
     !
     TYPE(TRACE) :: TR
     REAL(RK) :: Y(TR%DIM2_SUB1:TR%DIM2_SUP1)
     REAL(RK) :: ELMS(TR%DIM1_SUB1:TR%DIM1_SUP1, TR%EL_SUB1:TR%EL_SUP1)
     INTEGER :: CONNECTIVITY(TR%DIM1_SUB1:TR%DIM1_SUP1, TR%EL_SUB1:TR%EL_SUP1)
-    LOGICAL :: PERSIST
     !
     ! Locals:
     !
@@ -337,7 +331,6 @@ CONTAINS
     INTEGER :: M
     INTEGER :: IERR
     INTEGER :: MPISTATUS(MPI_STATUS_SIZE)
-    INTEGER :: STATUS_ARRAY(MPI_STATUS_SIZE, TR%NUMPROCS*2)
     !
     !---------------------------------------------------------------------------
     !
@@ -350,9 +343,19 @@ CONTAINS
         IF (TR%NODES_TO_MOVE(I) .NE. 0) THEN
             !
             TR%NRECEIVED = TR%NRECEIVED + 1
-            CALL MPI_IRECV(TR%BUFFER(1 + TR%NODE_PTR(I)), TR%NODES_TO_MOVE(I), &
-                & MPI_DOUBLE_PRECISION, I - 1, I - 1, TR%GS_COMM, &
-                & TR%REQ(TR%NRECEIVED), IERR)
+            !
+            IF (RK .EQ. REAL_KIND_D) THEN
+                !
+                CALL MPI_IRECV(TR%BUFFER(1 + TR%NODE_PTR(I)), &
+                    & TR%NODES_TO_MOVE(I), MPI_DOUBLE_PRECISION, I - 1, I - 1, &
+                    & TR%GS_COMM, TR%REQ(TR%NRECEIVED), IERR)
+                !
+            ELSE
+                !
+                CALL PAR_QUIT("Error  :     > Unsupported MPI data type set &
+                    &in `INTRINSIC_TYPES_MOD'.")
+                !
+            END IF
             !
         END IF
         !
@@ -596,7 +599,7 @@ CONTAINS
     !
     TEMP_SEND(1) = TR%DIM2_SUB1
     TEMP_SEND(2) = TR%DIM2_SUP1
-    CALL MPI_AllGATHER( TEMP_SEND, 2, MPI_INTEGER, TEMP, 2, MPI_INTEGER,&
+    CALL MPI_ALLGATHER( TEMP_SEND, 2, MPI_INTEGER, TEMP, 2, MPI_INTEGER,&
         & TR%GS_COMM, IERR)
     !
     J = 1
@@ -632,6 +635,9 @@ CONTAINS
         DO J = TR%DIM1_SUB1, TR%DIM1_SUP1
             !
             IPOINT = CONNECTIVITY(J, I)
+            !
+            IF (IPOINT .LT. 0) CALL PAR_QUIT('Error  :     > &
+              &IPOINT out of bounds')
             !
             IF (IPOINT > DIM2_SUP1S(TR%NUMPROCS) ) THEN
                 !
@@ -898,8 +904,18 @@ CONTAINS
                 !
             END DO
             !
-            CALL MPI_TYPE_INDEXED(TR%NODES_TO_MOVE(I), ELMSIZES, ADDRESSES, &
-                & MPI_DOUBLE_PRECISION, TR%NODE_TRACE(I), IERR)
+            IF (RK .EQ. REAL_KIND_D) THEN
+                !
+                CALL MPI_TYPE_INDEXED(TR%NODES_TO_MOVE(I), ELMSIZES, &
+                    & ADDRESSES, MPI_DOUBLE_PRECISION, TR%NODE_TRACE(I), IERR)
+                !
+            ELSE
+                !
+                CALL PAR_QUIT("Error  :     > Unsupported MPI data type set &
+                    &in `INTRINSIC_TYPES_MOD'.")
+                !
+            END IF
+            !
             CALL MPI_TYPE_COMMIT(TR%NODE_TRACE(I), IERR)
             !
         END IF
@@ -908,9 +924,18 @@ CONTAINS
             !
             TR%NELEM_TRACES = TR%NELEM_TRACES + 1
             !
-            CALL MPI_TYPE_INDEXED(TR%MIN_N_TO_MOVE(I), ELMSIZES, &
-                & MIN_ELEM_OFFSETS(1 + TR%MIN_PTR(I)), MPI_DOUBLE_PRECISION, &
-                & TR%ELM_TRACE(I), IERR )
+            IF (RK .EQ. REAL_KIND_D) THEN
+                !
+                CALL MPI_TYPE_INDEXED(TR%MIN_N_TO_MOVE(I), ELMSIZES, &
+                    & MIN_ELEM_OFFSETS(1 + TR%MIN_PTR(I)), &
+                    & MPI_DOUBLE_PRECISION, TR%ELM_TRACE(I), IERR )
+                !
+            ELSE
+                !
+                CALL PAR_QUIT("Error  :     > Unsupported MPI data type set &
+                    &in `INTRINSIC_TYPES_MOD'.")
+                !
+            END IF
             !
             CALL MPI_TYPE_COMMIT(TR%ELM_TRACE(I), IERR)
             !

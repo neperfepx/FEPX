@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE INTRINSIC_TYPES_MOD
@@ -13,28 +13,30 @@ MODULE INTRINSIC_TYPES_MOD
 !   and long (4-byte and 8-byte).
 !
 ! INTEGER_KIND_S: Short integer kind (at least 9 digits)
-! INTEGER_KIND_L: Long integer kind (at least 15 digits)
+! INTEGER_KIND_L: Long integer kind (at least 15 digits, unsupported)
 ! INTEGER_KIND: Default integer kind for this module (short)
 !
 INTEGER, PUBLIC, PARAMETER :: INTEGER_KIND_S = SELECTED_INT_KIND(9)
-INTEGER, PUBLIC, PARAMETER :: INTEGER_KIND_L = SELECTED_INT_KIND(15)
+!INTEGER, PUBLIC, PARAMETER :: INTEGER_KIND_L = SELECTED_INT_KIND(15)
 INTEGER, PUBLIC, PARAMETER :: INTEGER_KIND = INTEGER_KIND_S
 !
 ! Reals:
 !
 ! The real kinds are specified using the PRECISION and RANGE arguments to
-!   SELECTED_REAL_KIND; on seahag (alpha/linux), the preicison is 6 for single
-!   and 15 for double, and the ranges are 37 for single and 307 for double.
-!   Quadruple precision is also available on many compilers.
+!   SELECTED_REAL_KIND; The precision is 6 for single and 15 for double, 
+!   and the ranges are 37 for single and 307 for double.
+!   Quadruple precision is also available on many compilers, but users who
+!   wish to use this level of precision must be sure their hardware and MPI 
+!   version can support it.
 !
-! REAL_KIND_S: Single precision
+! REAL_KIND_S: Single precision (unsupported)
 ! REAL_KIND_D: Double precision
-! REAL_KIND_Q: Wuadruple precision
+! REAL_KIND_Q: Quadruple precision (unsupported)
 ! REAL_KIND: Default precision for this module (double)
 !
-INTEGER, PUBLIC, PARAMETER :: REAL_KIND_S = SELECTED_REAL_KIND(5, 30)
-INTEGER, PUBLIC, PARAMETER :: REAL_KIND_D = SELECTED_REAL_KIND(14, 200)
-INTEGER, PUBLIC, PARAMETER :: REAL_KIND_Q = SELECTED_REAL_KIND(25, 200)
+!INTEGER, PUBLIC, PARAMETER :: REAL_KIND_S = SELECTED_REAL_KIND(6, 37)
+INTEGER, PUBLIC, PARAMETER :: REAL_KIND_D = SELECTED_REAL_KIND(15, 307)
+!INTEGER, PUBLIC, PARAMETER :: REAL_KIND_Q = SELECTED_REAL_KIND(33, 4931)
 INTEGER, PUBLIC, PARAMETER :: REAL_KIND = REAL_KIND_D
 !
 ! Logicals:

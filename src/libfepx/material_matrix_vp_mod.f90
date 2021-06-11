@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE MATERIAL_MATRIX_VP_MOD
@@ -39,7 +39,7 @@ PUBLIC :: DEFRATE
 CONTAINS
     !
     SUBROUTINE MATERIAL_MATRIX_VP(TYPE, STIF, DNDX, DNDY, DNDZ, GVEL, SCALE, &
-        & QR5X5, WTS, EPSEFF, DTIME, INCR)
+        & EPSEFF)
     !
     ! Material matrix for the viscoplastic solution
     !
@@ -56,8 +56,6 @@ CONTAINS
     ! QR5X5:
     ! WTS:
     ! EPSEFF:
-    ! DTIME:
-    ! INCR:
     !
     INTEGER :: TYPE
     REAL(RK) :: STIF(TVEC, TVEC, EL_SUB1:EL_SUP1)
@@ -66,19 +64,13 @@ CONTAINS
     REAL(RK) :: DNDZ(0:NNPE, EL_SUB1:EL_SUP1)
     REAL(RK) :: GVEL(0:KDIM1, EL_SUB1:EL_SUP1)
     REAL(RK) :: SCALE(EL_SUB1:EL_SUP1)
-    REAL(RK) :: QR5X5(0:TVEC1, 0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK) :: WTS(0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: EPSEFF(EL_SUB1:EL_SUP1)
-    REAL(RK) :: DTIME
-    INTEGER :: INCR
     !
     ! Locals:
     !
     INTEGER :: I
-    INTEGER :: J
     INTEGER :: M_EL
     REAL(RK) :: D(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1)
-    REAL(RK) :: D_VEC(0:TVEC1, EL_SUB1:EL_SUP1)
     REAL(RK) :: CMU(EL_SUB1:EL_SUP1)
     REAL(RK) :: TEMP_K(EL_SUB1:EL_SUP1)
     REAL(RK) :: DSDT_ISO(EL_SUB1:EL_SUP1)
@@ -95,15 +87,13 @@ CONTAINS
     !
     CALL DEFRATE(D, DNDX, DNDY, DNDZ, GVEL)
     !
-    ! tm268_M13:
-    !CALL eff_def(EPSEFF, eqplas, d, DTIME, M_EL)
-    CALL EFF_DEF(EPSEFF, D, DTIME, M_EL)
+    CALL EFF_DEF(EPSEFF, D, M_EL)
     !
     ! hr-tm
     ! we aren't going through this portion to update for two-phase compatibility
     IF (TYPE .EQ. ANISOTROPIC_VP) THEN
         !
-        CALL par_quit('Error  :     > ANISOTROPIC_VP is no longer implemented.')
+        CALL PAR_QUIT('Error  :     > ANISOTROPIC_VP is no longer implemented.')
         !
     ELSE IF (TYPE .EQ. ISOTROPIC_VP) THEN
         !
@@ -192,8 +182,7 @@ CONTAINS
     REAL(RK) :: SIGMA(EL_SUB1:EL_SUP1)
     REAL(RK) :: SIGMAP(EL_SUB1:EL_SUP1)
     REAL(RK) :: SIGMAV(EL_SUB1:EL_SUP1)
-    !
-    INTEGER :: I
+
     !
     !---------------------------------------------------------------------------
     !

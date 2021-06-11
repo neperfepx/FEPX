@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE DRIVER_ISO_VP_MOD
@@ -39,8 +39,8 @@ PUBLIC :: DRIVER_VP_SOLVE
 !
 CONTAINS
     !
-    SUBROUTINE DRIVER_VP_SOLVE(ITYPE, BCS, VELOCITY, PFORCE, DOF_TRACE, &
-        & NP_TRACE, CRSS, C0_ANGS, RSTAR, WTS)
+    SUBROUTINE DRIVER_VP_SOLVE(ITYPE, BCS, VELOCITY, PFORCE, DOF_TRACE, CRSS, &
+        & C0_ANGS)
     !
     ! Driver for viscoplastic solution.
     !
@@ -52,22 +52,16 @@ CONTAINS
     ! VELOCITY: Global velocity vector
     ! PFORCE: Global force vector
     ! DOF_TRACE: Gather/scatter trace for degrees of freedom
-    ! NP_TRACE: Gather/scatter trace for nodal points
     ! CRSS: Elemental critical resolved shear stress
     ! C0_ANGS: Initial orientation matrices
-    ! RSTAR: Reorientation matrices
-    ! WTS: Grain weights per element (legacy, can likely be removed)
     !
     INTEGER :: ITYPE
     LOGICAL :: BCS(DOF_SUB1:DOF_SUP1)
     REAL(RK) :: VELOCITY(DOF_SUB1:DOF_SUP1)
     REAL(RK) :: PFORCE(DOF_SUB1:DOF_SUP1)
     TYPE(TRACE) :: DOF_TRACE
-    TYPE(TRACE) :: NP_TRACE
     REAL(RK) :: CRSS(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: C0_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK) :: RSTAR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK) :: WTS(0:NGRAIN1, EL_SUB1:EL_SUP1)
     !
     ! Locals:
     !
@@ -77,9 +71,6 @@ CONTAINS
     REAL(RK) :: DTIME
     REAL(RK) :: ELPRESS(EL_SUB1:EL_SUP1)
     REAL(RK) :: EVEL(0:KDIM1, EL_SUB1:EL_SUP1)
-    REAL(RK) :: C_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK) :: QR5X5(0:TVEC1, 0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK) :: SIG_VEC(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: EPSEFF(EL_SUB1:EL_SUP1)
     ! tm268_M13: REAL(RK) :: eqplas(EL_SUB1:EL_SUP1)
     ! SIG_DUMMY is currently just for passing to print_incr, but in the future
@@ -112,7 +103,7 @@ CONTAINS
     INCR = 0
     !
     IER = ITMETHOD_VP(ITYPE, BCS, PFORCE, VELOCITY, ELPRESS, EVEL, DOF_TRACE, &
-        & NP_TRACE, QR5X5, WTS, EPSEFF, DTIME, INCR)
+        & EPSEFF)
     !      
     IF (IER .LT. 0) THEN
         !
@@ -130,14 +121,14 @@ CONTAINS
         !
         CALL CALC_ELVOL(ELVOL_0, ELEMENT_CRDS)
         !
-        CALL PRINT_STEP(INCR, ITYPE, COORDS, VELOCITY, C0_ANGS, WTS, CRSS, &
+        CALL PRINT_STEP(INCR, ITYPE, COORDS, VELOCITY, C0_ANGS, CRSS, &
             & ELVOL_0)
         !
         DEALLOCATE(ELVOL_0)
         !
     ELSE
         !
-        CALL PRINT_STEP(INCR, ITYPE, COORDS, VELOCITY, C0_ANGS, WTS, CRSS)
+        CALL PRINT_STEP(INCR, ITYPE, COORDS, VELOCITY, C0_ANGS, CRSS)
         !
     END IF
     !

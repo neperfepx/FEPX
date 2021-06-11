@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE ITERATE_STRESS_EVPS_MOD
@@ -43,9 +43,9 @@ PUBLIC :: ITMETHOD_EVPS
 CONTAINS
     !
     INTEGER FUNCTION ITMETHOD_EVPS(BCS, PFORCE, VEL, ELPRESS, EVEL, DTRACE, &
-        & NTRACE, C0_ANGS, C_ANGS, SIG_VEC_N, SIG_VEC, CRSS_N, CRSS, RSTAR_N, &
-        & RSTAR, KEINV, E_ELAS_KK_BAR, E_ELAS_KK, SIG_KK, JITER_STATE, WTS, &
-        & EPSEFF, DTIME, INCR, E_BAR_VEC, CONVERGED_SOLUTION, AUTO_TIME, ITER)
+        & C0_ANGS, C_ANGS, SIG_VEC_N, SIG_VEC, CRSS_N, CRSS, RSTAR_N, RSTAR, &
+        & KEINV, E_ELAS_KK_BAR, E_ELAS_KK, SIG_KK, JITER_STATE, WTS, EPSEFF, &
+        & DTIME, INCR, E_BAR_VEC, CONVERGED_SOLUTION, AUTO_TIME, ITER)
     !
     ! Driver for the EVPS iteration required for a single time increment.
     !
@@ -63,7 +63,6 @@ CONTAINS
     ! ELPRESS:
     ! EVEL:
     ! DTRACE: Gather/scatter trace for degrees of freedom
-    ! NTRACE: Gather/scatter trace for nodal point arrays
     ! C0_ANGS:
     ! C_ANGS:
     ! SIG_VEC_N: (enters=0 at the first increment for all the grains, exits =/0
@@ -93,11 +92,11 @@ CONTAINS
     REAL(RK), INTENT(OUT) :: ELPRESS(EL_SUB1:EL_SUP1, 0:NQPT1)
     REAL(RK) :: EVEL(0:KDIM1, EL_SUB1:EL_SUP1)
     TYPE(TRACE) :: DTRACE
-    TYPE(TRACE) :: NTRACE
     REAL(RK), INTENT(IN) :: C0_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
         & EL_SUB1:EL_SUP1)
     REAL(RK), INTENT(IN) :: C_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK), INTENT(INOUT) :: SIG_VEC_N(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK), INTENT(INOUT) :: SIG_VEC_N(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, &
+        & 0:NQPT1)
     REAL(RK), INTENT(OUT) :: SIG_VEC(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, &
         & 0:NQPT1)
     REAL(RK), INTENT(IN) :: CRSS_N(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
@@ -124,13 +123,10 @@ CONTAINS
     !
     ! Locals:
     !
-    CHARACTER(LEN=128) :: MESSAGE
     INTEGER, PARAMETER :: NR_SLOPE_START = 2
     INTEGER :: ITMETHOD
     INTEGER :: IDIV
     INTEGER :: I
-    INTEGER :: J
-    INTEGER :: K
     INTEGER :: CG_ITER_OUT
     INTEGER :: IER
     INTEGER :: CG_MAX_ITERS
@@ -169,12 +165,6 @@ CONTAINS
     REAL(RK) :: TRSTAR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
     REAL(RK) :: GDIAG(DOF_SUB1:DOF_SUP1)
     INTEGER  :: M_EL
-    REAL(RK) :: VELCUR(3, 10)
-    INTEGER :: IO
-    INTEGER :: IELEM
-    INTEGER :: J1
-    INTEGER :: J2
-    INTEGER :: J3
     !
     ! Local node number for mid-nodes correction
     ! E1, E2: end node
@@ -216,7 +206,7 @@ CONTAINS
     !
     ! Scatter ones arrays and store multiplicity
     !
-    CALL PART_SCATTER(G_ONES, E_ONES, NODES, .FALSE., DTRACE)
+    CALL PART_SCATTER(G_ONES, E_ONES, NODES, DTRACE)
     !
     ! Initialization
     R_NORM_O = 0.0D0
@@ -334,7 +324,7 @@ CONTAINS
         !
         ! Scatter e_coordinates
         !
-        CALL PART_SCATTER(COORDS, ECOORDS, NODES, .FALSE., DTRACE)
+        CALL PART_SCATTER(COORDS, ECOORDS, NODES, DTRACE)
         !
         ! Divide the coordinates by the multiplicity
         !
@@ -395,7 +385,7 @@ CONTAINS
         PART_F_NORM = 0.0D0
         F_NORM = 0.0D0
         !
-        CALL GEN_MATRIX_VECTOR_MULT(ERESID, ESTIFF, EVEL, 1, 2, 3, 4, IER)
+        CALL GEN_MATRIX_VECTOR_MULT(ERESID, ESTIFF, EVEL, IER)
         !
         DO I = 0, KDIM1 ! 29
             !
@@ -405,7 +395,7 @@ CONTAINS
         !
         ! Scatter elemental residuals to all nodes
         !
-        CALL PART_SCATTER(RESID, ERESID, NODES, .FALSE., DTRACE)
+        CALL PART_SCATTER(RESID, ERESID, NODES, DTRACE)
         !
         ! Calculate residual and force magnitudes
         !
@@ -425,7 +415,7 @@ CONTAINS
         !
         CALL PAR_MAX(PART_RX_NORM, RX_NORM)
         !
-        CALL PART_SCATTER(FORCE, EFORCE, NODES, .FALSE., DTRACE)
+        CALL PART_SCATTER(FORCE, EFORCE, NODES, DTRACE)
         !
         PART_F_NORM = SUM(FORCE * FORCE)
         !
@@ -458,7 +448,8 @@ CONTAINS
             !
             ! Form the diagonal part of the stiffness matrix
             !
-            CALL ASSEMBLE_DIAGONALS(GDIAG, ETANSTIFF, KDIM, DOF_SUB1, DOF_SUP1, EL_SUB1, EL_SUP1, DTRACE, NODES)
+            CALL ASSEMBLE_DIAGONALS(GDIAG, ETANSTIFF, KDIM, DOF_SUB1, &
+                & DOF_SUP1, EL_SUB1, EL_SUP1, DTRACE, NODES)
             !
             ! Compute the velocity field (VEL) using the conjugate gradient
             !   method
@@ -480,7 +471,8 @@ CONTAINS
             !
             ITMETHOD = 0
             !
-            CALL ASSEMBLE_DIAGONALS(GDIAG, ESTIFF, KDIM, DOF_SUB1, DOF_SUP1, EL_SUB1, EL_SUP1, DTRACE, NODES)
+            CALL ASSEMBLE_DIAGONALS(GDIAG, ESTIFF, KDIM, DOF_SUB1, DOF_SUP1, &
+                & EL_SUB1, EL_SUP1, DTRACE, NODES)
             !
             ! Compute the velocity field (VEL) using the conjugate gradient
             !   method

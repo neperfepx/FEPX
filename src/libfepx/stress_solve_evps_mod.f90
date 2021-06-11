@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE STRESS_SOLVE_EVPS_MOD
@@ -89,12 +89,14 @@ CONTAINS
     !
     IF (IER .EQ. 0) RETURN
     !
-    WRITE(DFLT_U, '(A,I0)') 'Warning:       . STRESS_SOLVE_EVPS: ', &
-        & count(.not. converged), ' elements did not converge'
-    WRITE(DFLT_U, '(A,I0)') 'Warning:       .                    in iter_state &
-        &= ', iter_state
-    WRITE(DFLT_U, '(A)') 'Warning:       . These elements will receive &
-        &average stress values'
+    WRITE(DFLT_U, '(A)') 'Warning:       . STRESS_SOLVE_EVPS: Some elements did &
+        &not converge'
+    !WRITE(DFLT_U, '(A,I0)') 'Warning:       . STRESS_SOLVE_EVPS: ', &
+    !    & count(.not. converged), ' elements did not converge'
+    !WRITE(DFLT_U, '(A,I0)') 'Warning:       .                    in iter_state &
+    !    &= ', iter_state
+    !WRITE(DFLT_U, '(A)') 'Warning:       . These elements will receive &
+    !    &average stress values'
     !
     NUM = COUNT(CONVERGED)
     !
@@ -482,8 +484,10 @@ CONTAINS
             !
             IF(ANY(FACT .LT. 0.001)) THEN
                 !
-                ! DEBUG: Update this print - JC
-                print *, ' error in line search',count(fact .lt. 0.1), iter_newton
+                WRITE(DFLT_U, '(A,I0,I0)') 'Warning:       . Error in line &
+                    &search' 
+                !WRITE(DFLT_U, '(A,I0,I0)') 'Warning:       . Error in line &
+                !    &search ', COUNT(FACT .LT. 0.1), ITER_NEWTON
                 WHERE(FACT .LT. 0.001) NEWTON_OK = .FALSE.
                 !
             ENDIF
@@ -507,7 +511,8 @@ CONTAINS
                 ENDIF
                 !
                 ALLOCATE(E_VEC_TMP(0:TVEC1,0:(N-1),0:(NUMIND-1)))
-                CALL VEC_D_VEC5(KEINV(:,IPHASE), XLAMBDA(:,:,INDICES), E_VEC_TMP, N, NUMIND)
+                CALL VEC_D_VEC5(KEINV(:,IPHASE), XLAMBDA(:,:,INDICES), &
+                    & E_VEC_TMP, N, NUMIND)
                 !                
                 E_VEC(:,:,INDICES) = E_VEC_TMP
                 !
@@ -590,7 +595,8 @@ CONTAINS
                 !
             ENDDO !NUMPHASES
             !
-            WHERE((RATIO_RES .GT. 1.0) .AND. (NEWTON_OK) .AND. (.NOT. CONVERGED))
+            WHERE((RATIO_RES .GT. 1.0) .AND. (NEWTON_OK) .AND. &
+                & (.NOT. CONVERGED))
                 !
                 RES = RES_AUX
                 RATIO_RES = RES / RES_N
@@ -622,13 +628,16 @@ CONTAINS
         !
         IF ((COUNT(CONVERGED) + INEWTON) .EQ. NM) THEN
             !
-            if (INEWTON .GT. 0) THEN
+            IF (INEWTON .GT. 0) THEN
                 !
-                WRITE(DFLT_U, '(A,I0,A,I0)') 'Warning:       . SOLVE_NEWTON_EVPS:&
-                    & Converged = ', COUNT(CONVERGED), ' Remaining = ', INEWTON
-                WRITE(DFLT_U, '(A,G12.5,2X,G12.5)') '                 Residual for&
-                    & converged grains = ', MINVAL(RES, MASK=CONVERGED), &
-                    & MAXVAL(RES, MASK=CONVERGED)
+                WRITE(DFLT_U, '(A)') 'Warning:       . SOLVE_NEWTON_EVPS: &
+                    &Some elements did not converge'
+                !WRITE(DFLT_U, '(A,I0,A,I0)') 'Warning:       . &
+                !    &SOLVE_NEWTON_EVPS: Converged = ', COUNT(CONVERGED), &
+                !    & ' Remaining = ', INEWTON
+                !WRITE(DFLT_U, '(A,G12.5,2X,G12.5)') '                 Residual &
+                !    &for converged grains = ', MINVAL(RES, MASK = CONVERGED), &
+                !    & MAXVAL(RES, MASK = CONVERGED)
                 !
             END IF
             !
@@ -718,7 +727,6 @@ CONTAINS
     !
     ! Locals:
     !
-    INTEGER  :: I, J
     REAL(RK) :: SQR3
     !
     !---------------------------------------------------------------------------
@@ -768,7 +776,6 @@ CONTAINS
     !
     ! Locals:
     !
-    INTEGER  :: I, J
     REAL(RK) :: SQR3
     !
     !---------------------------------------------------------------------------

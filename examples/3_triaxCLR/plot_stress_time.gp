@@ -1,7 +1,7 @@
 # FEPX Post-Process Gnuplot Script
 
 set term pngcairo enhanced font 'Latin Modern Roman,18'
-set output '3_stresstime.png'
+set output '3_stress_time.png'
 
 set key out vert right center box width 1
 set grid xtics ytics dt 3 lw 1 lc -1

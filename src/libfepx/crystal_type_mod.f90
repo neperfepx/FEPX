@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE CRYSTAL_TYPE_MOD
@@ -94,9 +94,6 @@ CONTAINS
     ! Locals:
     !
     INTEGER(IK) :: MYSTAT
-    INTEGER(IK) :: i
-    INTEGER(IK) :: UNIT
-    INTEGER(IK) :: NUMVERT
     !
     REAL(RK), PARAMETER :: DFLT_HRATIO_HCP = 1.0D0
     REAL(RK), PARAMETER :: DFLT_HRATIO_HCP_PRISM = 1.0D0

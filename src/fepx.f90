@@ -1,11 +1,11 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 PROGRAM FEPX
 !
 ! Full-field 3D polycrystal FEM analysis with anisotropic elasticity and
-! viscoplasticity. Primary arrays are automatically allocated here to be 
+! viscoplasticity. Primary arrays are automatically allocated here to be
 ! used in the subsequent driver routines which perform the simulation.
 !
 !-------------------------------------------------------------------------------
@@ -13,6 +13,7 @@ PROGRAM FEPX
 ! LibF95 modules
 USE INTRINSIC_TYPES_MOD, RK=>REAL_KIND
 USE FILES_MOD
+USE TIMER_MOD
 !
 ! LibParallel modules
 USE PARALLEL_MOD
@@ -40,7 +41,7 @@ IMPLICIT NONE
 ! Local variables:
 !
 CHARACTER(LEN = 80) :: IOFILE
-INTEGER :: NARGS, IOSTATUS
+INTEGER :: IOSTATUS
 INTEGER :: AVG_NP_PER_PROC
 INTEGER, DIMENSION(8) :: TIMEVALUES
 !
@@ -64,9 +65,10 @@ REAL(RK), ALLOCATABLE :: CRSS_N(:, :, :)
 !
 ! Miscellaneous:
 !
+REAL(RK) :: CLOCK_START
 INTEGER :: DEF_CONTROL_BY
 INTEGER :: AUTO_TIME
-INTEGER :: M_EL, I
+INTEGER :: M_EL
 INTEGER :: ALSTATUS, NUM_ELM_PART, NUM_NODE_PART
 INTEGER, ALLOCATABLE :: PART_INFO(:,:)
 INTEGER, ALLOCATABLE :: GLOBAL_INFO(:,:)
@@ -77,18 +79,25 @@ INTEGER, ALLOCATABLE :: GLOBAL_INFO(:,:)
 !
 CALL PAR_INIT()
 !
+! Initialize clock value
+!
+CALL CPU_TIME(CLOCK_START)
+!
 ! Print FEPX header to console.
 !
 IF (MYID .EQ. 0) THEN
     !
     CALL DATE_AND_TIME(VALUES = TIMEVALUES)
-    WRITE(DFLT_U,'(A)')'==========================    F   E   P   X   =========================='
-    WRITE(DFLT_U,'(A)')'Info   : A finite element software package for polycrystal plasticity.'
-    WRITE(DFLT_U,'(A)')'Info   : Version 1.1.2-1'
+    WRITE(DFLT_U,'(A)')'==========================    &
+        & F   E   P   X   =========================='
+    WRITE(DFLT_U,'(A)')'Info   : A finite element software package for &
+        & polycrystal plasticity.'
+    WRITE(DFLT_U,'(A)')'Info   : Version 1.2.0'
     WRITE(DFLT_U,'(A,I0,A)')'Info   : Running on ', NUMPROCS, ' cores.'
     WRITE(DFLT_U,'(A)')'Info   : <https://fepx.info>'
-    WRITE(DFLT_U,'(A)')'Info   : Copyright (C) 1996-2020, DPLab, ACME Lab.'
-    WRITE(DFLT_U,'(A)')'Info   : ---------------------------------------------------------------'
+    WRITE(DFLT_U,'(A)')'Info   : Copyright (C) 1996-2021, DPLab, ACME Lab.'
+    WRITE(DFLT_U,'(A)')'Info   : &
+        &---------------------------------------------------------------'
     WRITE(DFLT_U,'(A,I0,A,I0,A,I0,A,I0,A,I2.2)')'Info   : Start time: ',&
         & TIMEVALUES(1), '-', TIMEVALUES(2), '-', TIMEVALUES(3), ' at ' ,&
         & TIMEVALUES(5), ':', TIMEVALUES(6)
@@ -114,6 +123,12 @@ IF (IOFILE .NE. '0') THEN
     !
     OPEN(UNIT = IUNITS(TMPI1_U), FILE = IOFILE, STATUS = 'old', &
         & ACTION = 'READ', IOSTAT = IOSTATUS)
+    !
+    IF (IOSTATUS .NE. 0) THEN
+        !
+        CALL PAR_QUIT("Error  :     > Failure to open `simulation.config'.")
+        !
+    END IF
     !
     ! Read optional input
     !
@@ -148,7 +163,7 @@ OPEN(UNIT = IUNITS(MSH_U), FILE = IOFILE, STATUS = 'old', ACTION = 'READ', &
 !
 IF (IOSTATUS .NE. 0) THEN
     !
-    CALL PAR_QUIT("Error  :     > Failure to open `simulation.msh' file.")
+    CALL PAR_QUIT("Error  :     > Failure to open `simulation.msh'.")
     !
 END IF
 !
@@ -208,6 +223,175 @@ DEF_CONTROL_BY = OPTIONS%DEF_CONTROL_BY
 !
 CALL PROCESS_MATERIAL_PARAMETERS(KELAS, KEINV)
 !
+! Write boundary condition information to console
+!
+IF (MYID .EQ. 0) THEN
+    !
+    WRITE(DFLT_U, '(A)') "Info   :   - Boundary conditions:"
+    !
+    ! Write boundary conditions type
+    !
+    IF (BCS_OPTIONS%BOUNDARY_CONDITIONS .EQ. 1) THEN
+        !
+        WRITE(DFLT_U, '(A)') "Info   :     > Uniaxial grip"
+        !
+    ELSE IF (BCS_OPTIONS%BOUNDARY_CONDITIONS .EQ. 2) THEN
+        !
+        WRITE(DFLT_U, '(A)') "Info   :     > Uniaxial symmetry"
+        !
+    ELSE IF (BCS_OPTIONS%BOUNDARY_CONDITIONS .EQ. 3) THEN
+        !
+        WRITE(DFLT_U, '(A)') "Info   :     > Triaxial"
+        !
+    ELSE IF (BCS_OPTIONS%BOUNDARY_CONDITIONS .EQ. 4) THEN
+        !
+        WRITE(DFLT_U, '(A)') "Info   :     > Uniaxial minimal"
+        !
+    END IF
+    !
+    ! Write control type
+    !
+    IF (OPTIONS%DEF_CONTROL_BY .EQ. UNIAXIAL_LOAD_TARGET) THEN
+        !
+        WRITE(DFLT_U, '(A)') "Info   :     > Load targeting, constant &
+            &strain rate"
+        !
+    ELSE IF (OPTIONS%DEF_CONTROL_BY .EQ. UNIAXIAL_STRAIN_TARGET) THEN
+        !
+        WRITE(DFLT_U, '(A)') "Info   :     > Strain targeting, constant &
+            &strain rate"
+        !
+    ELSE IF (OPTIONS%DEF_CONTROL_BY .EQ. TRIAXIAL_CONSTANT_STRAIN_RATE) THEN
+        !
+        WRITE(DFLT_U, '(A)') "Info   :     > Load targeting, constant &
+            &strain rate"
+        !
+    ELSE IF (OPTIONS%DEF_CONTROL_BY .EQ. TRIAXIAL_CONSTANT_LOAD_RATE) THEN
+        !
+        WRITE(DFLT_U, '(A)') "Info   :     > Load targeting, constant load &
+            &rate"
+        !
+    END IF
+    !
+    ! Write loading rates rates
+    !
+    IF ((OPTIONS%DEF_CONTROL_BY .EQ. UNIAXIAL_LOAD_TARGET) .OR. &
+        & (OPTIONS%DEF_CONTROL_BY .EQ. UNIAXIAL_STRAIN_TARGET) .OR. &
+        & (OPTIONS%DEF_CONTROL_BY .EQ. TRIAXIAL_CONSTANT_STRAIN_RATE)) THEN
+        !
+        WRITE(DFLT_U, '(A,E14.6)') "Info   :     > Strain rate: ", &
+            & BCS_OPTIONS%STRAIN_RATE
+        !
+    ELSE IF (OPTIONS%DEF_CONTROL_BY .EQ. TRIAXIAL_CONSTANT_LOAD_RATE) THEN
+        !
+        WRITE(DFLT_U, '(A,E14.6)') "Info   :     > Load rate: ", &
+            & BCS_OPTIONS%LOAD_RATE
+        !
+    END IF
+    !
+    ! Write loading directions
+    !
+    IF (BCS_OPTIONS%LOADING_DIRECTION .EQ. 0) THEN
+        !
+        WRITE(DFLT_U, '(A)') "Info   :     > Loading direction: x"
+        !
+    ELSE IF (BCS_OPTIONS%LOADING_DIRECTION .EQ. 1) THEN
+        !
+        WRITE(DFLT_U, '(A)') "Info   :     > Loading direction: y"
+        !
+    ELSE IF (BCS_OPTIONS%LOADING_DIRECTION .EQ. 2) THEN
+        !
+        WRITE(DFLT_U, '(A)') "Info   :     > Loading direction: z"
+        !
+    END IF
+    !
+    ! Write loading face (if uniaxial)
+    !
+    IF ((BCS_OPTIONS%BOUNDARY_CONDITIONS .EQ. 1) .OR. &
+        & (BCS_OPTIONS%BOUNDARY_CONDITIONS .EQ. 2) .OR. &
+        & (BCS_OPTIONS%BOUNDARY_CONDITIONS .EQ. 4)) THEN
+        !
+        IF (BCS_OPTIONS%LOADING_FACE .EQ. 1) THEN
+            !
+            WRITE(DFLT_U, '(A)') "Info   :     > Loading face: x0"
+            !
+        ELSE IF (BCS_OPTIONS%LOADING_FACE .EQ. 2) THEN
+            !
+            WRITE(DFLT_U, '(A)') "Info   :     > Loading face: x1"
+            !
+        ELSE IF (BCS_OPTIONS%LOADING_FACE .EQ. 3) THEN
+            !
+            WRITE(DFLT_U, '(A)') "Info   :     > Loading face: y0"
+            !
+        ELSE IF (BCS_OPTIONS%LOADING_FACE .EQ. 4) THEN
+            !
+            WRITE(DFLT_U, '(A)') "Info   :     > Loading face: y1"
+            !
+        ELSE IF (BCS_OPTIONS%LOADING_FACE .EQ. 5) THEN
+            !
+            WRITE(DFLT_U, '(A)') "Info   :     > Loading face: z0"
+            !
+        ELSE IF (BCS_OPTIONS%LOADING_FACE .EQ. 6) THEN
+            !
+            WRITE(DFLT_U, '(A)') "Info   :     > Loading face: z1"
+            !
+        END IF
+        !
+    END IF
+    !
+END IF
+!
+! Write deformation history stats to console
+!
+IF (MYID .EQ. 0) THEN
+    !
+    WRITE(DFLT_U, '(A)') "Info   :   - Deformation history:"
+    !
+    IF (OPTIONS%DEF_CONTROL_BY .EQ. UNIAXIAL_LOAD_TARGET) THEN
+        !
+        WRITE(DFLT_U, '(A, I0)') "Info   :     > Number of load steps: ", &
+            & UNIAXIAL_OPTIONS%NUMBER_OF_LOAD_STEPS
+        !
+    ELSE IF (OPTIONS%DEF_CONTROL_BY .EQ. UNIAXIAL_STRAIN_TARGET) THEN
+        !
+        WRITE(DFLT_U, '(A, I0)') "Info   :     > Number of strain steps: ", &
+            & UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_STEPS
+        !
+        IF (UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_RATE_JUMPS .GT. 0) THEN
+            !
+            WRITE(DFLT_U, '(A, I0)') "Info   :     > Number of strain rate &
+                &jumps: ", UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_RATE_JUMPS
+            !
+        END IF
+        !
+    ELSE IF (OPTIONS%DEF_CONTROL_BY .EQ. TRIAXIAL_CONSTANT_STRAIN_RATE) THEN
+        !
+        WRITE(DFLT_U, '(A, I0)') "Info   :     > Number of load steps: ", &
+            & TRIAXCSR_OPTIONS%NUMBER_OF_CSR_LOAD_STEPS
+        !
+    ELSE IF (OPTIONS%DEF_CONTROL_BY .EQ. TRIAXIAL_CONSTANT_LOAD_RATE) THEN
+        !
+        WRITE(DFLT_U, '(A, I0)') "Info   :     > Number of load steps: ", &
+            & TRIAXCLR_OPTIONS%NUMBER_OF_CLR_LOAD_STEPS
+        !
+        IF (TRIAXCLR_OPTIONS%NUMBER_OF_LOAD_RATE_JUMPS .GT. 0) THEN
+            !
+            WRITE(DFLT_U, '(A, I0)') "Info   :     > Number of load rate &
+                &jumps: ", TRIAXCLR_OPTIONS%NUMBER_OF_LOAD_RATE_JUMPS
+            !
+        END IF
+        !
+        IF (TRIAXCLR_OPTIONS%NUMBER_OF_DWELL_EPISODES .GT. 0) THEN
+            !
+            WRITE(DFLT_U, '(A, I0)') "Info   :     > Number of dwell &
+                &episodes: ", TRIAXCLR_OPTIONS%NUMBER_OF_DWELL_EPISODES
+            !
+        END IF
+        !
+    END IF
+    !
+END IF
+!
 IF (MYID .EQ. 0) THEN
     !
     WRITE(DFLT_U, '(A)') "Info   :   [i] Parsed file `simulation.config'."
@@ -243,8 +427,8 @@ IF (MYID .EQ. 0) THEN
     !
 END IF
 !
-! Close the mesh unit - this shows up as a comment in text editors due to F77 formatting.
-! 
+! Close the mesh unit - shows up as a comment in editors due to F77 formatting.
+!
 CLOSE(IUNITS(MSH_U))
 !
 ! Open files for writing
@@ -269,7 +453,7 @@ IF (OPTIONS%READ_ORI_FROM_FILE .EQV. .TRUE.) THEN
     IF (MYID .EQ. 0) THEN
         !
         WRITE(DFLT_U, '(A)') "Info   :   [i] Parsing file `simulation.ori'..."
-        !   
+        !
     END IF
     !
     ! Use the mesh parsing parent subroutine to parse the external .ori file.
@@ -290,8 +474,8 @@ IF (OPTIONS%READ_PHASE_FROM_FILE .EQV. .TRUE.) THEN
     !
     IOFILE = 'simulation.phase'
     !
-    OPEN(UNIT = IUNITS(PHASE_U), FILE = IOFILE, STATUS = 'old', ACTION = 'READ', &
-        & IOSTAT = IOSTATUS)
+    OPEN(UNIT = IUNITS(PHASE_U), FILE = IOFILE, STATUS = 'old', &
+        & ACTION = 'READ', IOSTAT = IOSTATUS)
     !
     IF (IOSTATUS .NE. 0) THEN
         !
@@ -302,7 +486,7 @@ IF (OPTIONS%READ_PHASE_FROM_FILE .EQV. .TRUE.) THEN
     IF (MYID .EQ. 0) THEN
         !
         WRITE(DFLT_U, '(A)') "Info   :   [i] Parsing file `simulation.phase'..."
-        !   
+        !
     END IF
     !
     CALL READ_GROUPS(IUNITS(PHASE_U), DFLT_U)
@@ -460,12 +644,15 @@ CALL INIT_SURF()
 !
 IF (MYID .EQ. 0) THEN
     !
-    WRITE(DFLT_U, '(A)') 'Info   :   - Initializing parallel gather/scatter routines...'
+    WRITE(DFLT_U, '(A)') 'Info   :   - Initializing parallel gather/scatter &
+        &routines...'
     !
 END IF
 !
-CALL PART_SCATTER_SETUP(0, KDIM1, DOF_SUB1, DOF_SUP1, EL_SUB1, EL_SUP1, NODES, DOF_TRACE)
-CALL PART_SCATTER_SETUP(0, NNPE, NP_SUB1, NP_SUP1, EL_SUB1, EL_SUP1, NP, NP_TRACE)
+CALL PART_SCATTER_SETUP(0, KDIM1, DOF_SUB1, DOF_SUP1, EL_SUB1, EL_SUP1, NODES, &
+    & DOF_TRACE)
+CALL PART_SCATTER_SETUP(0, NNPE, NP_SUB1, NP_SUP1, EL_SUB1, EL_SUP1, NP, &
+    & NP_TRACE)
 !
 ! Initialize fiber average routines.
 !
@@ -473,11 +660,12 @@ IF (FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE) THEN
     !
     IF (MYID .EQ. 0) THEN
         !
-        WRITE(DFLT_U, '(A)') 'Info   :   - Initializing fiber averaging processing...'
+        WRITE(DFLT_U, '(A)') 'Info   :   - Initializing fiber averaging &
+            &processing...'
         !
     END IF
     !
-    CALL INITIALIZE_FIBER_AVERAGE(IUNITS(TMPI1_U), DOF_TRACE)
+    CALL INITIALIZE_FIBER_AVERAGE(IUNITS(TMPI1_U))
     !
 ENDIF
 !
@@ -490,8 +678,7 @@ ENDIF
 IF (((DEF_CONTROL_BY .EQ. UNIAXIAL_LOAD_TARGET) .OR. (DEF_CONTROL_BY .EQ. &
        & UNIAXIAL_STRAIN_TARGET)) .AND. (.NOT. OPTIONS%RESTART)) THEN
     !
-    CALL DRIVER_VP_SOLVE(0, BCS, VELOCITY, PFORCE, DOF_TRACE, NP_TRACE, &
-        & CRSS_N, C0_ANGS, RSTAR_N, WTS)
+    CALL DRIVER_VP_SOLVE(0, BCS, VELOCITY, PFORCE, DOF_TRACE, CRSS_N, C0_ANGS)
     !
 ENDIF
 !
@@ -502,18 +689,18 @@ SELECT CASE (DEF_CONTROL_BY)
     CASE (UNIAXIAL_LOAD_TARGET, UNIAXIAL_STRAIN_TARGET)
         !
         CALL DRIVER_UNIAXIAL_CONTROL(BCS, VELOCITY, PFORCE, DOF_TRACE, &
-            & NP_TRACE, C0_ANGS, CRSS_N, RSTAR_N, KEINV, WTS, AUTO_TIME, &
-            & GAMMADOT)
+            & C0_ANGS, CRSS_N, RSTAR_N, KEINV, WTS, AUTO_TIME, GAMMADOT, &
+            & CLOCK_START)
         !
     CASE (TRIAXIAL_CONSTANT_STRAIN_RATE)
         !
-        CALL DRIVER_TRIAX_CSR(BCS, VELOCITY, PFORCE, DOF_TRACE, NP_TRACE, &
-            & C0_ANGS, CRSS_N, RSTAR_N, KEINV, WTS, AUTO_TIME, GAMMADOT)
+        CALL DRIVER_TRIAX_CSR(BCS, VELOCITY, PFORCE, DOF_TRACE, C0_ANGS, &
+            & CRSS_N, RSTAR_N, KEINV, WTS, AUTO_TIME, GAMMADOT, CLOCK_START)
         !
     CASE (TRIAXIAL_CONSTANT_LOAD_RATE)
         !
-        CALL DRIVER_TRIAX_CLR( BCS, VELOCITY, PFORCE, DOF_TRACE, NP_TRACE, &
-            & C0_ANGS, CRSS_N, RSTAR_N, KEINV, WTS, AUTO_TIME, GAMMADOT)
+        CALL DRIVER_TRIAX_CLR( BCS, VELOCITY, PFORCE, DOF_TRACE, C0_ANGS, &
+            & CRSS_N, RSTAR_N, KEINV, WTS, AUTO_TIME, GAMMADOT, CLOCK_START)
         !
     CASE DEFAULT
         !

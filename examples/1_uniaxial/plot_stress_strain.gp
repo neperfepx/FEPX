@@ -3,7 +3,7 @@
 #    instead the postprocess.sh script adds these via `sed'.
 
 set term pngcairo enhanced font 'Latin Modern Roman,18'
-set output '1_stressstrain.png'
+set output '1_stress_strain.png'
 
 unset key
 set grid xtics ytics dt 3 lw 1 lc -1

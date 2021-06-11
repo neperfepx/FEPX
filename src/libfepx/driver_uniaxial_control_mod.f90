@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE DRIVER_UNIAXIAL_CONTROL_MOD
@@ -8,7 +8,7 @@ MODULE DRIVER_UNIAXIAL_CONTROL_MOD
 !
 ! Contains subroutines:
 ! DRIVER_UNIAXIAL_CONTROL: Primary driver for uniaxial control simulations.
-! PROCESS_CTRL_DATA: Read data for load control and modify initial velocity field.
+! PROCESS_CTRL_DATA: Read data for load control and modify init. velocity field.
 ! READ_UNIAXIAL_RESTART: Read uniaxial control restart information.
 !
 ! Contains functions:
@@ -39,7 +39,7 @@ USE FIBER_AVERAGE_MOD, ONLY: RUN_FIBER_AVERAGE
 USE ITERATE_STRESS_EVPS_MOD, ONLY: ITMETHOD_EVPS
 USE KINEMATICS_MOD, ONLY: PLASTICVELGRADSYMSKW, CALC_TOTAL_WORK,&
     & CALC_PLASTIC_WORK
-USE MATRIX_OPERATIONS_MOD, ONLY: CALC_ELVOL
+USE MATRIX_OPERATIONS_MOD, ONLY: CALC_ELVOL, STRAIN_EQUIV_3X3, VEC6_MAT_SYMM
 USE MICROSTRUCTURE_MOD, ONLY: NUMPHASES, GAMMADOT, GACCUMSHEAR, ACCUMSHEAR_CEN
 USE QUADRATURE_MOD, ONLY: NQPT1
 USE READ_INPUT_MOD, ONLY: KDIM1, EL_SUB1, EL_SUP1, DOF_SUB1, DOF_SUP1, COORDS,&
@@ -58,8 +58,6 @@ USE WRITE_OUTPUT_MOD, ONLY: PRINT_STEP, WRITE_REPORT_FILE_COMPLETE_STEPS, &
 !
 USE GATHER_SCATTER_MOD, ONLY: TRACE, PART_GATHER
 USE PARALLEL_MOD, ONLY: MYID, PAR_MESSAGE, PAR_QUIT
-
-
 !
 IMPLICIT NONE
 !
@@ -68,6 +66,9 @@ IMPLICIT NONE
 INTEGER, PRIVATE :: NSTEPS, CURRENT_STEP, TARGET_SURFACE
 REAL(RK), ALLOCATABLE, PRIVATE :: TARGET_LOAD(:), TARGET_SIGN(:), &
     & VEL_FACTOR(:), TIME_STEP(:), TIME_STEP_MIN(:)
+REAL(RK), PRIVATE :: PREV_STRAIN, CURR_STRAIN
+REAL(RK), ALLOCATABLE, PRIVATE :: STEP_STRAIN_RATE(:)
+LOGICAL, ALLOCATABLE, PRIVATE :: IS_SIGNED(:)
 INTEGER, ALLOCATABLE, PRIVATE :: TARGET_INCR(:), TARGET_INDEX(:), PRINT_FLAG(:)
 REAL(RK), DIMENSION(3), PRIVATE :: &
     & CURRENT_LOAD  =(/0.0d0,0.0d0,0.0d0/),&
@@ -81,8 +82,8 @@ PUBLIC
 !
 CONTAINS
     !
-    SUBROUTINE DRIVER_UNIAXIAL_CONTROL(BCS, VELOCITY, PFORCE, DTRACE, NTRACE, &
-        & C0_ANGS, CRSS_N, RSTAR_N, KEINV, WTS, AUTO_TIME, GAMMADOT)
+    SUBROUTINE DRIVER_UNIAXIAL_CONTROL(BCS, VELOCITY, PFORCE, DTRACE, C0_ANGS, &
+        & CRSS_N, RSTAR_N, KEINV, WTS, AUTO_TIME, GAMMADOT, CLOCK_START)
     !
     ! Primary driver for uniaxial strain control with load or strain targeting.
     !
@@ -93,7 +94,6 @@ CONTAINS
     ! VELOCITY: Global D.O.F. array storing nodal velocities.
     ! PFORCE: Global D.O.F. array with tractions (not implemented?).
     ! DTRACE: Gather/scatter trace for degrees of freedom.
-    ! NTRACE: Gather/scatter trace for nodal points.
     ! C0_ANGS: Initial orientations, rotation matrix.
     ! CRSS_N: Resolved shear stresses on each slip system.
     ! RSTAR_N: Current orientations.
@@ -101,12 +101,12 @@ CONTAINS
     ! WTS: Elemental weights (??).
     ! AUTO_TIME: (??).
     ! GAMMADOT: Elemental slip system shearing rates.
+    ! COUNT_INIT: Timer start time
     !
     LOGICAL  :: BCS(DOF_SUB1:DOF_SUP1)
     REAL(RK) :: VELOCITY(DOF_SUB1:DOF_SUP1)
     REAL(RK) :: PFORCE(DOF_SUB1:DOF_SUP1)
     TYPE(TRACE) :: DTRACE
-    TYPE(TRACE) :: NTRACE
     REAL(RK) :: C0_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: CRSS_N(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: RSTAR_N(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
@@ -114,6 +114,7 @@ CONTAINS
     REAL(RK) :: WTS(0:NGRAIN1, EL_SUB1:EL_SUP1)
     INTEGER  :: AUTO_TIME
     REAL(RK) :: GAMMADOT(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: CLOCK_START
     !
     ! Locals:
     ! Need to be defined - JC
@@ -136,10 +137,12 @@ CONTAINS
     REAL(RK) :: SIG_VEC_N(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: SIG_VEC(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: E_BAR_VEC(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK) :: ELAS_TOT6(0:TVEC , 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: ELAS_TOT6(0:TVEC, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: ELAS_TOT_3X3(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: D_TOT(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: TOTSTRAIN(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1)
     REAL(RK) :: S_AVG_3X3(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1)
     REAL(RK) :: CRSS(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK) :: ELPRESS(EL_SUB1:EL_SUP1)
     REAL(RK) :: E_ELAS_KK_BAR(EL_SUB1:EL_SUP1)
     REAL(RK) :: E_ELAS_KK(EL_SUB1:EL_SUP1)
     REAL(RK) :: SIG_KK(EL_SUB1:EL_SUP1)
@@ -154,17 +157,18 @@ CONTAINS
     REAL(RK) :: DEFF_Q(EL_SUB1:EL_SUP1, 0:NQPT1)
     REAL(RK) :: STIF(TVEC, TVEC, EL_SUB1:EL_SUP1)
     REAL(RK) :: FE(TVEC, EL_SUB1:EL_SUP1)
-    INTEGER  :: M_EL, I, J, K
-    INTEGER  :: ISTEP, IPRINT, IPHASE
+    INTEGER  :: M_EL, I
+    INTEGER  :: ISTEP
     REAL(RK) :: LOAD(NSURFACES,3)
-    REAL(RK) :: PREV_LOAD
-    REAL(RK) :: AREA0(NSURFACES), area(NSURFACES)
+    REAL(RK) :: AREA0(NSURFACES), AREA(NSURFACES)
     REAL(RK) :: GAMMA(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK) :: DP_HAT(0:TVEC1,EL_SUB1:EL_SUP1)
-    REAL(RK) :: WP_HAT(0:DIMS1,EL_SUB1:EL_SUP1)
+    REAL(RK) :: DP_HAT(0:TVEC1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: PLSTRAIN(0:TVEC1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: WP_HAT(0:DIMS1, EL_SUB1:EL_SUP1)
     REAL(RK) :: DEFF(EL_SUB1:EL_SUP1)
     REAL(RK) :: DPEFF(EL_SUB1:EL_SUP1)
     REAL(RK) :: EQSTRAIN(EL_SUB1:EL_SUP1)
+    REAL(RK) :: EQELSTRAIN(EL_SUB1:EL_SUP1)
     REAL(RK) :: EQPLSTRAIN(EL_SUB1:EL_SUP1)
     INTEGER  :: LOAD_INDEX, LOAD_SURFACE, NTSTEPS
     CHARACTER(LEN=16) :: FIELD, TIME_STRING, DTIME_STRING
@@ -175,7 +179,9 @@ CONTAINS
     REAL(RK), ALLOCATABLE :: ECOORDS(:, :)
     REAL(RK), ALLOCATABLE :: ELVOL(:)
     !
-    !----------------------------------------------------------------------
+    REAL(RK) :: CLOCK_END
+    !
+    !---------------------------------------------------------------------------
     !
     ! Initialization
     !
@@ -189,9 +195,12 @@ CONTAINS
         CALL READ_RESTART_FIELD(VELOCITY, C0_ANGS, C_ANGS, &
             & RSTAR, RSTAR_N, WTS, CRSS, CRSS_N, &
             & E_ELAS_KK_BAR, SIG_VEC_N, EQSTRAIN, EQPLSTRAIN, GAMMA, &
-            & EL_WORK_N, EL_WORKP_N, EL_WORK_RATE_N, EL_WORKP_RATE_N)
+            & EL_WORK_N, EL_WORKP_N, EL_WORK_RATE_N, EL_WORKP_RATE_N, &
+            & PLSTRAIN, TOTSTRAIN)
         !
-        CALL READ_UNIAXIAL_RESTART(INCR, TIME, LOAD, PREV_LOAD, AREA, AREA0)
+        CALL READ_UNIAXIAL_RESTART(INCR, TIME, LOAD, PREVIOUS_LOAD, AREA, &
+            & AREA0, VELOCITY, TIME_STEP)
+        !
         RINCR = INCR
         !
         ! Update initial guess of velocity field for load reversal
@@ -205,7 +214,7 @@ CONTAINS
         !
         DTIME_N = TIME_INCREMENT(LOAD(LOAD_SURFACE,:), INCR)
         !
-    ELSE 
+    ELSE
         !
         ! Initialize areas and load arrays
         !
@@ -216,12 +225,6 @@ CONTAINS
         ! Compute initial area (AREA0)
         !
         CALL COMPUTE_AREA(COORDS, AREA0)
-        !
-        !IF (MYID .EQ. 0) THEN
-            !
-        !    WRITE(DFLT_U,'(a25,6f12.6)') 'initial areas &(AREA0):   ', AREA0
-            !
-        !END IF
         !
         ! Initialize state
         !
@@ -247,6 +250,9 @@ CONTAINS
         !
         EQSTRAIN = 0.0D0
         EQPLSTRAIN = 0.0D0
+        PLSTRAIN = 0.0D0
+        D_TOT = 0.0D0
+        TOTSTRAIN = 0.0D0
         GAMMA = 0.0D0
         !
         ! Initialize deformation control
@@ -265,13 +271,23 @@ CONTAINS
             !
             CALL WRITE_FORCE_FILE_HEADERS(1)
             !
+            IF (OPTIONS%RESTART .EQV. .FALSE.) THEN
+                !
+                ! If virgin sample, write 0th step
+                !
+                IDUMMY = 0.0D0
+                CALL WRITE_FORCE_FILE_DATA(1, 0, 0, LOAD, AREA0, 0.0D0, &
+                    & IDUMMY)
+                !
+            END IF
+            !
         END IF
         !
         IF (PRINT_OPTIONS%PRINT_CONV) THEN
             !
             CALL WRITE_CONV_FILE_HEADERS()
             !
-        END IF        
+        END IF
         !
     END IF
     !
@@ -322,7 +338,7 @@ CONTAINS
                 WRITE(FIELD, '(F0.4)') DTIME
                 IF (FIELD(1:1) == '.') FIELD = '0' // FIELD
                 DTIME_STRING = FIELD
-                !               
+                !
                 WRITE(DFLT_U,'(A,I0,A,A,A,A,A)') 'Info   :   - &
                     &Increment ', INCR, ': t = ', TRIM(TIME_STRING), '&
                     & secs, dt = ', TRIM(DTIME_STRING), ' secs'
@@ -336,7 +352,7 @@ CONTAINS
                 WRITE(FIELD, '(F0.4)') DTIME
                 IF (FIELD(1:1) == '.') FIELD = '0' // FIELD
                 DTIME_STRING = FIELD
-                !             
+                !
                 WRITE(DFLT_U,'(A,I0,A,A,A,A,A)') 'Info   :   - &
                     &Increment ', INCR, ': t = ', TRIM(TIME_STRING), '&
                     & secs, dt = ', TRIM(DTIME_STRING), ' secs'
@@ -349,7 +365,7 @@ CONTAINS
                 WRITE(FIELD, '(F0.4)') DTIME
                 IF (FIELD(1:1) == '.') FIELD = '0' // FIELD
                 DTIME_STRING = FIELD
-                !             
+                !
                 WRITE(DFLT_U,'(/,A,I0,A,A,A,A,A)') 'Info   :   - &
                     &Increment ', INCR, ': t = ', TRIM(TIME_STRING), '&
                     & secs, dt = ', TRIM(DTIME_STRING), ' secs'
@@ -386,7 +402,7 @@ CONTAINS
         ! SIG_VEC_N: INOUT (enters=0 at the first increment), could be OUT?
         !
         IER = ITMETHOD_EVPS(BCS, PFORCE, VELOCITY, ELPRESS_Q, EVEL, DTRACE, &
-            & NTRACE, C0_ANGS, C_ANGS, SIG_VEC_N_Q, SIG_VEC_Q, CRSS_N, CRSS_Q, &
+            & C0_ANGS, C_ANGS, SIG_VEC_N_Q, SIG_VEC_Q, CRSS_N, CRSS_Q, &
             & RSTAR_N, RSTAR, KEINV, E_ELAS_KK_BAR_Q, E_ELAS_KK_Q, SIG_KK_Q, &
             & JITER_STATE, WTS, DEFF_Q, DTIME, INCR, E_BAR_VEC_Q, &
             & CONVERGED_SOLUTION, AUTO_TIME, ITERNL)
@@ -403,7 +419,7 @@ CONTAINS
             !
             IF (MYID .EQ. 0) THEN
                 !
-                WRITE(DFLT_U,'(A)') 'Warning:     > AUTO_TIME .NE. 1 with& 
+                WRITE(DFLT_U,'(A)') 'Warning:     > AUTO_TIME .NE. 1 with&
                 & CONVERGED_SOLUTION = FALSE'
                 !
             END IF
@@ -430,7 +446,7 @@ CONTAINS
         !
         CALL UPDATE_STATE_EVPS(VELOCITY, DTRACE, C0_ANGS, C_ANGS, SIG_VEC_N, &
             & SIG_VEC, CRSS_N, CRSS, RSTAR_N, RSTAR, E_BAR_VEC, E_ELAS_KK_BAR, &
-            & E_ELAS_KK, SIG_KK, KEINV, WTS, DEFF, DTIME, STIF, FE, D, D_VEC, &
+            & E_ELAS_KK, SIG_KK, KEINV, DEFF, DTIME, STIF, FE, D, D_VEC, &
             & VGRAD, CONVERGED_SOLUTION, AUTO_TIME)
         !
         !
@@ -459,7 +475,7 @@ CONTAINS
                 WRITE(FIELD, '(F0.4)') LOAD(LOAD_SURFACE,I)
                 IF (FIELD(1:1) == '.') FIELD = '0' // FIELD
                 IF (FIELD(1:2) == '-.') FIELD = '-0.' // FIELD(3:)
-                !               
+                !
                 WRITE(DFLT_U, '(A,A)', ADVANCE='NO') TRIM(FIELD), '  '
                 !
             END DO
@@ -470,29 +486,37 @@ CONTAINS
         !
         ! Calculate DPEFF
         !
-        CALL PLASTICVELGRADSYMSKW(DP_HAT,WP_HAT,DPEFF,GAMMADOT(:,0,:),M_EL)
+        CALL PLASTICVELGRADSYMSKW(DP_HAT, WP_HAT, DPEFF, GAMMADOT(:, 0, :), &
+            & M_EL)
         !
         ! Update EQPLSTRAIN
         !
-        EQPLSTRAIN=EQPLSTRAIN+DPEFF*DTIME
+        EQPLSTRAIN = EQPLSTRAIN + DPEFF * DTIME
         !
-        ! Update EQSTRAIN
+        ! Update EQELSTRAIN
         !
-        EQSTRAIN=EQSTRAIN+DEFF*DTIME
+        CALL VEC6_MAT_SYMM(ELAS_TOT6, ELAS_TOT_3X3, M_EL, NGRAIN1)
+        CALL STRAIN_EQUIV_3X3(ELAS_TOT_3X3, EQELSTRAIN)
+        !
+        ! Update PLSTRAIN
+        !
+        PLSTRAIN = PLSTRAIN + DP_HAT * DTIME
         !
         ! Update slip system shear
         !
-        GAMMA=GAMMA+GAMMADOT*DTIME
+        GAMMA = GAMMA + GAMMADOT * DTIME
         !
         ! Reconstruct total deformation rate tensor if requested
         !
         IF ((PRINT_OPTIONS%PRINT_WORK) .OR. (PRINT_OPTIONS%PRINT_DEFRATE) .OR. &
+            & (PRINT_OPTIONS%PRINT_WORKRATE) .OR. &
+            & (PRINT_OPTIONS%PRINT_STRAIN_TOT) .OR. &
             & (PRINT_OPTIONS%PRINT_RESTART)) THEN
             !
             ! Copy current deviatoric portion to new array
             !
             D_TOT = D
-            ! 
+            !
             ! Reconstruct the total deformation rate tensor
             !
             DO I = EL_SUB1, EL_SUP1
@@ -506,16 +530,26 @@ CONTAINS
             !
         END IF
         !
+        ! Update TOTSTRAIN
+        !
+        TOTSTRAIN = TOTSTRAIN + D_TOT * DTIME
+        !
+        ! Update EQSTRAIN
+        !
+        CALL STRAIN_EQUIV_3X3(TOTSTRAIN, EQSTRAIN)
+        !
         ! Calculate work, plastic work
         !
-        IF ((PRINT_OPTIONS%PRINT_WORK) .OR. (PRINT_OPTIONS%PRINT_RESTART)) THEN
+        IF ((PRINT_OPTIONS%PRINT_WORK) .OR. (PRINT_OPTIONS%PRINT_WORKRATE) &
+            & .OR. (PRINT_OPTIONS%PRINT_RESTART)) THEN
             !
             CALL CALC_TOTAL_WORK(DTIME, D_TOT, S_AVG_3X3, EL_WORK_N, &
                 & EL_WORK_RATE_N, EL_WORK)
             !
         END IF
         !
-        IF ((PRINT_OPTIONS%PRINT_WORKP) .OR. (PRINT_OPTIONS%PRINT_RESTART)) THEN
+        IF ((PRINT_OPTIONS%PRINT_WORKP) .OR. (PRINT_OPTIONS%PRINT_WORKRATEP) &
+            & .OR. (PRINT_OPTIONS%PRINT_RESTART)) THEN
             !
             CALL CALC_PLASTIC_WORK(DTIME, DP_HAT, C_ANGS, S_AVG_3X3, &
                 & EL_WORKP_N, EL_WORKP_RATE_N, EL_WORKP)
@@ -552,32 +586,66 @@ CONTAINS
             !
             IF (MYID .EQ. 0) THEN
                 !
-                WRITE(DFLT_U,'(/,A,I0)') 'Info   :     > Converged on increment ', INCR
-                WRITE(DFLT_U,'(A,3(F12.6))') 'Info   :     > Loads on X0: ', LOAD(1,:)
-                WRITE(DFLT_U,'(A,3(F12.6))') 'Info   :       Loads on X1: ', LOAD(2,:)
-                WRITE(DFLT_U,'(A,3(F12.6))') 'Info   :       Loads on Y0: ', LOAD(3,:)
-                WRITE(DFLT_U,'(A,3(F12.6))') 'Info   :       Loads on Y1: ', LOAD(4,:)
-                WRITE(DFLT_U,'(A,3(F12.6))') 'Info   :       Loads on Z0: ', LOAD(5,:)
-                WRITE(DFLT_U,'(A,3(F12.6))') 'Info   :       Loads on Z1: ', LOAD(6,:)
+                WRITE(DFLT_U,'(/,A,I0)') 'Info   :     > Converged on &
+                    &increment ', INCR
+                WRITE(DFLT_U,'(A,3(E14.6))') 'Info   :     > Loads on X0: ', &
+                    & LOAD(1,:)
+                WRITE(DFLT_U,'(A,3(E14.6))') 'Info   :       Loads on X1: ', &
+                    & LOAD(2,:)
+                WRITE(DFLT_U,'(A,3(E14.6))') 'Info   :       Loads on Y0: ', &
+                    & LOAD(3,:)
+                WRITE(DFLT_U,'(A,3(E14.6))') 'Info   :       Loads on Y1: ', &
+                    & LOAD(4,:)
+                WRITE(DFLT_U,'(A,3(E14.6))') 'Info   :       Loads on Z0: ', &
+                    & LOAD(5,:)
+                WRITE(DFLT_U,'(A,3(E14.6))') 'Info   :       Loads on Z1: ', &
+                    & LOAD(6,:)
                 !
             END IF
             !
             IF (GET_PRINT_FLAG() .EQ. 0) THEN
                 !
                 CALL PRINT_STEP(ISTEP, ANISOTROPIC_EVPS, COORDS, VELOCITY, &
-                    & C_ANGS, WTS, CRSS, ELVOL, ELAS_TOT6, S_AVG_3X3, DEFF, &
+                    & C_ANGS, CRSS, ELVOL, ELAS_TOT6, S_AVG_3X3, DEFF, &
                     & EQSTRAIN, DPEFF, EQPLSTRAIN, VGRAD, DP_HAT, WP_HAT, &
-                    & GAMMA, GAMMADOT, EL_WORK, EL_WORKP, D_TOT)
+                    & GAMMA, GAMMADOT, EL_WORK, EL_WORKP, D_TOT, &
+                    & EL_WORK_RATE_N, EL_WORKP_RATE_N, EQELSTRAIN, PLSTRAIN, &
+                    & TOTSTRAIN)
                 !
                 IF (PRINT_OPTIONS%PRINT_RESTART) THEN
                     !
                     CALL WRITE_RESTART_FIELD(VELOCITY, C0_ANGS, C_ANGS, RSTAR, &
                         & RSTAR_N, WTS, CRSS, CRSS_N, E_ELAS_KK_BAR, SIG_VEC_N,&
                         & EQSTRAIN, EQPLSTRAIN, GAMMA, EL_WORK_N, EL_WORKP_N, &
-                        & EL_WORK_RATE_N, EL_WORKP_RATE_N)
-                    CALL WRITE_UNIAXIAL_RESTART(INCR, TIME, LOAD, PREV_LOAD, &
-                        & AREA, AREA0, CURRENT_STEP, PREVIOUS_LOAD, & 
-                        & STEP_COMPLETE, DTIME_OLD)
+                        & EL_WORK_RATE_N, EL_WORKP_RATE_N, PLSTRAIN, &
+                        & TOTSTRAIN, ISTEP)
+                    !
+                    IF (OPTIONS%DEF_CONTROL_BY .EQ. UNIAXIAL_STRAIN_TARGET) THEN
+                        !
+                        IF (ISTEP .EQ. 1) THEN
+                            !
+                            PREV_STRAIN = 0.0D0
+                            !
+                        ELSE
+                            !
+                            PREV_STRAIN = &
+                                & UNIAXIAL_OPTIONS%TARGET_STRAIN(ISTEP - 1,1)
+                            !
+                        END IF
+                        !
+                        CURR_STRAIN = UNIAXIAL_OPTIONS%TARGET_STRAIN(ISTEP, 1)
+                        !
+                    ELSE IF (OPTIONS%DEF_CONTROL_BY .EQ. &
+                        & UNIAXIAL_LOAD_TARGET) THEN
+                        !
+                        PREV_STRAIN = 0.0D0
+                        CURR_STRAIN = 0.0D0
+                        !
+                    END IF
+                    !
+                    CALL WRITE_UNIAXIAL_RESTART(INCR, TIME, LOAD, AREA, AREA0, &
+                        & CURRENT_STEP, PREVIOUS_LOAD, STEP_COMPLETE, &
+                        & DTIME_OLD, PREV_STRAIN, CURR_STRAIN, ISTEP)
                     !
                 END IF
                 !
@@ -610,6 +678,16 @@ CONTAINS
             IF (GET_ALL_STEPS_COMPLETE()) THEN
                 !
                 CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP, PRINT_FLAG)
+                !
+                ! Finalize clock values and print to console
+                !
+                IF (MYID .EQ. 0) THEN
+                    !
+                    CALL CPU_TIME(CLOCK_END)
+                    WRITE(DFLT_U, '(A, F10.3, A)') 'Info   : Elapsed time:', &
+                        & (CLOCK_END - CLOCK_START), ' secs.'
+                    !
+                END IF
                 !
                 CALL PAR_QUIT('Info   : Final step terminated. Simulation&
                     & completed successfully.')
@@ -644,17 +722,13 @@ CONTAINS
     ! USER_STRAIN_RATE: User-defined initial strain rate from BCs input.
     ! STEP_STRAIN_RATE: Array used to store strain rate jump values.
     ! IS_SIGNED: Array to enable load reversal checks to sign VEL_FACTOR.
-    ! MESSAGE: Temporary string for passing to PAR_MESSAGE.
     !
     INTEGER :: I, II
     REAL(RK) :: DIFF_STRAIN, DIFF_STRESS, USER_STRAIN_RATE
-    REAL(RK), ALLOCATABLE :: STEP_STRAIN_RATE(:)    
-    LOGICAL, ALLOCATABLE  :: IS_SIGNED(:)
-    CHARACTER(LEN=256) :: MESSAGE
     !
     ! Notes:
-    ! User-defined input (strain rates) should ALWAYS be positive. Compression 
-    ! and similar signed deformation control are handled internally by way of 
+    ! User-defined input (strain rates) should ALWAYS be positive. Compression
+    ! and similar signed deformation control are handled internally by way of
     ! the sign in the targeted load or strain.
     !
     !---------------------------------------------------------------------------
@@ -688,7 +762,7 @@ CONTAINS
         IS_SIGNED = .FALSE.
         STEP_STRAIN_RATE = BCS_OPTIONS%STRAIN_RATE
         !
-        ! Build step strain rate array, specifiCALLy handle strain rate jumps.
+        ! Build step strain rate array, specifically handle strain rate jumps.
         !
         IF (UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_RATE_JUMPS .GT. 0) THEN
             !
@@ -724,8 +798,9 @@ CONTAINS
             !
             IF (UNIAXIAL_OPTIONS%STRAIN_RATE_JUMP(II,1) .EQ. -1) THEN
                 !
-                CALL PAR_QUIT('Error  :     > Inputted `number_of_strain_rate_jumps`&
-                    & does not match number of defined `strain_rate_jumps`.')
+                CALL PAR_QUIT('Error  :     > Input &
+                    &`number_of_strain_rate_ jumps` does not match number of &
+                    &defined `strain_rate_jumps`.')
                 !
             END IF
             !
@@ -739,8 +814,8 @@ CONTAINS
             !
             IF (UNIAXIAL_OPTIONS%TARGET_LOAD(I,4) .EQ. -1) THEN
                 !
-                CALL PAR_QUIT('Error  :     > Number of load steps does not match&
-                    & defined number of targets in *.config file.')
+                CALL PAR_QUIT('Error  :     > Number of load steps does not &
+                    &match defined number of targets in *.config file.')
                 !
             END IF
             !
@@ -752,9 +827,9 @@ CONTAINS
                 !
                 TARGET_LOAD(I)   = UNIAXIAL_OPTIONS%TARGET_LOAD(I,1)
                 TARGET_INDEX(I)  = BCS_OPTIONS%LOADING_DIRECTION + 1
-                TIME_STEP(I)     = UNIAXIAL_OPTIONS%TARGET_LOAD(I,2)
+                TIME_STEP(I) = UNIAXIAL_OPTIONS%TARGET_LOAD(I,2)
                 TIME_STEP_MIN(I) = UNIAXIAL_OPTIONS%TARGET_LOAD(I,3)
-                PRINT_FLAG(I)    = UNIAXIAL_OPTIONS%TARGET_LOAD(I,4)
+                PRINT_FLAG(I) = INT(UNIAXIAL_OPTIONS%TARGET_LOAD(I,4))
                 !
                 ! Next, determine the velocity factor for the first step.
                 !
@@ -791,9 +866,9 @@ CONTAINS
                 !
                 TARGET_LOAD(I)  = UNIAXIAL_OPTIONS%TARGET_LOAD(I,1)
                 TARGET_INDEX(I) = BCS_OPTIONS%LOADING_DIRECTION + 1
-                TIME_STEP(I)     = UNIAXIAL_OPTIONS%TARGET_LOAD(I,2)
+                TIME_STEP(I) = UNIAXIAL_OPTIONS%TARGET_LOAD(I,2)
                 TIME_STEP_MIN(I) = UNIAXIAL_OPTIONS%TARGET_LOAD(I,3)
-                PRINT_FLAG(I)    = UNIAXIAL_OPTIONS%TARGET_LOAD(I,4)
+                PRINT_FLAG(I) = INT(UNIAXIAL_OPTIONS%TARGET_LOAD(I,4))
                 !
                 ! Next, determine the velocity factor for the first step.
                 !
@@ -811,7 +886,7 @@ CONTAINS
                     TARGET_SIGN(I) = 1
                     !
                 ELSE IF (DIFF_STRESS .LT. 0.0D0) THEN
-                    !                
+                    !
                     IS_SIGNED(I) = .TRUE.
                     TARGET_SIGN(I) = -1
                     !
@@ -839,7 +914,7 @@ CONTAINS
                 END IF
                 !
             END IF
-            !                
+            !
         END DO
         !
     ! End case (UNIAXIAL_LOAD_TARGET)
@@ -886,7 +961,7 @@ CONTAINS
                     IF (II.EQ.UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_RATE_JUMPS) THEN
                         !
                         II = II
-                        !           
+                        !
                     ELSE
                         !
                         II = II + 1
@@ -906,8 +981,9 @@ CONTAINS
             !
             IF (UNIAXIAL_OPTIONS%STRAIN_RATE_JUMP(II,1) .EQ. -1) THEN
                 !
-                CALL PAR_QUIT('Error  :     > Inputted `number_of_strain_rate_jumps`&
-                    & does not match number of defined `strain_rate_jumps`.')
+                CALL PAR_QUIT('Error  :     > Input &
+                    &`number_of_strain_rate_jumps` does not match number of &
+                    &defined `strain_rate_jumps`.')
                 !
             END IF
             !
@@ -932,10 +1008,10 @@ CONTAINS
                 !
                 ! First, assign the fixed values.
                 !
-                TARGET_INCR(I)  = UNIAXIAL_OPTIONS%TARGET_STRAIN(I,2)
+                TARGET_INCR(I) = INT(UNIAXIAL_OPTIONS%TARGET_STRAIN(I,2))
                 TARGET_INDEX(I) = BCS_OPTIONS%LOADING_DIRECTION + 1
-                TARGET_SIGN(I)  = 1
-                PRINT_FLAG(I)   = UNIAXIAL_OPTIONS%TARGET_STRAIN(I,3)
+                TARGET_SIGN(I) = 1
+                PRINT_FLAG(I) = INT(UNIAXIAL_OPTIONS%TARGET_STRAIN(I,3))
                 !
                 ! Next, determine the velocity factor for the first step.
                 !
@@ -971,12 +1047,12 @@ CONTAINS
                 !
                 ! First, assign the fixed values for I > 1.
                 !
-                TARGET_INCR(I)  = UNIAXIAL_OPTIONS%TARGET_STRAIN(I,2)&
-                    & + TARGET_INCR(I-1)
+                TARGET_INCR(I) = INT(UNIAXIAL_OPTIONS%TARGET_STRAIN(I,2)) + &
+                    & TARGET_INCR(I-1)
                 !
                 TARGET_INDEX(I) = BCS_OPTIONS%LOADING_DIRECTION + 1
-                TARGET_SIGN(I)  = 1
-                PRINT_FLAG(I)   = UNIAXIAL_OPTIONS%TARGET_STRAIN(I,3)
+                TARGET_SIGN(I) = 1
+                PRINT_FLAG(I) = INT(UNIAXIAL_OPTIONS%TARGET_STRAIN(I,3))
                 !
                 ! Next, determine the velocity factor for the first step.
                 !
@@ -986,7 +1062,7 @@ CONTAINS
                 ! Calculate the differential strain from zero.
                 !
                 DIFF_STRAIN = (UNIAXIAL_OPTIONS%TARGET_STRAIN(I,1)) &
-                    & - (UNIAXIAL_OPTIONS%TARGET_STRAIN(I-1,1)) 
+                    & - (UNIAXIAL_OPTIONS%TARGET_STRAIN(I-1,1))
                 !
                 IF (DIFF_STRAIN .GT. 0.0D0) THEN
                     !
@@ -1012,6 +1088,7 @@ CONTAINS
                 ELSE IF (IS_SIGNED(I) .EQV. IS_SIGNED(I-1)) THEN
                     !
                     VEL_FACTOR(I) = VEL_FACTOR(I) * (1)
+                    !
                 ELSE
                     !
                     CALL PAR_QUIT('Error  :     > Load reversal check failed.')
@@ -1024,7 +1101,7 @@ CONTAINS
                     & (STEP_STRAIN_RATE(I)*UNIAXIAL_OPTIONS%TARGET_STRAIN(I,2))
                 !
             END IF
-            !                  
+            !
         END DO
         !
         ! Check that increments are monotonically increasing.
@@ -1061,24 +1138,28 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE READ_UNIAXIAL_RESTART(INCR,TIME,LOAD,PREV_LOAD,AREA,AREA0)
+    SUBROUTINE READ_UNIAXIAL_RESTART(INCR, TIME, LOAD, PREVIOUS_LOAD, AREA, &
+        & AREA0, VELOCITY, TIME_STEP)
     !
     ! Read uniaxial control restart information.
     !
     !---------------------------------------------------------------------------
     !
     ! Arguments:
-    ! INCR: Current step INCRement (additive).
-    ! TIME: Current step total TIME.
+    ! INCR: Current step increment (additive).
+    ! TIME: Current step total time.
     ! LOAD: Current load on all surfaces in the mesh.
-    ! PREV_LOAD: Previous step load value.
+    ! PREVIOUS_LOAD: Previous step load value.
     ! AREA/AREA0: Current and initial surface areas of the mesh at current step.
     !
     INTEGER,  INTENT(OUT) :: INCR
     REAL(RK), INTENT(OUT) :: TIME
     REAL(RK), INTENT(OUT) :: LOAD(NSURFACES,3)
-    REAL(RK), INTENT(OUT) :: PREV_LOAD
-    REAL(RK), INTENT(OUT) :: AREA(NSURFACES), AREA0(NSURFACES)
+    REAL(RK), INTENT(OUT) :: PREVIOUS_LOAD(3)
+    REAL(RK), INTENT(OUT) :: AREA(NSURFACES)
+    REAL(RK), INTENT(OUT) :: AREA0(NSURFACES)
+    REAL(RK), INTENT(INOUT) :: VELOCITY(DOF_SUB1:DOF_SUP1)
+    REAL(RK), INTENT(INOUT) :: TIME_STEP(NSTEPS)
     !
     ! Locals:
     ! MYUNIT: Current unit number to open restart file.
@@ -1086,48 +1167,276 @@ CONTAINS
     !
     INTEGER :: MYUNIT
     INTEGER :: ISURF
+    INTEGER :: RST_NUM
+    LOGICAL :: FILE_EXISTS
+    CHARACTER(LEN=8) :: RST_NUM_STR
+    CHARACTER(LEN=64) :: FILENAME
+    REAL(RK) :: DIFF_STRAIN
+    REAL(RK) :: DIFF_STRESS
+    INTEGER :: I
     !
     ! Notes:
-    ! Current_load becomes the previous_load inside subroutine TIME_INCRement.
+    ! Current_load becomes the previous_load inside subroutine time_increment.
     !
     !---------------------------------------------------------------------------
     !
     MYUNIT = NEWUNITNUMBER()
     !
-    OPEN(UNIT=MYUNIT, FILE=TRIM(OPTIONS%RSCTRL_IN),&
-        & FORM='UNFORMATTED', ACTION='READ')
+    RST_NUM = 1000
+    FILE_EXISTS = .FALSE.
+    !
+    DO WHILE (.NOT. FILE_EXISTS)
+        !
+        WRITE(RST_NUM_STR, '(I0)') RST_NUM
+        !
+        FILENAME = 'rst'//TRIM(RST_NUM_STR)//'.control'
+        !
+        INQUIRE(FILE = FILENAME, EXIST = FILE_EXISTS)
+        RST_NUM = RST_NUM - 1
+        !
+        IF (RST_NUM .EQ. -2) THEN
+            !
+            CALL PAR_QUIT('Error  :     > Restart control file not found.')
+            !
+        END IF
+        !
+    END DO
+    !
+    RST_NUM = RST_NUM + 1
+    WRITE(RST_NUM_STR, '(I0)') RST_NUM
+    FILENAME = 'rst'//TRIM(RST_NUM_STR)//'.control'
+    !
+    OPEN(UNIT = MYUNIT, FILE = FILENAME, FORM = 'UNFORMATTED', ACTION = 'READ')
     !
     READ(MYUNIT) CURRENT_STEP
-    READ(MYUNIT) CURRENT_LOAD
+    READ(MYUNIT) PREVIOUS_LOAD
     READ(MYUNIT) STEP_COMPLETE
     READ(MYUNIT) DTIME_OLD
     READ(MYUNIT) INCR
     READ(MYUNIT) TIME
     !
-    DO ISURF = 1,NSURFACES
+    DO ISURF = 1, NSURFACES
         !
         READ(MYUNIT) LOAD(ISURF,:)
         !
     ENDDO
     !
-    READ(MYUNIT) PREV_LOAD
     READ(MYUNIT) AREA
     READ(MYUNIT) AREA0
+    READ(MYUNIT) PREV_STRAIN
+    READ(MYUNIT) CURR_STRAIN
+    !
+    ! Re-assign variables for new restart
+    !
+    STEP_COMPLETE = .TRUE.
+    CURRENT_LOAD(1) = LOAD(2,1)
+    CURRENT_LOAD(2) = LOAD(4,2)
+    CURRENT_LOAD(3) = LOAD(6,3)
+    !
+    ! Print statistics to console
     !
     IF (MYID .EQ. 0) THEN
         !
         WRITE(DFLT_U,'(A)') 'Info   : Reading restart control information...'
         WRITE(DFLT_U,'(A)') 'Info   :   - Restart parameters:'
-        WRITE(DFLT_U,'(A, I0)')       'Info   :     > Increment:     ', INCR
-        WRITE(DFLT_U,'(A, I0)')       'Info   :     > Current Step:  ', &
-            & CURRENT_STEP
-        WRITE(DFLT_U,'(A, E14.6)')    'Info   :     > Current Time:  ', TIME
-        WRITE(DFLT_U,'(A, 3(E14.6))') 'Info   :     > Current Load:  ', &
+        WRITE(DFLT_U,'(A, I0)')       'Info   :     > Prior Increments: ', &
+            & INCR
+        WRITE(DFLT_U,'(A, I0)')       'Info   :     > Prior Steps:      ', &
+            & CURRENT_STEP - 1
+        WRITE(DFLT_U,'(A, E14.4)')    'Info   :     > Prior Time:   ', TIME
+        WRITE(DFLT_U,'(A, 3(E14.4))') 'Info   :     > Current Load: ', &
             & CURRENT_LOAD
-        WRITE(DFLT_U,'(A, 3(E14.6))') 'Info   :     > Previous Load: ', &
-            & PREV_LOAD
+        WRITE(DFLT_U,'(A, 3(E14.4))') 'Info   :     > Previous Load:', &
+            & PREVIOUS_LOAD
         !
     ENDIF
+    !
+    ! Reinitialize step and time if new files
+    ! In the future, we will have to handle the APPEND case, which will continue
+    ! sequentially, rather than reinitializing
+    !
+    IF (OPTIONS%RESTART_FILE_HANDLING .EQ. 1) THEN ! New files
+        !
+        CURRENT_STEP = 1
+        STEP_COMPLETE = .FALSE.
+        INCR = 0
+        TIME = 0.0D0
+        !
+    !ELSE IF (OPTIONS%RESTART_FILE_HANDLING .EQ. 0) THEN ! Append
+    END IF
+    !
+    ! Reevaluate time step for first step if strain targeting
+    !
+    IF (OPTIONS%DEF_CONTROL_BY .EQ. UNIAXIAL_STRAIN_TARGET) THEN
+        !
+        DIFF_STRAIN = (UNIAXIAL_OPTIONS%TARGET_STRAIN(1,1)) - (CURR_STRAIN)
+        TIME_STEP(1) = (ABS(DIFF_STRAIN)) / (STEP_STRAIN_RATE(1) * &
+            & TARGET_INCR(1))
+        !
+    END IF
+    !
+    ! Check for a reversal in loading direction upon restart, correct loading
+    ! history if so. The loading history as assigned in PROCESS_CTRL_DATA
+    ! assumes that we are starting from 0 load. Below rectifies any directional
+    ! issues with loading due to this assumption.
+    !
+    IF ((OPTIONS%DEF_CONTROL_BY .EQ. UNIAXIAL_LOAD_TARGET) .AND. &
+        & (((CURRENT_LOAD(BCS_OPTIONS%LOADING_DIRECTION + 1) - &
+        & PREVIOUS_LOAD(BCS_OPTIONS%LOADING_DIRECTION + 1)) * &
+        & (TARGET_LOAD(1) -  &
+        & CURRENT_LOAD(BCS_OPTIONS%LOADING_DIRECTION + 1))) .LT. 0.0D0)) THEN
+        !
+        ! Change velocity direction
+        !
+        VELOCITY = -1.0D0 * VELOCITY
+        !
+        ! And check for any load reversals on subsequent steps
+        !
+        IF (NSTEPS .GE. 2) THEN
+            !
+            ! Calculate TARGET_SIGN and IS_SIGNED for the first step
+            !
+            DIFF_STRESS = UNIAXIAL_OPTIONS%TARGET_LOAD(1, 1) - &
+                & CURRENT_LOAD(BCS_OPTIONS%LOADING_DIRECTION + 1)
+            !
+            IF (DIFF_STRESS .GT. 0.0D0) THEN
+                !
+                IS_SIGNED(1) = .FALSE.
+                TARGET_SIGN(1) = 1
+                !
+            ELSE IF (DIFF_STRESS .LT. 0.0D0) THEN
+                !
+                IS_SIGNED(1) = .TRUE.
+                TARGET_SIGN(1) = -1
+                !
+            ELSE ! The differential change is zero, thus dt is zero.
+                !
+                CALL PAR_QUIT('Error  :     > Load differential is zero&
+                    & between steps.')
+                !
+            END IF
+            !
+            ! Reset VEL_FACTOR for reassignment in the below loops
+            !
+            VEL_FACTOR = ABS(VEL_FACTOR)
+            !
+            ! Calculate VEL_FACTOR for each step after the first
+            !
+            DO I = 2, NSTEPS
+                !
+                DIFF_STRESS = (UNIAXIAL_OPTIONS%TARGET_LOAD(I, 1)) &
+                    & - (UNIAXIAL_OPTIONS%TARGET_LOAD(I - 1, 1))
+                !
+                IF (DIFF_STRESS .GT. 0.0D0) THEN
+                    !
+                    IS_SIGNED(I)   = .FALSE.
+                    TARGET_SIGN(I) = 1
+                    !
+                ELSE IF (DIFF_STRESS .LT. 0.0D0) THEN
+                    !
+                    IS_SIGNED(I) = .TRUE.
+                    TARGET_SIGN(I) = -1
+                    !
+                ELSE ! The differential change is zero, thus dt is zero.
+                    !
+                    CALL PAR_QUIT('Error  :     > Load differential is zero&
+                        & between steps.')
+                    !
+                END IF
+                !
+                ! Check if a load reversal occured since the last step.
+                !
+                IF (IS_SIGNED(I) .NEQV. IS_SIGNED(I-1)) THEN
+                    !
+                    VEL_FACTOR(I) = VEL_FACTOR(I) * (-1)
+                    !
+                ELSE IF (IS_SIGNED(I) .EQV. IS_SIGNED(I-1)) THEN
+                    !
+                    VEL_FACTOR(I) = VEL_FACTOR(I) * (1)
+                    !
+                ELSE
+                    !
+                    CALL PAR_QUIT('Error  :     > Load reversal check failed.')
+                    !
+                END IF
+                !
+            END DO
+            !
+        END IF
+        !
+    ELSE IF ((OPTIONS%DEF_CONTROL_BY .EQ. UNIAXIAL_STRAIN_TARGET) .AND. &
+        & (((CURR_STRAIN - PREV_STRAIN) * &
+        & (UNIAXIAL_OPTIONS%TARGET_STRAIN(1, 1) - CURR_STRAIN)) &
+        & .LT. 0.0D0)) THEN
+        !
+        ! Change velocity direction
+        !
+        VELOCITY = -1.0D0 * VELOCITY
+        !
+        ! And check for any load reversals on subsequent steps
+        !
+        IF (NSTEPS .GE. 2) THEN
+            !
+            DIFF_STRAIN = UNIAXIAL_OPTIONS%TARGET_STRAIN(1, 1) - CURR_STRAIN
+            !
+            IF (DIFF_STRAIN .GT. 0.0D0) THEN
+                !
+                IS_SIGNED(1) = .FALSE.
+                !
+            ELSE IF (DIFF_STRAIN .LT. 0.0D0) THEN
+                !
+                IS_SIGNED(1) = .TRUE.
+                !
+            ELSE ! The differential change is zero, thus dt is zero.
+                !
+                CALL PAR_QUIT('Error  :     > Strain differential&
+                    & is zero between steps.')
+                !
+            END IF
+            !
+            ! Reset VEL_FACTOR for reassignment in the below loops
+            !
+            VEL_FACTOR = ABS(VEL_FACTOR)
+            !
+            DO I = 2, NSTEPS
+                !
+                DIFF_STRAIN = (UNIAXIAL_OPTIONS%TARGET_STRAIN(I, 1)) &
+                    & - (UNIAXIAL_OPTIONS%TARGET_STRAIN(I - 1, 1))
+                !
+                IF (DIFF_STRAIN .GT. 0.0D0) THEN
+                    !
+                    IS_SIGNED(I) = .FALSE.
+                    !
+                ELSE IF (DIFF_STRAIN .LT. 0.0D0) THEN
+                    !
+                    IS_SIGNED(I) = .TRUE.
+                    !
+                ELSE ! The differential change is zero, thus dt is zero.
+                    !
+                    CALL PAR_QUIT('Error  :     > Load differential is zero&
+                        & between steps.')
+                    !
+                END IF
+                !
+                IF (IS_SIGNED(I) .NEQV. IS_SIGNED(I-1)) THEN
+                    !
+                    VEL_FACTOR(I) = VEL_FACTOR(I) * (-1)
+                    !
+                ELSE IF (IS_SIGNED(I) .EQV. IS_SIGNED(I-1)) THEN
+                    !
+                    VEL_FACTOR(I) = VEL_FACTOR(I) * (1)
+                    !
+                ELSE
+                    !
+                    CALL PAR_QUIT('Error  :     > Load reversal check failed.')
+                    !
+                END IF
+                !
+            END DO
+            !
+        END IF
+        !
+    END IF
     !
     CLOSE(MYUNIT)
     !
@@ -1395,20 +1704,20 @@ CONTAINS
     REAL(RK), DIMENSION(3) :: LOAD
     !
     ! Locals:
-    ! INDEX/I: Generic loop index values.
+    ! INDEX: Generic loop index value.
     ! DLOAD: DifFErential load between current and previous TIME steps.
     ! TRIAL_LOAD: Estimated load value to determine if dt needs to be changed.
     ! TRIAL_DT: Estimated new TIME step value for the trial load.
     ! MIN_TIME_STEP: Current step minimum defined TIME INCRement.
     ! DELTA_LOAD: DifFErence between the trial load and current load at step.
     !
-    INTEGER :: INDEX, I
+    INTEGER :: INDEX
     REAL(RK) :: DLOAD(3), TRIAL_LOAD(3), TRIAL_DT, MIN_TIME_STEP, DELTA_LOAD
     !
     ! Notes:
-    ! Used for load control only! 
+    ! Used for load control only!
     ! The suggested TIME step is given in the input data.
-    ! Near the target load, we use a linear approximation to match the load, 
+    ! Near the target load, we use a linear approximation to match the load,
     ! with a minimum value to insure we get there.
     !
     !---------------------------------------------------------------------------
@@ -1429,7 +1738,7 @@ CONTAINS
         CASE (UNIAXIAL_STRAIN_TARGET)
             !
             STEP_COMPLETE = .FALSE.
-            !            
+            !
             IF (INCR .EQ. TARGET_INCR(CURRENT_STEP)) THEN
                 !
                 STEP_COMPLETE = .TRUE.
@@ -1447,9 +1756,9 @@ CONTAINS
         CURRENT_STEP = CURRENT_STEP + 1
         !
         IF (CURRENT_STEP > NSTEPS) THEN
-            !          
+            !
             ALL_STEPS_COMPLETE = .TRUE.
-            !          
+            !
             RETURN
             !
         ENDIF
@@ -1472,7 +1781,7 @@ CONTAINS
             !
             !LEGACY NOTE: -TM. FROM DONALD'S VERSION:
             DELTA_LOAD = TRIAL_LOAD (INDEX) - CURRENT_LOAD(INDEX)
-            !            
+            !
             IF (ABS(DELTA_LOAD) < 1.0D-16) THEN
                 !
                 DTIME_OLD = DELTA_T;

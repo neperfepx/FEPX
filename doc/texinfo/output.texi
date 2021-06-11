@@ -1,5 +1,5 @@
 @c This file is part of the FEPX software package.
-@c Copyright (C) 1996-2020 ACME Lab
+@c Copyright (C) 1996-2021 ACME Lab
 @c See the COPYING file in the top-level directory.
 
 @node Simulation Output
@@ -11,7 +11,7 @@ All desired output must be defined in the @file{simulation.config} file (@pxref{
 
 @section Nodal Output
 
-Nodal output prints a single variable per finite element node. Raw output is printed on a per-core basis, and the general file name structure is @file{post.variable.core*}, where @samp{variable} is the variable being printed, and @samp{*} denotes the ID of the core on which the data is being printed. In general, the file structure is:
+Nodal output prints a single variable per finite element node. Raw output is printed on a per-core basis, and the general file name structure is @file{post.variable.core#}, where @samp{variable} is the variable being printed, and @samp{#} denotes the ID of the core on which the data is being printed. In general, the file structure is:
 
 @inputfilehead
 @example
@@ -34,6 +34,12 @@ In this file, the coordinates are printed. Each nodal coordinate is described in
 
 @var{x}, @var{y}, @var{z}
 
+@item @file{post.disp.core*} : Displacements
+
+In this file, the displacements are printed. Each nodal displacement is described in the orthonormal Cartesian sample basis, and one displacement is printed per line (3 values per line). The components of the displacements are printed in the order:
+
+@var{d}@sub{@var{x}}, @var{d}@sub{@var{y}}, @var{d}@sub{@var{z}}
+
 @item @file{post.vel.core*} : Velocities
 
 In this file, the velocities are printed. Each nodal velocity is described in the orthonormal Cartesian sample basis, and one velocity is printed per line (3 values per line). The components of the velocities are printed in the order:
@@ -44,7 +50,7 @@ In this file, the velocities are printed. Each nodal velocity is described in th
 
 @section Elemental Output
 
-Elemental output prints a single variable per finite element. Raw output is printed on a per-core basis, and the general file name structure is @file{post.variable.core*}, where @samp{variable} is the variable being printed, and @samp{*} denotes the ID of the core on which the data is being printed. In general, the file structure is:
+Elemental output prints a single variable per finite element. Raw output is printed on a per-core basis, and the general file name structure is @file{post.variable.core#}, where @samp{variable} is the variable being printed, and @samp{#} denotes the ID of the core on which the data is being printed. In general, the file structure is:
 
 @c typical_start
 @example
@@ -105,7 +111,7 @@ In this file, the deformation rate tensor is printed. Each tensor, @math{\bf D},
 
 In this file, the equivalent deformation rate is printed. One scalar value is printed per element. The equivalent deformation rate, @math{D}, is calculated based on the deformation rate tensor, @math{{\bf D}}, via the tensor inner product:
 
-@math{D = \sqrt{ {3 \over 2} {\bf D} : {\bf D} }}
+@math{D = \sqrt{ {2 \over 3} {\bf D} : {\bf D} }}
 
 
 @item @file{post.defrate-pl.core*} : Plastic Deformation Rate Tensor
@@ -119,7 +125,7 @@ In this file, the deviatoric plastic deformation rate tensor is printed. Each te
 
 In this file, the equivalent plastic deformation rate is printed. One scalar value is printed per element. The equivalent plastic deformation rate, @math{D^p}, is calculated based on the plastic deformation rate tensor, @math{{\bf D}^p}, via the tensor inner product:
 
-@math{D^p = \sqrt{ {3 \over 2} {\bf D}^p : {\bf D}^p }}
+@math{D^p = \sqrt{ {2 \over 3} {\bf D}^p : {\bf D}^p }}
 
 
 @item @file{post.elt-vol.core*} : Elemental Volume
@@ -196,25 +202,46 @@ In this file, the skew-symmetric plastic spin rate tensor is printed. Each tenso
 @math{ W^p_{12},@ W^p_{13},@ W^p_{23} }
 
 
+@item @file{post.strain.core*} : Total Strain Tensor
+
+In this file, the total strain tensor is printed. Each tensor, @math{\bf E}, is printed in the sample basis. The independent components are printed, one tensor per line (6 values per line). The components, @math{E_{ij}}, are printed in the order:
+
+@math{ E_{11},@ E_{22},@ E_{33},@ E_{23},@ E_{13},@ E_{12}}
+
+
 @item @file{post.strain-eq.core*} : Equivalent Total Strain
 
-In this file, the equivalent strain is printed. One scalar value is printed per element. The equivalent strain is calculated based on the strain tensor, via the tensor inner product:
+In this file, the equivalent total strain is printed. One scalar value is printed per element. The equivalent total strain, @math{E}, is calculated based on the deviatoric portion of the total strain tensor, @math{{\bf E}^\prime}. via the tensor inner product:
 
-@math{E = \sqrt{ {3 \over 2} {\bf E} : {\bf E}}}
+@math{E = \sqrt{ {2 \over 3} {\bf E}^\prime : {\bf E}^\prime}}
 
 
 @item @file{post.strain-el.core*} : Elastic Strain Tensor
 
-In this file, the symmetric strain tensor is printed. Each tensor, @math{\bf E}, is printed in the sample basis. The independent components are printed, one tensor per line (6 values per line). The components, @math{E_{ij}}, are printed in the order:
+In this file, the elastic strain tensor is printed. Each tensor, @math{\bf {E}^e}, is printed in the sample basis. The independent components are printed, one tensor per line (6 values per line). The components, @math{E^e_{ij}}, are printed in the order:
 
-@math{ E_{11},@ E_{22},@ E_{33},@ E_{23},@ E_{13},@ E_{12}}
+@math{ E^e_{11},@ E^e_{22},@ E^e_{33},@ E^e_{23},@ E^e_{13},@ E^e_{12}}
+
+
+@item @file{post.strain-el-eq.core*} : Equivalent Elastic Strain
+
+In this file, the equivalent elastic strain is printed. One scalar value is printed per element. The equivalent elastic strain, @math{E^{e}}, is calculated based on the deviatoric portion of the elastic strain tensor, @math{{\bf E}^{e \prime}}, via the tensor inner product:
+
+@math{E^e = \sqrt{ {2 \over 3} {\bf E}^{e \prime} : {\bf E}^{e \prime}}}
+
+
+@item @file{post.strain-pl.core*} : Plastic Strain Tensor
+
+In this file, the plastic strain tensor is printed. Each tensor, @math{\bf {E}^p}, is printed in the sample basis. The independent components are printed, one tensor per line (6 values per line). The components, @math{E^p_{ij}}, are printed in the order:
+
+@math{ E^p_{11},@ E^p_{22},@ E^p_{33},@ E^p_{23},@ E^p_{13},@ E^p_{12}}
 
 
 @item @file{post.strain-pl-eq.core*} : Equivalent Plastic Strain
 
 In this file, the equivalent plastic strain is printed. One scalar value is printed per element. The equivalent plastic strain, @math{E^p}, is calculated based on the plastic strain tensor, @math{{\bf E}^p}, via the tensor inner product:
 
-@math{E^p = \sqrt{ {3 \over 2} {\bf E}^p : {\bf E}^p }}
+@math{E^p = \sqrt{ {2 \over 3} {\bf E}^p : {\bf E}^p }}
 
 
 @item @file{post.stress.core*} : Stress Tensor
@@ -226,10 +253,9 @@ In this file, the symmetric stress tensor is printed. Each tensor, @math{\bf \si
 
 @item @file{post.stress-eq.core*} : Equivalent Stress
 
-In this file, the equivalent stress is printed. One scalar value is printed per element. The equivalent stress, @math{\sigma}, is calculated based on the stress tensor, @math{{\bf \sigma}}, via the tensor inner product:
+In this file, the equivalent stress is printed. One scalar value is printed per element. The equivalent stress, @math{\sigma}, is calculated based on the deviatoric portion of the stress tensor, @math{{\bf \sigma}^{\prime}}, via the tensor inner product:
 
-
-@math{\sigma = \sqrt{ {3 \over 2} {\bf \sigma} : {\bf \sigma}}}
+@math{\sigma = \sqrt{ {3 \over 2} {\bf \sigma}^{\prime} : {\bf \sigma}^{\prime}}}
 
 
 @item @file{post.velgrad.core*} : Velocity Gradient Tensor
@@ -241,137 +267,160 @@ In this file, the velocity gradient tensor is printed. Each tensor, @math{\bf L}
 
 @item @file{post.work.core*} : Work
 
-In this file, the work is printed. One scalar value is printed per element. The work is calculated as the time integration of the Cauchy stress tensor and the tensor inner product of the deformation rate tensor:
+In this file, the work is printed. One scalar value is printed per element. The work is calculated as the time integration of the tensor inner product of the deformation rate tensor and the Cauchy stress tensor:
 
 @math{W = \int{  (\sigma : {\bf D}) }\Delta t}
 
 
 @item @file{post.work-pl.core*} : Plastic Work
 
-In this file, the plastic work is printed. One scalar value is printed per element. The plastic work is calculated as the tensor inner product of the plastic deformation rate tensor and the deviatoric portion of the Cauchy stress tensor:
+In this file, the plastic work is printed. One scalar value is printed per element. The plastic work is calculated as the time integration of the tensor inner product of the plastic deformation rate tensor and the deviatoric portion of the Cauchy stress tensor:
 
 @math{ W^p = \int{ ( \sigma ^ \prime :  {\bf D }^ p ) \Delta t} }
 
+@item @file{post.workrate.core*} : Work Rate
+
+In this file, the work rate is printed. One scalar value is printed per element. The work rate is calculated as the tensor inner product of the deformation rate tensor and the Cauchy stress tensor:
+
+@math{\dot{W} = \sigma : {\bf D} }
+
+
+@item @file{post.workrate-pl.core*} : Plastic Work Rate
+
+In this file, the plastic work rate is printed. One scalar value is printed per element. The plastic work rate is calculated as the tensor inner product of the plastic deformation rate tensor and the deviatoric portion of the Cauchy stress tensor:
+
+@math{\dot{W}^p = \sigma ^ \prime : {\bf D }^ p }
 
 @end ftable
 
 @node Restart Output
 @section Restart Output
 
-If the @samp{@option{print restart}} command is present in the @file{simulation.config} file, a set of additional restart files will be generated from the simulation. These files are written at the end of each prescribed step and contain necessary information to restart a given simulation (@pxref{Restarting a Simulation} for information on how to restart a simulation). Two types of restart files are generated, a control file, @samp{post.restart.control}, and per-core field files, @samp{post.restart.field.*}. Both file types are unformatted (or binary) files and are generally unmodifiable. The structures of the data stored within both files for the various deformation modes follow.
-
-@c DEBUG: need to define the data type and size of all variables here per FORTRAN or IEEE standards. this may also be compiler dependent??
-
-@c could this be formatted differently? do we need to describe what each thing is directly?
+If the @samp{@option{print restart}} command is present in the
+@file{simulation.config} file, a set of additional restart files will be
+generated from the simulation. These files are written at the end of each
+prescribed step and contain necessary information to restart a given simulation
+(@pxref{Restarting a Simulation} for information on how to restart a
+simulation). Two types of restart files are generated, a control file,
+@samp{rst@var{N}.control}, and per-core field files,
+@samp{rst@var{N}.field.core*} (where @samp{@var{N}} indicates which
+simulation the files describe, 0 indexing). Both file types are unformatted
+(or binary) files and are generally unmodifiable. The structures of the data
+stored within both files for the various deformation modes follow.
 
 @subsection Uniaxial Restart Control
 
-The @file{post.restart.control} file for uniaxial loading modes contains the following data in the given order:
+The @file{rst@var{N}.control} file for uniaxial loading modes contains
+the following data in the given order:
 
 @inputfilehead
 @example
-@option{current_step} @code{[integer]}
-@option{previous_load_array} @code{[real_x]} @code{[real_y]} @code{[real_z]}
-@option{step_complete_flag} @code{[logical]}
-@option{previous_timestep_value} @code{[real]}
-@option{current_incr} @code{[integer]}
-@option{current_time} @code{[real]}
-@option{surface_1_loads} @code{[real_x]} @code{[real_y]} @code{[real_z]}
+@option{current_step} @var{integer}
+@option{previous_load_array} @var{real_x} @var{real_y} @var{real_z}
+@option{step_complete_flag} @var{logical}
+@option{previous_timestep_value} @var{real}
+@option{current_incr} @var{integer}
+@option{current_time} @var{real}
+@option{surface_1_loads} @var{real_x} @var{real_y} @var{real_z}
 ...
-@option{surface_6_loads} @code{[real_x]} @code{[real_y]} @code{[real_z]}
-@option{previous_prescribed_load} @code{[real]}
-@option{current_surface_areas} @code{[real_surf_1]} ... @code{[real_surf_6]}
-@option{initial_surface_areas} @code{[real_surf_1]} ... @code{[real_surf_6]}
+@option{surface_6_loads} @var{real_x} @var{real_y} @var{real_z}
+@option{previous_prescribed_load} @var{real}
+@option{current_surface_areas} @var{real_surf_1} ... @var{real_surf_6}
+@option{initial_surface_areas} @var{real_surf_1} ... @var{real_surf_6}
 @end example
 @inputfilefoot
 
 @subsection Multiaxial CSR Restart Control
 
-The @file{post.restart.control} file for multiaxial constant strain rate loading modes contains the following data in the given order:
+The @file{rst@var{N}.control} file for multiaxial constant strain rate
+loading modes contains the following data in the given order:
 
 @inputfilehead
 @example
-@option{current_step} @code{[integer]}
-@option{current_load_array} @code{[real_x]} @code{[real_y]} @code{[real_z]}
-@option{previous_load_array} @code{[real_x]} @code{[real_y]} @code{[real_z]}
-@option{step_complete_flag} @code{[logical]}
-@option{previous_timestep_value} @code{[real]}
-@option{current_incr} @code{[integer]}
-@option{current_time} @code{[real]}
-@option{surface_1_loads} @code{[real_x]} @code{[real_y]} @code{[real_z]}
+@option{current_step} @var{integer}
+@option{current_load_array} @var{real_x} @var{real_y} @var{real_z}
+@option{previous_load_array} @var{real_x} @var{real_y} @var{real_z}
+@option{step_complete_flag} @var{logical}
+@option{previous_timestep_value} @var{real}
+@option{current_incr} @var{integer}
+@option{current_time} @var{real}
+@option{surface_1_loads} @var{real_x} @var{real_y} @var{real_z}
 ...
-@option{surface_6_loads} @code{[real_x]} @code{[real_y]} @code{[real_z]}
-@option{current_surface_areas} @code{[real_surf_1]} ... @code{[real_surf_6]}
-@option{initial_surface_areas} @code{[real_surf_1]} ... @code{[real_surf_6]}
-@option{current_mesh_lengths} @code{[real_length_x]} @code{[real_length_y]} @code{[real_length_z]}
-@option{initial_mesh_lengths} @code{[real_length_x]} @code{[real_length_y]} @code{[real_length_z]}
-@option{current_control_velocity} @code{[real_vel_x]} @code{[real_vel_y]} @code{[real_vel_z]}
-@option{s_pert_mag} @code{[real]}
-@option{t_pert_mag} @code{[real]}
+@option{surface_6_loads} @var{real_x} @var{real_y} @var{real_z}
+@option{current_surface_areas} @var{real_surf_1} ... @var{real_surf_6}
+@option{initial_surface_areas} @var{real_surf_1} ... @var{real_surf_6}
+@option{current_mesh_lengths} @var{real_length_x} @var{real_length_y} @var{real_length_z}
+@option{initial_mesh_lengths} @var{real_length_x} @var{real_length_y} @var{real_length_z}
+@option{current_control_velocity} @var{real_vel_x} @var{real_vel_y} @var{real_vel_z}
+@option{s_pert_mag} @var{real}
+@option{t_pert_mag} @var{real}
 @end example
 @inputfilefoot
 
 @subsection Multiaxial CLR Restart Control
 
-The @file{post.restart.control} file for multiaxial constant load rate loading modes contains the following data in the given order:
+The @file{rst@var{N}.control} file for multiaxial constant load rate
+loading modes contains the following data in the given order:
 
 @inputfilehead
 @example
-@option{current_step} @code{[integer]}
-@option{current_load_array} @code{[real_x]} @code{[real_y]} @code{[real_z]}
-@option{previous_load_array} @code{[real_x]} @code{[real_y]} @code{[real_z]}
-@option{first_incr_in_step} @code{[logical]}
-@option{current_incr} @code{[integer]}
-@option{current_time} @code{[real]}
-@option{surface_1_loads} @code{[real_x]} @code{[real_y]} @code{[real_z]}
+@option{current_step} @var{integer}
+@option{current_load_array} @var{real_x} @var{real_y} @var{real_z}
+@option{previous_load_array} @var{real_x} @var{real_y} @var{real_z}
+@option{first_incr_in_step} @var{logical}
+@option{current_incr} @var{integer}
+@option{current_time} @var{real}
+@option{surface_1_loads} @var{real_x} @var{real_y} @var{real_z}
 ...
-@option{surface_6_loads} @code{[real_x]} @code{[real_y]} @code{[real_z]}
-@option{current_surface_areas} @code{[real_surf_1]} ... @code{[real_surf_6]}
-@option{initial_surface_areas} @code{[real_surf_1]} ... @code{[real_surf_6]}
-@option{current_mesh_lengths} @code{[real_length_x]} @code{[real_length_y]} @code{[real_length_z]}
-@option{initial_mesh_lengths} @code{[real_length_x]} @code{[real_length_y]} @code{[real_length_z]}
-@option{current_control_velocity} @code{[real_vel_x]} @code{[real_vel_y]} @code{[real_vel_z]}
-@option{previous_control_action} @code{[integer]}
-@option{current_control_action} @code{[integer]}
-@option{initial_load_dwell_velocity} @code{[real_vel_x]} @code{[real_vel_y]} @code{[real_vel_z]}
-@option{initial_unload_dwell_velocity} @code{[real_vel_x]} @code{[real_vel_y]} @code{[real_vel_z]}
+@option{surface_6_loads} @var{real_x} @var{real_y} @var{real_z}
+@option{current_surface_areas} @var{real_surf_1} ... @var{real_surf_6}
+@option{initial_surface_areas} @var{real_surf_1} ... @var{real_surf_6}
+@option{current_mesh_lengths} @var{real_length_x} @var{real_length_y} @var{real_length_z}
+@option{initial_mesh_lengths} @var{real_length_x} @var{real_length_y} @var{real_length_z}
+@option{current_control_velocity} @var{real_vel_x} @var{real_vel_y} @var{real_vel_z}
+@option{previous_control_action} @var{integer}
+@option{current_control_action} @var{integer}
+@option{initial_load_dwell_velocity} @var{real_vel_x} @var{real_vel_y} @var{real_vel_z}
+@option{initial_unload_dwell_velocity} @var{real_vel_x} @var{real_vel_y} @var{real_vel_z}
 @end example
 @inputfilefoot
 
 @subsection Restart Field Data
 
-All loading modes also write field data on a per-core basis to @file{post.restart.field.*} files. These files contain the necessary field variable information in order to spatially define the total state of the virtual sample at the time of printing. The following field data arrays are written to the files in the given order:
-
-@c DEBUG: the values printed here all have varying array dimensions (which should be noted), but I do not know the order of printing FORTRAN takes when writing without format specifications. Sparsely defining here for now for discussion.
+All loading modes also write field data on a per-core basis to
+@file{rst@var{N}.field.core*} files. These files contain the necessary
+field variable information in order to spatially define the total state of the
+virtual sample at the time of printing. The following field data arrays are
+written to the files in the given order:
 
 @inputfilehead
 @example
-@option{coords} @code{[real]}
-@option{velocity} @code{[real]}
+@option{coords} @var{real}
+@option{velocity} @var{real}
 
-@option{c0_angs} @code{[real]}
-@option{c_angs} @code{[real]}
-@option{rstar} @code{[real]}
-@option{rstar_n} @code{[real]}
-@option{wts} @code{[real]}
-@option{crss} @code{[real]}
-@option{crss_n} @code{[real]}
+@option{c0_angs} @var{real}
+@option{c_angs} @var{real}
+@option{rstar} @var{real}
+@option{rstar_n} @var{real}
+@option{wts} @var{real}
+@option{crss} @var{real}
+@option{crss_n} @var{real}
 
-@option{gela_kk_bar} @code{[real]}
-@option{gsig_vec_n} @code{[real]}
-@option{pela_kk_bar} @code{[real]}
-@option{psig_vec_n} @code{[real]}
-@option{e_elas_kk_bar} @code{[real]}
-@option{sig_vec_n} @code{[real]}
+@option{gela_kk_bar} @var{real}
+@option{gsig_vec_n} @var{real}
+@option{pela_kk_bar} @var{real}
+@option{psig_vec_n} @var{real}
+@option{e_elas_kk_bar} @var{real}
+@option{sig_vec_n} @var{real}
 
-@option{eqstrain} @code{[real]}
-@option{eqplstrain} @code{[real]}
-@option{gamma} @code{[real]}
+@option{eqstrain} @var{real}
+@option{eqplstrain} @var{real}
+@option{gamma} @var{real}
 
-@option{el_work_n} @code{[real]}
-@option{el_workp_n} @code{[real]}
-@option{el_work_rate_n} @code{[real]}
-@option{el_workp_rate_n} @code{[real]}
+@option{el_work_n} @var{real}
+@option{el_workp_n} @var{real}
+@option{el_work_rate_n} @var{real}
+@option{el_workp_rate_n} @var{real}
 @end example
 @inputfilefoot
 
@@ -487,7 +536,7 @@ where @code{@var{defrate-pl-eq_fib*_avg}} refers to the average equivalent plast
 In this file, the fiber averaged sum of the slip system shear rates rate is printed. The output file is structured as follows:
 
 @verbatimsep
-@verbatim    
+@verbatim
 step_number num_fibers
 sliprate-sum_fib1_avg sliprate-sum_fib1_std
 sliprate-sum_fib2_avg sliprate-sum_fib2_std
@@ -502,7 +551,7 @@ where @code{@var{sliprate-sum_fib*_avg}} refers to the average sum of the slip s
 In this file, the fiber averaged elastic lattice strain is printed. The output file is structured as follows:
 
 @verbatimsep
-@verbatim  
+@verbatim
 step_number num_fibers
 strain-el-lat_fib1_avg strain-el-lat_fib1_std
 strain-el-lat_fib2_avg strain-el-lat_fib2_std

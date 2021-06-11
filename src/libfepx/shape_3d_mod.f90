@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE SHAPE_3D_MOD
@@ -72,8 +72,6 @@ CONTAINS
     ! Locals:
     !
     INTEGER :: I
-    INTEGER :: J
-    INTEGER :: K
     INTEGER :: I0
     INTEGER :: I1
     INTEGER :: I2
@@ -96,14 +94,12 @@ CONTAINS
     REAL(RK) :: JAC32(EL_SUB1:EL_SUP1)
     REAL(RK) :: JAC33(EL_SUB1:EL_SUP1)
     !
-    INTEGER :: IO
-    !
     !---------------------------------------------------------------------------
     !
     ! Evaluate shape function derivatives.
     !
     ! CALL B8_DERIV_HPAR(LOC0, LOC1, LOC2, DNDA, DNDB, DNDC)
-    ! CALL T4_DERIV_HPAR(LOC0, LOC1, LOC2, DNDA, DNDB, DNDC)
+    ! CALL T4_DERIV_HPAR(DNDA, DNDB, DNDC)
     CALL T10_DERIV_HPAR(LOC0, LOC1, LOC2, DNDA, DNDB, DNDC)
     !
     ! Initialize Jacobian matrix
@@ -489,20 +485,16 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE T4_DERIV_HPAR(LOC0, LOC1, LOC2, DNDA, DNDB, DNDC)
+    SUBROUTINE T4_DERIV_HPAR(DNDA, DNDB, DNDC)
     !
     ! Shape function derivatives for 4-node tetrahedron.
     !
     !---------------------------------------------------------------------------
     !
     ! Arguments:
-    ! LOC0,LOC1,LOC2: Coordinates of point
     ! DNDA,DNDB,DNDC: shape function derivatives at point, distributed over all
     !   elements
     !
-    REAL(RK), INTENT(IN) :: LOC0
-    REAL(RK), INTENT(IN) :: LOC1
-    REAL(RK), INTENT(IN) :: LOC2
     REAL(RK), INTENT(OUT) :: DNDA(0:NNPE)
     REAL(RK), INTENT(OUT) :: DNDB(0:NNPE)
     REAL(RK), INTENT(OUT) :: DNDC(0:NNPE)

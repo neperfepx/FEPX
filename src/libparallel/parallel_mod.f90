@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE PARALLEL_MOD
@@ -20,6 +20,10 @@ MODULE PARALLEL_MOD
 ! MRE_DECOMP1D:  This file contains a routine for producing a decomposition of a
 !   1-d array when given a number of processors.  It may be used in "direct"
 !   product decomposition. The values returned assume a "global" domain in [1:n]
+!
+! From libf95:
+!
+USE INTRINSIC_TYPES_MOD, RK=>REAL_KIND
 !
 IMPLICIT NONE
 !
@@ -125,8 +129,8 @@ CONTAINS
     ! PART: This processor's part
     ! WHOLE: The sum of all parts
     !
-    DOUBLE PRECISION :: PART
-    DOUBLE PRECISION :: WHOLE
+    REAL(RK) :: PART
+    REAL(RK) :: WHOLE
     !
     ! Locals:
     !
@@ -134,8 +138,17 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    CALL MPI_ALLREDUCE(PART, WHOLE, 1, MPI_DOUBLE_PRECISION, MPI_SUM, &
-        & MPI_COMM_WORLD, IERR)
+    IF (RK .EQ. REAL_KIND_D) THEN
+        !
+        CALL MPI_ALLREDUCE(PART, WHOLE, 1, MPI_DOUBLE_PRECISION, MPI_SUM, &
+            & MPI_COMM_WORLD, IERR)
+        !
+    ELSE
+        !
+        CALL PAR_QUIT("Error  :     > Unsupported MPI data type set &
+            &in `INTRINSIC_TYPES_MOD'.")
+        !
+    END IF
     !
     RETURN
     !
@@ -153,8 +166,8 @@ CONTAINS
     ! PART: This processor's part
     ! MAXPART: The maximum of all parts
     !
-    DOUBLE PRECISION :: PART
-    DOUBLE PRECISION :: MAXPART
+    REAL(RK) :: PART
+    REAL(RK) :: MAXPART
     !
     ! Locals:
     !
@@ -162,8 +175,17 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    CALL MPI_ALLREDUCE(PART, MAXPART, 1, MPI_DOUBLE_PRECISION, MPI_MAX, &
-        & MPI_COMM_WORLD, IERR)
+    IF (RK .EQ. REAL_KIND_D) THEN
+        !
+        CALL MPI_ALLREDUCE(PART, MAXPART, 1, MPI_DOUBLE_PRECISION, MPI_MAX, &
+            & MPI_COMM_WORLD, IERR)
+        !
+    ELSE
+        !
+        CALL PAR_QUIT("Error  :     > Unsupported MPI data type set &
+            &in `INTRINSIC_TYPES_MOD'.")
+        !
+    END IF
     !
     RETURN
     !
@@ -181,8 +203,8 @@ CONTAINS
     ! PART: This processor's part
     ! MINPART: The minimum of all parts
     !
-    DOUBLE PRECISION :: PART
-    DOUBLE PRECISION :: MINPART
+    REAL(RK) :: PART
+    REAL(RK) :: MINPART
     !
     ! Locals:
     !
@@ -190,8 +212,17 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    CALL MPI_ALLREDUCE(PART, MINPART, 1, MPI_DOUBLE_PRECISION, MPI_MIN, &
-        & MPI_COMM_WORLD, IERR)
+    IF (RK .EQ. REAL_KIND_D) THEN
+        !
+        CALL MPI_ALLREDUCE(PART, MINPART, 1, MPI_DOUBLE_PRECISION, MPI_MIN, &
+            & MPI_COMM_WORLD, IERR)
+        !
+    ELSE
+        !
+        CALL PAR_QUIT("Error  :     > Unsupported MPI data type set &
+            &in `INTRINSIC_TYPES_MOD'.")
+        !
+    END IF
     !
     RETURN
     !

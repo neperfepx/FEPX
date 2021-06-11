@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE MATERIAL_MATRIX_EVPS_MOD
@@ -121,7 +121,6 @@ CONTAINS
     ! Locals:
     !
     INTEGER :: I
-    INTEGER :: J
     INTEGER :: M_EL
     REAL(RK) :: D(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1)
     REAL(RK) :: W(0:DIMS1, 0:DIMS1, EL_SUB1:EL_SUP1)
@@ -160,7 +159,7 @@ CONTAINS
         ! Calculate
         ! D, DTIME to EPSEFF
         !
-        CALL EFF_DEF(EPSEFF(:, I), D, DTIME, M_EL)
+        CALL EFF_DEF(EPSEFF(:, I), D, M_EL)
         !
     END DO
     !
@@ -173,7 +172,7 @@ CONTAINS
     ! E_ELAS_KK (1)
     !
     CALL POLYCRYSTAL_RESPONSE_EVPS(D_VEC, W_VEC, C0_ANGS, C_ANGS, SIG_VEC_N, &
-        & SIG_VEC, CRSS_N, CRSS, RSTAR_N, RSTAR, E_BAR_VEC, WTS, EPSEFF, D_KK, &
+        & SIG_VEC, CRSS_N, CRSS, RSTAR_N, RSTAR, E_BAR_VEC, EPSEFF, D_KK, &
         & SIG_KK, E_ELAS_KK_BAR, E_ELAS_KK, JITER_STATE, KEINV, INCR, DTIME, &
         & CONVERGED_SOLUTION, AUTO_TIME)
     !

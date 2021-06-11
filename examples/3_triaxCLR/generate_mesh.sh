@@ -1,21 +1,24 @@
 #!/bin/bash
 
-# Generate the tessellation and mesh files for use in example `3_triaxCLR'
-# - This bash script requires a configured installation of Neper 4.0.0
-#   in order to be properly executed.
+# Generate the tessellation and mesh files for the `Multiaxial Control with
+# Constant Load Rate' example (`3_triaxCLR')
+# - This bash script requires a full installation of Neper v4.2.0
 
-# First, generate a dual-phase centroidal tessellation for the domain with `Neper -T':
-neper -T -n 100 -reg 1 -rsel 1.25 -mloop 4 \
-    -morpho "diameq:1,1-sphericity:lognormal(0.145,0.03)" -morphooptistop val=5e-3 \
-    -oricrysym "cubic" \
-    -group "id<=50?1:2" \
+# Generate a tessellation describing a dual-phase microstructure geometry
+neper -T \
+    -n 50 \
+    -reg 1 \
+    -group "id<=25?1:2" \
+    -morpho gg \
     -o simulation
 
-# Then, generate a coarse finite element mesh for the domain with `Neper -M':
-neper -M simulation.tess -order 2 -rcl 1.25 -part 2
+# Generate a finite element mesh
+neper -M simulation.tess \
+    -order 2 \
+    -part 4
 
 exit 0
 
-# This script produces output files:
+# This script produces the files:
 # - simuation.tess
 # - simulation.msh

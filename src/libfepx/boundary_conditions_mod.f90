@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2020, DPLab, ACME Lab.
+! Copyright (C) 1996-2021, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
 MODULE BOUNDARY_CONDITIONS_MOD
@@ -99,16 +99,16 @@ CONTAINS
     INTEGER                 :: CONTROL_TYPE
     REAL(RK)                :: NODAL_VELOCITY, STRAIN_RATE, GAGE_LENGTH
     !
-    ! Notes: 
+    ! Notes:
     ! The mesh face set is always defined from [1 2 3 4 5 6] as
     ! [x_min x_max y_min y_max z_min z_max]. This should be consistent
-    ! with the face set provided during mesh generation. The loading 
+    ! with the face set provided during mesh generation. The loading
     ! directions are defined along the sample axes [X Y Z] as [0 1 2].
     !
-    ! This subroutine by default assumes that displacement occurs in a 
-    ! positive axis direction (that is, a domain loading in tension or 
-    ! sheared along a positive coordinate axis). In order to perform 
-    ! compression or negative axis direction shearing tests, the user 
+    ! This subroutine by default assumes that displacement occurs in a
+    ! positive axis direction (that is, a domain loading in tension or
+    ! sheared along a positive coordinate axis). In order to perform
+    ! compression or negative axis direction shearing tests, the user
     ! must sign the velocity in their *.loads or *.disp files.
     !
     !---------------------------------------------------------------------------
@@ -143,19 +143,11 @@ CONTAINS
         CALL PAR_QUIT('Error  :     > Parameters "DEF_CONTROL_BY" and&
             & "BOUNDARY_CONDITIONS" do not agree.')
         !
-    ELSE
-        ! Print notification to processor 0.
-        IF (MYID .EQ. 0) THEN
-            !
-            WRITE(DFLT_U, '(A)') 'Info   :   - Initializing boundary conditions...'
-            !
-        END IF
-        !         
     END IF
     !
-    SELECT CASE (BOUNDARY_CONDITIONS)
-    !
     !---------------------------------------------------------------------------
+    !
+    SELECT CASE (BOUNDARY_CONDITIONS)
     !
     CASE (1) ! Begin Case (UNIAXIAL_GRIP)
         !
@@ -197,7 +189,8 @@ CONTAINS
                 !
             CASE DEFAULT
                 !
-                CALL PAR_QUIT('Error  :     > Control face determination failed.')
+                CALL PAR_QUIT('Error  :     > Control face determination &
+                    &failed.')
                 !
         END SELECT
         !
@@ -282,7 +275,7 @@ CONTAINS
                 SYMM_OFFSET_2 = 2
                 !
             CASE (1) ! Y_MAX
-                ! 
+                !
                 CONTROL_FACE = 3
                 LOADING_FACE = 4
                 SYMMETRY_FACE_1 = 1
@@ -301,7 +294,8 @@ CONTAINS
                 !
             CASE DEFAULT
                 !
-                CALL PAR_QUIT('Error  :     > Control face determination failed.')
+                CALL PAR_QUIT('Error  :     > Control face determination &
+                    &failed.')
                 !
         END SELECT
         !
@@ -397,7 +391,8 @@ CONTAINS
                 GLOBAL_VEL(I + LOAD_DIRECTION) = 0.0D0
                 !
             ! If the coordinate component is on the LOADING_FACE.
-            ELSE IF ((GLOBAL_COORDS(I+LOAD_DIRECTION)) .EQ. MAX_SPATIAL_DIM) THEN
+            ELSE IF ((GLOBAL_COORDS(I+LOAD_DIRECTION)) .EQ. MAX_SPATIAL_DIM) &
+                & THEN
                 !
                 GLOBAL_BCS(I)   = .TRUE.
                 GLOBAL_BCS(I+1) = .TRUE.
@@ -521,7 +516,7 @@ CONTAINS
                 !
             END IF
             !
-        END DO        
+        END DO
         !
     ! End Case (TRIAXIAL)
     !
@@ -530,13 +525,13 @@ CONTAINS
     CASE (4) ! Begin Case (UNIAXIAL_MINIMAL)
         !
         ! Note: This boundary condition is another implementation of uniaxial
-        ! grip however it has `minimal` nodal constraints. The loading and 
+        ! grip however it has `minimal` nodal constraints. The loading and
         ! control face are constrained in the normal directions and two nodes
         ! are constrained to prevent rigid body motion. All other DOFs are free.
         !
         LOAD_DIRECTION  = BCS_OPTIONS%LOADING_DIRECTION
         STRAIN_RATE     = BCS_OPTIONS%STRAIN_RATE
-        ! 
+        !
         ! Determine face information based on user-defined loading direction.
         SELECT CASE (LOAD_DIRECTION)
             !
@@ -557,7 +552,8 @@ CONTAINS
                 !
             CASE DEFAULT
                 !
-                CALL PAR_QUIT('Error  :     > Control face determination failed.')
+                CALL PAR_QUIT('Error  :     > Control face determination &
+                    &failed.')
                 !
         END SELECT
         !
@@ -617,7 +613,7 @@ CONTAINS
             MAX_SPATIAL_DIM = MAX_X_DIM
             ! Set the nodal velocity while we are here
             GAGE_LENGTH = MAX_X_DIM - MIN_X_DIM
-            NODAL_VELOCITY = STRAIN_RATE * GAGE_LENGTH  
+            NODAL_VELOCITY = STRAIN_RATE * GAGE_LENGTH
             !
         ELSE IF (LOAD_DIRECTION .EQ. 1) THEN
             !
@@ -625,7 +621,7 @@ CONTAINS
             MAX_SPATIAL_DIM = MAX_Y_DIM
             !
             GAGE_LENGTH = MAX_Y_DIM - MIN_Y_DIM
-            NODAL_VELOCITY = STRAIN_RATE * GAGE_LENGTH 
+            NODAL_VELOCITY = STRAIN_RATE * GAGE_LENGTH
             !
         ELSE IF (LOAD_DIRECTION .EQ. 2) THEN
             !
@@ -649,7 +645,8 @@ CONTAINS
                 GLOBAL_VEL(I + LOAD_DIRECTION) = 0.0D0
                 !
             ! If the coordinate component is on the LOADING_FACE.
-            ELSE IF ((GLOBAL_COORDS(I+LOAD_DIRECTION)) .EQ. MAX_SPATIAL_DIM) THEN
+            ELSE IF ((GLOBAL_COORDS(I+LOAD_DIRECTION)) .EQ. MAX_SPATIAL_DIM) &
+                & THEN
                 !
                 GLOBAL_BCS(I + LOAD_DIRECTION) = .TRUE.
                 !
@@ -686,11 +683,12 @@ CONTAINS
             !
         END DO
         !
-        ! Node 2 is additionally constrained in the direction that would cause rigid
-        ! body rotation about the loading direction axis. It is constrained
-        ! on the maximum face on the same edge as Node 1.
+        ! Node 2 is additionally constrained in the direction that would cause
+        ! rigid body rotation about the loading direction axis. It is
+        ! constrained on the maximum face on the same edge as Node 1.
         !
-        ! Abstract the RHS variables we need to check to be load direction dependent.
+        ! Abstract the RHS variables we need to check to be load direction
+        ! dependent.
         IF (LOAD_DIRECTION .EQ. 0) THEN ! X-direction
             !
             MAX_FACE_DIM    = MAX_Z_DIM ! z1
@@ -747,8 +745,8 @@ CONTAINS
     !
     CASE DEFAULT
         ! Exit the program if input is invalid.
-        CALL PAR_QUIT('Error  :     > User-defined BOUNDARY_CONDITIONS parameter&
-            & is invalid.')
+        CALL PAR_QUIT('Error  :     > User-defined BOUNDARY_CONDITIONS &
+            &parameter is invalid.')
         !
     ! End Case (DEFAULT)
     !
@@ -818,7 +816,8 @@ CONTAINS
     !
     IF (MYID .EQ. 0) THEN
         !
-        WRITE(DFLT_U, '(A,A,A)') 'Info   :   [i] Parsing file `', TRIM(ADJUSTL(IOFILE)), "'..."
+        WRITE(DFLT_U, '(A,A,A)') 'Info   :   [i] Parsing file `', &
+            & TRIM(ADJUSTL(IOFILE)), "'..."
         !
     END IF
     !
@@ -861,7 +860,8 @@ CONTAINS
             READ(IARRAY(J), *) DIR
             READ(IARRAY(NVALS), *) VAL ! VAL is fixed over outer index I
             !
-            ! Assign node direction/value pair into corresponding DOF array location
+            ! Assign node direction/value pair into corresponding DOF array
+            ! location
             IF ( (INODE .GE. NP_SUB1) .AND. (INODE .LE. NP_SUP1) ) THEN
                 !
                 IF ((TRIM(DIR) .EQ. 'X') .OR. (TRIM(DIR) .EQ. 'x')) THEN
@@ -886,8 +886,9 @@ CONTAINS
                 ! Check that the node has not already been assigned a value
                 IF ( BCS(K) .NEQV. .FALSE. ) THEN
                     !
-                    WRITE(MESSAGE, '(a,i0,a)') 'Fatal error: Node number ', INODE, &
-                        & 'has been assigned multiple boundary conditions.'
+                    WRITE(MESSAGE, '(a,i0,a)') 'Fatal error: Node number ', &
+                        & INODE, 'has been assigned multiple boundary &
+                        &conditions.'
                     !
                     CALL PAR_QUIT(TRIM(ADJUSTL(MESSAGE)))
                     !
@@ -907,7 +908,8 @@ CONTAINS
     !
     IF (MYID .EQ. 0) THEN
         !
-        WRITE(DFLT_U, '(A,A,A)') 'Info   :   [i] Parsed file `', TRIM(ADJUSTL(IOFILE)), "'."
+        WRITE(DFLT_U, '(A,A,A)') 'Info   :   [i] Parsed file `', &
+            & TRIM(ADJUSTL(IOFILE)), "'."
         !
     END IF
     !
