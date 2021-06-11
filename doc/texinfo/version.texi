@@ -3,9 +3,9 @@
 @c See the COPYING file in the top-level directory.
 
 @iftex
-@set FEPX_VERSION 1.1.2-161-devel
+@set FEPX_VERSION 1.2.0
 @end iftex
 
 @ifinfo
-@set FEPX_VERSION 1.1.2-161-devel
+@set FEPX_VERSION 1.2.0
 @end ifinfo
