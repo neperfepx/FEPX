@@ -1,3 +1,6 @@
+New in 1.2.1-2 (12 Jun 2021):
+- Minor fixes.
+
 New in 1.2.0 (11 Jun 2021):
 - Amendments to simulation output: changed definition and calculation of
   equivalent variables (e.g., equivalent deformation rate). Refer to
