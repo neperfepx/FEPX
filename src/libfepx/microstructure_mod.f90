@@ -165,7 +165,7 @@ CONTAINS
                 IF (ORIENTATION_OPTIONS%ORIENTATION_PARAMETERIZATION &
                     & .EQ. 'axis-angle') THEN
                     !
-                    WHERE (I+1 .EQ. MY_UESUB) ! I+1 as UESUB is 1-indexed
+                    WHERE (I .EQ. MY_UESUB) ! I+1 as UESUB is 1-indexed
                         !
                         AXIS(0, IGRAIN, :) = GRAIN_ORIENTATION(0, I)
                         AXIS(1, IGRAIN, :) = GRAIN_ORIENTATION(1, I)
@@ -177,7 +177,7 @@ CONTAINS
                 ELSEIF (ORIENTATION_OPTIONS%ORIENTATION_PARAMETERIZATION &
                     & .EQ. 'euler-bunge') THEN
                     !
-                    WHERE (I+1 .EQ. MY_UESUB)
+                    WHERE (I .EQ. MY_UESUB)
                         !
                         PSI1(IGRAIN, :) = GRAIN_ORIENTATION(0, I)
                         PHI(IGRAIN, :) = GRAIN_ORIENTATION(1, I)
@@ -188,7 +188,7 @@ CONTAINS
                 ELSEIF (ORIENTATION_OPTIONS%ORIENTATION_PARAMETERIZATION &
                     & .EQ. 'euler-kocks') THEN
                     !
-                    WHERE (I+1 .EQ. MY_UESUB)
+                    WHERE (I .EQ. MY_UESUB)
                         !
                         PSI(IGRAIN, :) = GRAIN_ORIENTATION(0, I)
                         THE(IGRAIN, :) = GRAIN_ORIENTATION(1, I)
@@ -199,7 +199,7 @@ CONTAINS
                 ELSEIF (ORIENTATION_OPTIONS%ORIENTATION_PARAMETERIZATION &
                     & .EQ. 'rodrigues') THEN
                     !
-                    WHERE (I+1 .EQ. MY_UESUB)
+                    WHERE (I .EQ. MY_UESUB)
                         !
                         RODS(0, IGRAIN, :) = GRAIN_ORIENTATION(0, I)
                         RODS(1, IGRAIN, :) = GRAIN_ORIENTATION(1, I)
@@ -210,7 +210,7 @@ CONTAINS
                 ELSEIF (ORIENTATION_OPTIONS%ORIENTATION_PARAMETERIZATION &
                     & .EQ. 'quaternion') THEN
                     !
-                    WHERE (I+1 .EQ. MY_UESUB)
+                    WHERE (I .EQ. MY_UESUB)
                         !
                         QUAT(0, IGRAIN, :) = GRAIN_ORIENTATION(0, I)
                         QUAT(1, IGRAIN, :) = GRAIN_ORIENTATION(1, I)

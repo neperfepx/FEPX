@@ -5,7 +5,7 @@
 # Top-level CMakeLists.txt for building FEPX
 cmake_minimum_required(VERSION 3.0)
 project(fepx Fortran)
-set(FEPX_VERSION \"1.2.1-3\")
+set(FEPX_VERSION \"1.2.1\")
 
 # Prepare CMake for Fortran and locate MPI package
 enable_language(Fortran)
@@ -26,11 +26,6 @@ endif(VERBOSE)
 
 # Option to suppress IEEE warnings on program exit
 option(IEEE_SUPPRESS "Suppress IEEE signals on program exit" ON)
-if ((${CMAKE_Fortran_COMPILER_ID} MATCHES GNU) AND (${CMAKE_Fortran_COMPILER_VERSION} LESS 4.9.0))
-  message (WARNING "GNU Fortran compiler version: ${CMAKE_Fortran_COMPILER_VERSION} < 4.9.0, disabling IEEE_SUPPRESS")
-  set(IEEE_SUPPRESS OFF)
-endif()
-
 if(IEEE_SUPPRESS)
     set(CMAKE_Fortran_FLAGS "-ffpe-summary='none'")
 else(IEEE_SUPPRESS)
