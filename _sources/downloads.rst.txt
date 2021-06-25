@@ -17,7 +17,7 @@ It you use FEPX for your own work, please mention it explicitly and cite one or 
 Current official release
 ------------------------
 
-- `fepx-1.2.0.tar.gz (28 Jan 2021) <https://github.com/acmelab-ua/FEPX/archive/v1.2.0.tar.gz>`_: source code
+- `fepx-1.2.1.tar.gz (25 Jun 2021) <https://github.com/acmelab-ua/FEPX/archive/v1.2.1.tar.gz>`_: source code
 - `fepx.pdf <docs/fepx.pdf>`_: documentation
 
 Development repository
