@@ -1140,7 +1140,7 @@ CONTAINS
         !
         WRITE(OUNITS(REPORT_U), '(A)', ADVANCE='NO') 'printed_steps '
         !
-        DO I = 1, SIZE(PRINT_ARRAY,1)
+        DO I = 1, FINAL_STEP
             !
             IF (PRINT_ARRAY(I) .EQ. 0) WRITE(OUNITS(REPORT_U), &
                 & '(I0, A)', ADVANCE='NO') I, ' '

@@ -1,5 +1,6 @@
-New in 1.2.1 (25 Jun 2021):
+New in 1.2.2-1 (02 Aug 2021):
 - Bug fix related to orientation assignment - users should update.
+- Bug fixes and code improvements
 
 New in 1.2.0 (11 Jun 2021):
 - Amendments to simulation output: changed definition and calculation of
