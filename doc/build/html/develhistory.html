@@ -1,0 +1,318 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Development History &mdash; FEPX 1.2.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="References" href="refs.html" />
+    <link rel="prev" title="Example Simulations" href="examples.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> FEPX
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.2.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="copying.html">Conditions of Use</a></li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="input.html">Simulation Input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="output.html">Simulation Output</a></li>
+<li class="toctree-l1"><a class="reference internal" href="job.html">Running a Simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Example Simulations</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Development History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="refs.html">References</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">FEPX</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Development History</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/develhistory.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <div class="rst-breadcrumbs-buttons" role="navigation" aria-label="breadcrumb navigation">
+      
+        <a href="refs.html" class="btn btn-neutral float-right" title="References" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="examples.html" class="btn btn-neutral float-left" title="Example Simulations" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+  </div>
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="development-history">
+<span id="id1"></span><h1>Development History<a class="headerlink" href="#development-history" title="Permalink to this headline">¶</a></h1>
+<p>&#64;emph{Milestones in the development of FEpX:}</p>
+<p>Development of present code began in the late 1990’s.
+The impetus was to incorporate elasticity in the existing viscoplastic constitutive framework.
+A number of attributes of the mechanical response can be addressed only if elasticity is part of
+the total constitutive description, and several of these were important to the research goals at that time.
+The inclusion of elasticity, however, fundamentally alters the computational approach because elasticity
+is based on changes in configuration of differential volumes, whereas plasticity requires knowledge only of  current configurations.
+Further, the stiff mathematical character of the resulting system of equations necessitates greater care be exercised in integrating the equations over time and motivates the use of implicit schemes.
+While introducing added complexity in this regard, the inclusion of elasticity removes the constraint of
+incompressibility, which is particularly difficult to enforce within a robust framework and limits
+options available for the computational methodologies.
+Given these factors, the intent of the effort was to develop a code to support research investigations with the following defining specifications:
+&#64;itemize
+&#64;item incorporates anisotropic elasto-viscoplastic behaviors, especially in materials  with low rate sensitivity of yielding  such as metals at low homologous temperature;
+&#64;item embodies nonlinear kinematics, which are necessary for handling the large strains and large rotations inherent in plastic flow;
+&#64;item utilizes state-based representation of properties, with attention to verifiable state descriptions at microscale as  motivated  by the inclusion of crystallographic texture (for yield surfaces) and evolution of texture (for strain induced anisotropy);
+&#64;item exercises robust numerical methodologies, including implicit integration for stress,  element types capable of large strain deformations, and general boundary conditions;
+&#64;item features a data parallel implementation with good scaling characteristics; and,
+&#64;item is an expansible code framework to facilitate testing of alternative plasticity models and numerical methodologies.
+&#64;end itemize
+Incorporation of a code with elasticity and nonlinear kinematics (which are tightly coupled) was  carried out principally by E. Marin [&#64;value{mar_daw_98a}, &#64;value{mar_daw_98b}].
+The starting point for this effort was a code that utilized a viscoplastic model implemented in parallel
+with a hybrid finite element formulation developed by A. Beaudoin [&#64;value{bea_daw_mat_koc_95}] (the hybrid formulation was an effective approach for dealing with the incompressibility constraint in the presence of plastic anisotropy).
+This code had been migrated to a version using Fortran and MPI and
+had 10-node tetrahedral elements available for robust simulations of large plastic strains [&#64;value{mik_daw_99}].
+The approach taken by Marin followed a methodology developed for isotropic elasto-viscoplastic behavior developed about a decade earlier by Eggert [&#64;value{egg_daw_88}].
+Refinements were added later by N. Barton [&#64;value{bar_daw_mil_99}] for anisotropic elasticity.</p>
+<p>&#64;sp 1</p>
+<p>&#64;emph{Earlier development leading to the present version:}</p>
+<p>The use of finite elements with crystal plasticity models can be organized into two broad categories that are defined by the relative sizes of grains and elements [&#64;value{daw_mar_98p}].  One category is labeled, ‘large scale’, and is defined by the grains being much smaller than elements; the other is labeled, ‘small scale’, and is defined by the elements some part of a grain.  In large scale applications, an ensemble of grains underlies spatial points at the continuum scale and defines the properties of the continuum at that point. In small scale applications, the volume within a finite element is entirely of one grain and the material exhibits properties of a single crystal.
+The code development leading eventually to FEpX began with a large scale implementation in which crystal plasticity was embedded in an Eulerian, viscoplastic formulation was devised by K. Mathur [&#64;value{mat_daw_89}] to model steady-state metal forming applications.
+The potential capabilities of a code that incorporated crystal plasticity was pursued because it permitted computing the  evolving anisotropy associated with plastic yielding directly derived from crystallographic texture.
+Subsequent application of the approach for metal forming and geologic flow  demonstrated that polycrystal models were viable for flow fields that could be idealized as steady and two-dimensional [&#64;value{mat_daw_90}, &#64;value{kum_daw_95}, &#64;value{daw_wen_00}].</p>
+<p>The desire to model transient processes, such as sheet forming, motivated the major effort to develop a data parallel code. The code developed in this effort employed a proprietary version of Fortran [&#64;value{mathur_numiform95}] that managed interprocessor communications, and enabled the simulation of fully three-dimensional forming processes [&#64;value{bea_mat_daw_joh_93}, &#64;value{bea_daw_mat_koc_kor_94}].
+An interest in applying the approach to small scale as well as large scale problems subsequently led to development of the hybrid finite element formulation for polycrystals [&#64;value{bea_daw_mat_koc_95}].
+This milestone solidified the role of the finite element approach for investigating the role of grain interactions in polycrystal deformations and opened the door to investigating the strengths and limitations of various mean field assumptions (e.g. Taylor, Sachs, Relaxed Constraints, and Constrained Hybrid).
+Concurrently, the parallel computing landscape was rapidly evolving, and to take advantage of the introduction of new platforms, the code architecture was re-structured to employ Message Passing Interface (MPI) routines to conduct interprocessor communications.
+This Fortran/MPI version remained limited to purely viscoplastic behaviors, but was exploited to
+study texture evolution in polycrystals as well as development of intragrain misorientation distributions.
+&#64;c ({bf Matt:  several articles could be cited here (as given along with others in Section 2.3 of the FEpX theory document), but if this is about developments to FEpX, those may be a bit of a tangent here.})
+This code was the starting point for development of FEpX and a re-focusing of the simulation
+priorities on small scale applications.</p>
+<p>&#64;sp 1</p>
+<p>&#64;emph{Application-driven expansion of capabilities:}</p>
+<p>FEpX development in the decade following the launch of the first version of the present code was
+centered on support of investigations related to mechanical behaviors of polycrystals.
+Improvements were made in numerical procedures to improve robustness (namely, the nonlinear solver, quadrature rules,  and integration of state variables).
+Modifications were implemented to provide options in the loading histories that
+enabled better replication of experimental loading protocols.
+In particular, options to invoke more complex sequences of loading, unloading and reloading
+used in &#64;emph{in situ} loading, x-ray and neutron diffraction experiments were implemented.
+Capabilities for cyclic and multiaxial loading  were added.</p>
+<p>The extraction of data  related to the orientation of the crystallographic lattice from the simulation
+was of paramount importance.
+Routines were implemented to identify elements of the mesh whose lattice orientations lie near crystallographic fibers, a process referred to as ‘light-up’ in analogy to diffraction measurements.
+The output of FEpX was coordinated with a number of
+ancillary capabilities for manipulation of orientation-dependent variables (ODFPF),
+representation of anisotropic yield surfaces,  and execution of a virtual diffractometer.</p>
+<p>Definition of the virtual polycrystals simulated with FEpX was initially limited to regular tessellations comprised of dodecahedral grains.
+Every grain was discretized with tetrahedral elements, typically numbering from 48 for a coarse representation to 1536 for more finely resolved grains.
+The use of other regular tessellations (cubic and truncated octahedral, in particular) were also explored [&#64;value{rit_daw_09}].
+The coupling of FEpX with Neper greatly improved the representation of virtual polycrystals by allowing for irregular  Voronoi or Laguerre tesselations and
+facilitating re-meshing in simulations taken to large plastic strains [&#64;value{que_daw_bar_11}].</p>
+<p>Individuals contributing to these improvements include: R. Carson, D. Boyce, T. Han, M. Kasemer, T. Marin, A. Poshadel, R.Quey, and S.-L. Wong.</p>
+<p>&#64;sp 1</p>
+<p>&#64;emph{Source sharing and documentation:}</p>
+<p>By 2010 the use of FEpX over a decade in a variety of research projects motivated a push for
+standardization, version control, and sharing best done within a collaborative platform.
+A repository was established in 2012 together with documentation (users manual compiled by A. Mitch) for the needed input and possible outputs for FEpX.
+In concert with the establishing the code repository, numerous improvements were made in the organization of input and output data.
+A full description of the underlying theory and finite element implementation was
+posted on arXiv in 2015 [&#64;value{daw_boy_15a}].
+&#64;c {bf New sentence (others?): }
+Individuals contributing to this effort include A. Poshadel and M. Kasemer.</p>
+<p>&#64;sp 1</p>
+<p>&#64;emph{Extensions of FEpX:}</p>
+<p>One of the specifications of FEpX was to provide an expansible code framework to facilitate testing of alternative plasticity models and numerical methodologies.
+Such efforts typically require substantial alterations to the code and are not intended to result in permanent changes to the baseline code.
+Examples of investigations of this nature include: a kinematic model with slip gradients [&#64;value{ger_daw_08b}];  a continuous intragrain lattice representation [&#64;value{car_daw_jmps_2019}], and a kinematic framework for twinning [&#64;value{kas_daw_cmame_2020}].
+&#64;c %error estimation~cite{} (carson/chatterjee).</p>
+<p>&#64;sp 1</p>
+<p>&#64;iftex
+Dr. Paul R. Dawson
+&#64;sp -0.1
+Joseph C. Ford Professor of Engineering Emeritus
+&#64;sp -0.1
+Sibley School of Mechanical and Aerospace Engineering
+&#64;sp -0.1
+Cornell University
+&#64;end iftex</p>
+<p>&#64;ifinfo
+Dr. Paul R. Dawson &#64;*
+Joseph C. Ford Professor of Engineering Emeritus &#64;*
+Sibley School of Mechanical and Aerospace Engineering &#64;*
+Cornell University
+&#64;end ifinfo</p>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="refs.html" class="btn btn-neutral float-right" title="References" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="examples.html" class="btn btn-neutral float-left" title="Example Simulations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
