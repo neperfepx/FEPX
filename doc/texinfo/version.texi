@@ -2,4 +2,4 @@
 @c Copyright (C) 1996-2021 ACME Lab
 @c See the COPYING file in the top-level directory.
 
-@set FEPX_VERSION 1.2.2-2
+@set FEPX_VERSION 1.2.2-3
