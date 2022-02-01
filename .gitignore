@@ -1,1 +1,5 @@
 build
+*~
+.DS_Store
+sphinx_rtd_theme/__pycache__/__init__.cpython-38.pyc
+*.orig
