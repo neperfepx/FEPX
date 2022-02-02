@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Running a Simulation &mdash; FEPX 1.3.0 documentation</title><link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Example Simulations" href="examples.html" />
+    <link rel="prev" title="Simulation Output" href="output.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> FEPX
+          </a>
+              <div class="version">
+                1.3.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../features.html">Features</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="copying.html">Conditions of Use</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="input.html">Simulation Input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="output.html">Simulation Output</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Running a Simulation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#submitting-fepx-to-a-job-scheduling-program">Submitting FEPX to a Job Scheduling Program</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#restarting-a-simulation">Restarting a Simulation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html">Example Simulations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="develhistory.html">Development History (1990-2020)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gpl.html">GNU General Public License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fdl.html">GNU Free Documentation License</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Example Simulations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../papers.html">Reference Papers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../applications.html">Applications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../downloads.html">Downloads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community.html">Community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../other.html">Other Resources</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">FEPX</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Documentation</a> &raquo;</li>
+      <li>Running a Simulation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/doc/job.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="running-a-simulation">
+<span id="id1"></span><h1>Running a Simulation<a class="headerlink" href="#running-a-simulation" title="Permalink to this headline">¶</a></h1>
+<p>First, a simulation may be run serially – that is, on a single core – by executing the binary from the terminal:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> fepx
+</pre></div>
+</div>
+<p>However, simulations will generally require more computational resources to run in reasonable time, which can be done using a parallel computer architecture.</p>
+<p>A simulation may be run in parallel utilizing MPI:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun -np &lt;N&gt; fepx
+</pre></div>
+</div>
+<p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;N&gt;</span></code> refers to the number of MPI processes desired. Note that your local installation of MPI may not utilize <strong class="program">mpirun</strong> and instead an alternative MPI command may be required.</p>
+<div class="section" id="submitting-fepx-to-a-job-scheduling-program">
+<h2>Submitting FEPX to a Job Scheduling Program<a class="headerlink" href="#submitting-fepx-to-a-job-scheduling-program" title="Permalink to this headline">¶</a></h2>
+<p>Performing simulations on high performance computing clusters typically requires interfacing with a job scheduling program. These programs have a number of directives that are too numerous to define here. For sake of illustration, however, generic submission scripts for the Slurm and Torque job scheduling programs are provided. The generation of these scripts is highly dependent on the local configuration, and you are encouraged to work with the system administrator of your cluster if you are unsure on how to properly build a submission script. Both example scripts below are designed to submit a parallel job of FEPX to 4 nodes with 16 cores per node (i.e., 64 total tasks) to the <code class="xref py py-data docutils literal notranslate"><span class="pre">main</span></code> queue.</p>
+<p>A generic submission script, <code class="file docutils literal notranslate"><span class="pre">runslurm.sh</span></code>, for submitting to a Slurm scheduler:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+<span class="c1">#SBATCH -J fepxjob</span>
+<span class="c1">#SBATCH -q main</span>
+<span class="c1">#SBATCH --ntasks 64</span>
+<span class="c1">#SBATCH --ntasks-per-node 16</span>
+<span class="c1">#SBATCH -o output.%A</span>
+<span class="c1">#SBATCH -e errors.%A</span>
+
+srun --mpi<span class="o">=</span>pmi2 fepx
+</pre></div>
+</div>
+<p>would be run by entering the following into the terminal from within the simulation directory:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sbatch runslurm.sh
+</pre></div>
+</div>
+<p>A generic submission script, <code class="file docutils literal notranslate"><span class="pre">runtorque.sh</span></code>, for submitting to a Torque scheduler:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+<span class="c1">#PBS -N fepxjob</span>
+<span class="c1">#PBS -q main</span>
+<span class="c1">#PBS -l nodes=4:ppn=16</span>
+<span class="c1">#PBS -k oe</span>
+<span class="c1">#PBS -j oe</span>
+
+<span class="c1"># Change to the current working directory</span>
+<span class="nb">cd</span> <span class="nv">$PBS_O_WORKDIR</span>
+
+<span class="c1"># Calculate the total number of cores requested</span>
+<span class="nv">NP</span><span class="o">=</span><span class="sb">`</span>cat <span class="nv">$PBS_NODEFILE</span> <span class="p">|</span> wc -l<span class="sb">`</span>
+
+mpirun -np <span class="nv">$@</span><span class="o">{</span>NP@<span class="o">}</span> fepx
+</pre></div>
+</div>
+<p>would be run by entering the following into the terminal from within the simulation directory:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> qsub runtorque.sh
+</pre></div>
+</div>
+</div>
+<div class="section" id="restarting-a-simulation">
+<span id="sim-restart"></span><h2>Restarting a Simulation<a class="headerlink" href="#restarting-a-simulation" title="Permalink to this headline">¶</a></h2>
+<p>A simulation may be restarted only if the restart files were printed as simulation output on the previous run (<span class="xref std std-ref">Restart Output</span>). Printing restart files outputs a single <code class="file docutils literal notranslate"><span class="pre">rst&lt;N&gt;.control</span></code> file and a <code class="file docutils literal notranslate"><span class="pre">rst&lt;N&gt;.field.core&#64;var&lt;#&gt;</span></code> file for each individual core, where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;N&gt;</span></code> refers to the restart ID (0 indexing), and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;#&gt;</span></code> denotes the ID of the core on which the data is being printed. These restart files must be included in the simulation directory along with the configuration file, the mesh file, and any external files included with the simulation.</p>
+<p>A simulation may be restarted by adding the following line to the <code class="file docutils literal notranslate"><span class="pre">simulation.config</span></code> file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">restart</span> <span class="n">on</span>
+</pre></div>
+</div>
+<p>When a simulation restarts, it will attempt to find the simulation restart files with the highest index, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;N&gt;</span></code>. It will write output variable data to a new set of files, <code class="file docutils literal notranslate"><span class="pre">post.&lt;var&gt;.rst&lt;N+1&gt;.core*</span></code>, where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;var&gt;</span></code> is the requested output variable name and <code class="xref py py-data docutils literal notranslate"><span class="pre">rst</span></code> is the restart label applied to all new output variable files. Likewise, if restart files are again printed, their index will increase to <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;N+2&gt;</span></code> (the previous restart’s files will not be overwritten).</p>
+<p>A simulation restart must be performed with the same number of cores that were used to run the original simulation. Restart files are always written at the end of a successful step and not at individual increments.</p>
+<p>Each restarted simulation is considered a new simulation, albeit with initialized field variables as written in the restart files. Step and increment indices, as well as the simulation time, are all reset to 0.</p>
+<p>When restarting a simulation, the prescribed deformation history (<a class="reference internal" href="input.html#deformation-history"><span class="std std-ref">Deformation History</span></a>) should include only additional steps. The restarted simulation will attempt to follow the entire deformation history as prescribed in the <code class="file docutils literal notranslate"><span class="pre">simulation.config</span></code> file, and will not consider steps that were completed in the initial simulation.</p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="output.html" class="btn btn-neutral float-left" title="Simulation Output" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="examples.html" class="btn btn-neutral float-right" title="Example Simulations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright ACME Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
