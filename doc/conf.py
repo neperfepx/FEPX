@@ -17,6 +17,8 @@ author = u'Matthew Kasemer'
 copyright = u''
 language = 'en'
 
+master_doc = 'index'
+
 html_theme = 'sphinx_rtd_theme'
 html_theme_options = {
     'logo_only': False,
