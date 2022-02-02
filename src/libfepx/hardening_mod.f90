@@ -81,7 +81,7 @@ CONTAINS
     ! Locals:
     ! MPK: Do any of these need to be defined here? They have been moved to the
     !   individual subroutines...
-    ! 
+    !
     REAL(RK) :: MYSIGN(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
     INTEGER :: ISLIP
     INTEGER :: MY_PHASE(0:(M - 1))
@@ -580,31 +580,28 @@ CONTAINS
         CALL MATRIX_VEC_MULT(HCP_H7, ABS(GAMMADOT(16:17, 0, IND + EL_SUB1)), &
             & SHRATE(16:17), 2)
         !
-    CASE (2) !BCC XTYPE
+    CASE (4) !BCT XTYPE
         !
-        TMP = ABS(GAMMADOT((/ 0,9/), 0, IND+EL_SUB1))
-        CALL MATRIX_VEC_MULT(BCC_H1, TMP, TMPO,2)
-        SHRATE((/ 0,9/)) = TMPO
-        !
-        TMP = ABS(GAMMADOT((/ 1,7/), 0, IND+EL_SUB1))
-        CALL MATRIX_VEC_MULT(BCC_H2, TMP, TMPO,2)
-        SHRATE((/ 1,7/)) = TMPO
-        !
-        TMP = ABS(GAMMADOT((/ 2,5/), 0, IND+EL_SUB1))
-        CALL MATRIX_VEC_MULT(BCC_H3, TMP, TMPO,2)
-        SHRATE((/ 2,5/)) = TMPO
-        !
-        TMP = ABS(GAMMADOT((/ 3,6/), 0, IND+EL_SUB1))
-        CALL MATRIX_VEC_MULT(BCC_H4, TMP, TMPO,2)
-        SHRATE((/ 3,6/)) = TMPO
-        !
-        TMP = ABS(GAMMADOT((/ 4,10/), 0, IND+EL_SUB1))
-        CALL MATRIX_VEC_MULT(BCC_H5, TMP, TMPO,2)
-        SHRATE((/ 4,10/)) = TMPO
-        !
-        TMP = ABS(GAMMADOT((/ 8,11/), 0, IND+EL_SUB1))
-        CALL MATRIX_VEC_MULT(BCC_H6, TMP, TMPO,2)
-        SHRATE((/ 8,11/)) = TMPO
+        CALL MATRIX_VEC_MULT(BCT_H1, ABS(GAMMADOT(0:1, 0, IND + EL_SUB1)), &
+            & SHRATE(0:1), 2)
+        CALL MATRIX_VEC_MULT(BCT_H2, ABS(GAMMADOT(2:3, 0, IND + EL_SUB1)), &
+            & SHRATE(2:3), 2)
+        CALL MATRIX_VEC_MULT(BCT_H3, ABS(GAMMADOT(4:5, 0, IND + EL_SUB1)), &
+            & SHRATE(4:5), 2)
+        CALL MATRIX_VEC_MULT(BCT_H4, ABS(GAMMADOT(6:9, 0, IND + EL_SUB1)), &
+            & SHRATE(6:9), 4)
+        CALL MATRIX_VEC_MULT(BCT_H5, ABS(GAMMADOT(10:11, 0, IND + EL_SUB1)), &
+            & SHRATE(10:11), 2)
+        CALL MATRIX_VEC_MULT(BCT_H6, ABS(GAMMADOT(12:15, 0, IND + EL_SUB1)), &
+            & SHRATE(12:15), 4)
+        CALL MATRIX_VEC_MULT(BCT_H7, ABS(GAMMADOT(16:17, 0, IND + EL_SUB1)), &
+            & SHRATE(16:17), 2)
+        CALL MATRIX_VEC_MULT(BCT_H8, ABS(GAMMADOT(18:19, 0, IND + EL_SUB1)), &
+            & SHRATE(18:19), 2)
+        CALL MATRIX_VEC_MULT(BCT_H9, ABS(GAMMADOT(20:23, 0, IND + EL_SUB1)), &
+            & SHRATE(20:23), 4)
+        CALL MATRIX_VEC_MULT(BCT_H10, ABS(GAMMADOT(24:31, 0, IND + EL_SUB1)), &
+            & SHRATE(24:31), 8)
         !
     CASE DEFAULT
         !

@@ -53,7 +53,7 @@ CONTAINS
     !
     ! Arguments:
     !
-    INTEGER, INTENT(IN)     :: ITER_STATE      
+    INTEGER, INTENT(IN)     :: ITER_STATE
     LOGICAL, INTENT(INOUT)  :: CONVERGED_NEWTON
     LOGICAL, INTENT(IN)     :: DONE(0:NGRAIN1, EL_SUB1:EL_SUP1)
     !
@@ -122,7 +122,7 @@ CONTAINS
     CONVERGED_NEWTON = .FALSE.
     !
     RETURN
-    !    
+    !
     END SUBROUTINE STRESS_SOLVE_EVPS
     !
     !===========================================================================
@@ -164,7 +164,7 @@ CONTAINS
     REAL(RK) :: E_BAR(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(M - 1))
     REAL(RK) :: E_VEC(0:TVEC1, 0:(N - 1), 0:(M - 1))
     REAL(RK) :: E_ELAS(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(M - 1))
-    !    
+    !
     REAL(RK) :: GDOT(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
     REAL(RK) :: DGDOT(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
     REAL(RK) :: DP_HAT_VEC(0:TVEC1, 0:(N - 1), 0:(M - 1))
@@ -175,20 +175,20 @@ CONTAINS
     REAL(RK) :: FACT(0:(N - 1), 0:(M - 1))
     REAL(RK) :: XLAMBDA(0:TVEC1, 0:(N - 1), 0:(M - 1))
     REAL(RK) :: FJAC(0:TVEC1, 0:TVEC1, 0:(N - 1), 0:(M - 1))
-    !      
+    !
     REAL(RK) :: WP_HAT_MATX(0:TVEC1, 0:TVEC1, 0:(N - 1), 0:(M - 1))
     REAL(RK) :: TAU(0:(N - 1), 0:(M - 1)), TAUA(0:(N - 1), 0:(M - 1))
     REAL(RK) :: FJ21(0:(N - 1), 0:(M - 1))
     REAL(RK) :: RATIO_RES(0:(N - 1), 0:(M - 1))
     REAL(RK) :: RES_AUX(0:(N - 1), 0:(M - 1))
     !
-    REAL(RK), POINTER :: P_HAT_VEC(:,:) => NULL()
-    REAL(RK), POINTER :: PPT(:,:,:) => NULL()
-    REAL(RK), POINTER :: E_VEC_TMP(:,:,:) => NULL()
-    REAL(RK), POINTER :: E_ELAS_TMP(:,:,:,:) => NULL()
-    REAL(RK), POINTER :: WP_X_E_TMP(:,:,:) => NULL()
-    REAL(RK), POINTER :: FJAC_TMP(:,:,:,:) => NULL()
-    !   
+    REAL(RK), POINTER :: P_HAT_VEC(:, :) => NULL()
+    REAL(RK), POINTER :: PPT(:, :, :) => NULL()
+    REAL(RK), POINTER :: E_VEC_TMP(:, :, :) => NULL()
+    REAL(RK), POINTER :: E_ELAS_TMP(:, :, :, :) => NULL()
+    REAL(RK), POINTER :: WP_X_E_TMP(:, :, :) => NULL()
+    REAL(RK), POINTER :: FJAC_TMP(:, :, :, :) => NULL()
+    !
     REAL(RK), PARAMETER :: ONE_DP = 1.0D0
     REAL(RK) :: UFLOW = TINY(ONE_DP)
     REAL(RK) :: TOOSMALL(NUMPHASES)
@@ -196,15 +196,15 @@ CONTAINS
     INTEGER  :: MY_PHASE(0:(M - 1)), IPHASE, NUMIND, IN
     INTEGER, POINTER :: INDICES(:) => NULL()
     !
-    REAL(RK) :: ANISO_M_TEMP(0:17)
-    REAL(RK) :: AXNN(0:17,NUMPHASES)
-    REAL(RK) :: AXN(0:17,NUMPHASES)
-    REAL(RK) :: ATOOSMALL(0:17,NUMPHASES)
+    REAL(RK) :: ANISO_M_TEMP(0:MAXSLIP1)
+    REAL(RK) :: AXNN(0:MAXSLIP1, NUMPHASES)
+    REAL(RK) :: AXN(0:MAXSLIP1, NUMPHASES)
+    REAL(RK) :: ATOOSMALL(0:MAXSLIP1, NUMPHASES)
     !
     !---------------------------------------------------------------------------
     !
     MY_PHASE(:) = PHASE(EL_SUB1:EL_SUP1)
-    ! 
+    !
     IRC   = 0
     JITER = 0
     SIG_0 = 0.0D0
@@ -219,20 +219,20 @@ CONTAINS
     !
     GDOT = 0.0D0
     DGDOT = 0.0D0
-    !      
+    !
     ! Begin iterations
-    !   
+    !
     DO ITER_NEWTON = 1, MAX_ITER_NEWTON
         !
         SIG_0 = SIG
         !
         ! Elastic strains
         !
-        DO IPHASE=1,NUMPHASES
+        DO IPHASE = 1, NUMPHASES
             !
             CALL FIND_INDICES(NUMIND, IPHASE, MY_PHASE, INDICES)
-            CALL CRYSTALTYPEGET(CTYPE(IPHASE), DEV=P_HAT_VEC,PPTRANS=PPT)
-            N_SLIP=CTYPE(IPHASE)%NUMSLIP
+            CALL CRYSTALTYPEGET(CTYPE(IPHASE), DEV = P_HAT_VEC, PPTRANS = PPT)
+            N_SLIP = CTYPE(IPHASE)%NUMSLIP
             !
             IF(ASSOCIATED(E_VEC_TMP)) THEN
                 !
@@ -240,22 +240,22 @@ CONTAINS
                 !
             ENDIF
             !
-            ALLOCATE(E_VEC_TMP(0:TVEC1,0:(N-1),0:(NUMIND-1)))
-            CALL VEC_D_VEC5(KEINV(:,IPHASE), SIG(:,:,INDICES), E_VEC_TMP, &
+            ALLOCATE(E_VEC_TMP(0:TVEC1, 0:(N - 1), 0:(NUMIND - 1)))
+            CALL VEC_D_VEC5(KEINV(:, IPHASE), SIG(:, :, INDICES), E_VEC_TMP, &
                 & N, NUMIND)
             !
-            E_VEC(:,:,INDICES)=E_VEC_TMP
+            E_VEC(:, :, INDICES) = E_VEC_TMP
             !
             IF(ASSOCIATED(E_ELAS_TMP)) THEN
                 !
                 DEALLOCATE(E_ELAS_TMP)
-                !            
+                !
             ENDIF
             !
-            ALLOCATE(E_ELAS_TMP(0:DIMS1,0:DIMS1,0:(N-1),0:(NUMIND-1)))
-            CALL VEC_MAT_SYMM_GRN(E_VEC(:,:,INDICES), E_ELAS_TMP, N, NUMIND)
-            !            
-            E_ELAS(:,:,:,INDICES) = E_ELAS_TMP
+            ALLOCATE(E_ELAS_TMP(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(NUMIND - 1)))
+            CALL VEC_MAT_SYMM_GRN(E_VEC(:, :, INDICES), E_ELAS_TMP, N, NUMIND)
+            !
+            E_ELAS(:, :, :, INDICES) = E_ELAS_TMP
             !
             ! Power law viscoplastic model
             !
@@ -264,66 +264,89 @@ CONTAINS
                 !
                 XNN(IPHASE) = 1.0D0 / CRYSTAL_PARM(0,IPHASE)
                 XN(IPHASE)  = XNN(IPHASE) - 1.0D0
-                TOOSMALL(IPHASE) = UFLOW**CRYSTAL_PARM(0,IPHASE)
+                TOOSMALL(IPHASE) = UFLOW ** CRYSTAL_PARM(0,IPHASE)
                 !
             ELSE IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .TRUE.) THEN
                 !
-                ANISO_M_TEMP(0:2)  = CRYS_OPTIONS%ANISO_M(IPHASE,1)
-                ANISO_M_TEMP(3:5)  = CRYS_OPTIONS%ANISO_M(IPHASE,2)
-                ANISO_M_TEMP(6:17) = CRYS_OPTIONS%ANISO_M(IPHASE,3)
-                !
-                AXNN(:,IPHASE) = 1.0D0 / ANISO_M_TEMP(:)
-                AXN(:,IPHASE)  = AXNN(:,IPHASE) - 1.0D0
-                ATOOSMALL(:,IPHASE) = UFLOW**ANISO_M_TEMP(:)
+                IF (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 3) THEN
+                    !
+                    ANISO_M_TEMP(0:2) = CRYS_OPTIONS%ANISO_M(IPHASE, 1)
+                    ANISO_M_TEMP(3:5) = CRYS_OPTIONS%ANISO_M(IPHASE, 2)
+                    ANISO_M_TEMP(6:17) = CRYS_OPTIONS%ANISO_M(IPHASE, 3)
+                    !
+                    AXNN(:, IPHASE) = 1.0D0 / ANISO_M_TEMP(:)
+                    AXN(:, IPHASE) = AXNN(:, IPHASE) - 1.0D0
+                    ATOOSMALL(:, IPHASE) = UFLOW ** ANISO_M_TEMP(:)
+                    !
+                ELSE IF (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 4) &
+                    & THEN
+                    !
+                    ANISO_M_TEMP(0:1) = CRYS_OPTIONS%ANISO_M(IPHASE, 1)
+                    ANISO_M_TEMP(2:3) = CRYS_OPTIONS%ANISO_M(IPHASE, 2)
+                    ANISO_M_TEMP(4:5) = CRYS_OPTIONS%ANISO_M(IPHASE, 3)
+                    ANISO_M_TEMP(6:9) = CRYS_OPTIONS%ANISO_M(IPHASE, 4)
+                    ANISO_M_TEMP(10:11) = CRYS_OPTIONS%ANISO_M(IPHASE, 5)
+                    ANISO_M_TEMP(12:15) = CRYS_OPTIONS%ANISO_M(IPHASE, 6)
+                    ANISO_M_TEMP(16:17) = CRYS_OPTIONS%ANISO_M(IPHASE, 7)
+                    ANISO_M_TEMP(18:19) = CRYS_OPTIONS%ANISO_M(IPHASE, 8)
+                    ANISO_M_TEMP(20:23) = CRYS_OPTIONS%ANISO_M(IPHASE, 9)
+                    ANISO_M_TEMP(24:31) = CRYS_OPTIONS%ANISO_M(IPHASE, 10)
+                    !
+                    AXNN(:, IPHASE) = 1.0D0 / ANISO_M_TEMP(:)
+                    AXN(:, IPHASE)  = AXNN(:, IPHASE) - 1.0D0
+                    ATOOSMALL(:, IPHASE) = UFLOW ** ANISO_M_TEMP(:)
+                    !
+                END IF
                 !
             END IF
             !
             DO ISLIP = 0, N_SLIP - 1
-                !         
-                TAU(:,INDICES) = 0.0D0
-                !                
+                !
+                TAU(:, INDICES) = 0.0D0
+                !
                 DO I = 0, TVEC1
                     !
-                    TAU(:,INDICES) = TAU(:,INDICES) + P_HAT_VEC(I+1,ISLIP+1) * &
-                        & SIG(I,:,INDICES)/CRSS(ISLIP,:,INDICES)
+                    TAU(:, INDICES) = TAU(:, INDICES) + &
+                        & P_HAT_VEC(I + 1, ISLIP + 1) * SIG(I, :, INDICES) / &
+                        & CRSS(ISLIP, :, INDICES)
                     !
-                ENDDO 
+                ENDDO
                 !
-                TAUA(:,INDICES) = DABS(TAU(:,INDICES))
+                TAUA(:, INDICES) = DABS(TAU(:, INDICES))
                 !
                 IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .FALSE.) THEN
                     !
-                    WHERE (TAUA(:,INDICES) .LE. TOOSMALL(IPHASE)) &
-                        & TAUA(:,INDICES) = 0.0D0
+                    WHERE (TAUA(:, INDICES) .LE. TOOSMALL(IPHASE)) &
+                        & TAUA(:, INDICES) = 0.0D0
                     !
-                    FJ21(:,INDICES) = &
-                        &CRYSTAL_PARM(1,IPHASE) * TAUA(:,INDICES)**XN(IPHASE)  
-                    DGDOT(ISLIP, :,INDICES) = &
-                        &FJ21(:,INDICES) * XNN(IPHASE) / CRSS(ISLIP,:,INDICES)
-                    GDOT(ISLIP, :, INDICES) = FJ21(:,INDICES) * TAU(:,INDICES) 
+                    FJ21(:, INDICES) = CRYSTAL_PARM(1, IPHASE) * &
+                        & TAUA(:, INDICES) ** XN(IPHASE)
+                    DGDOT(ISLIP, :, INDICES) = FJ21(:, INDICES) * XNN(IPHASE) / &
+                        & CRSS(ISLIP, :, INDICES)
+                    GDOT(ISLIP, :, INDICES) = FJ21(:, INDICES) * TAU(:, INDICES)
                     !
                 ELSE IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .TRUE.) THEN
                     !
-                    WHERE (TAUA(:,INDICES) .LE. ATOOSMALL(ISLIP,IPHASE)) &
-                        & TAUA(:,INDICES) = 0.0D0
+                    WHERE (TAUA(:, INDICES) .LE. ATOOSMALL(ISLIP, IPHASE)) &
+                        & TAUA(:, INDICES) = 0.0D0
                     !
-                    FJ21(:,INDICES) = CRYSTAL_PARM(1,IPHASE) * &
-                        &TAUA(:,INDICES)**AXN(ISLIP,IPHASE)  
-                    DGDOT(ISLIP, :,INDICES) = FJ21(:,INDICES) * &
-                        &AXNN(ISLIP,IPHASE) / CRSS(ISLIP,:,INDICES)
-                    GDOT(ISLIP, :, INDICES) = FJ21(:,INDICES) * TAU(:,INDICES)
+                    FJ21(:, INDICES) = CRYSTAL_PARM(1, IPHASE) * &
+                        &TAUA(:, INDICES) ** AXN(ISLIP, IPHASE)
+                    DGDOT(ISLIP, :, INDICES) = FJ21(:, INDICES) * &
+                        &AXNN(ISLIP, IPHASE) / CRSS(ISLIP, :, INDICES)
+                    GDOT(ISLIP, :, INDICES) = FJ21(:, INDICES) * TAU(:, INDICES)
                     !
                 END IF
                 !
             ENDDO !N_SLIP
             !
             ! Set up the Jacobian
-            !        
+            !
             CALL DP_WP_HAT(P_HAT_VEC, DP_HAT_VEC, &
                 & WP_HAT_VEC, E_ELAS, E_BAR, W_VEC_LAT, GDOT, &
                 & N_SLIP, DT, N, M, NUMIND, INDICES)
             !
-            CALL WP_HAT_MAT5X5(WP_HAT_VEC,WP_HAT_MATX, N, M, NUMIND, INDICES)
+            CALL WP_HAT_MAT5X5(WP_HAT_VEC, WP_HAT_MATX, N, M, NUMIND, INDICES)
             !
             IF(ASSOCIATED(WP_X_E_TMP)) THEN
                 !
@@ -334,27 +357,25 @@ CONTAINS
             ALLOCATE(WP_X_E_TMP(0:TVEC1, 0:(N - 1), 0:(NUMIND - 1)))
             CALL MAT_X_VEC5(WP_HAT_MATX(:, :, :, INDICES), &
                 & E_VEC(:, :, INDICES), WP_X_E_TMP, N, NUMIND)
-            !            
-            WP_X_E(:, :, INDICES)=WP_X_E_TMP
+            !
+            WP_X_E(:, :, INDICES) = WP_X_E_TMP
             !
             IF(ASSOCIATED(FJAC_TMP)) THEN
-                !               
+                !
                 DEALLOCATE(FJAC_TMP)
                 !
             ENDIF
             !
-            ALLOCATE(FJAC_TMP(0:TVEC1, 0:TVEC1, 0:(N - 1), 0:(NUMIND-1)))
-            CALL MATRIX_FJAC(FJAC_TMP,&
-                & KEINV(:,IPHASE), WP_HAT_MATX(:, :, :, INDICES), C1, &
-                & DGDOT(:, :, INDICES), PPT, N_SLIP,&
-                & N, NUMIND)
+            ALLOCATE(FJAC_TMP(0:TVEC1, 0:TVEC1, 0:(N - 1), 0:(NUMIND - 1)))
+            CALL MATRIX_FJAC(FJAC_TMP, KEINV(:, IPHASE), &
+                & WP_HAT_MATX(:, :, :, INDICES), C1, DGDOT(:, :, INDICES), &
+                & PPT, N_SLIP, N, NUMIND)
             !
-            FJAC(:, :, :, INDICES)=FJAC_TMP
+            FJAC(:, :, :, INDICES) = FJAC_TMP
             !
-            ! Set up the system function (RHS)      
+            ! Set up the system function (RHS)
             !
-            CALL RESIDUAL(RES_N, DEL_S, &
-                & D_VEC_LAT, E_VEC, E_BAR_VEC, &
+            CALL RESIDUAL(RES_N, DEL_S, D_VEC_LAT, E_VEC, E_BAR_VEC, &
                 & DP_HAT_VEC, WP_X_E, C1, N, M, NUMIND, INDICES)
             !
             DEALLOCATE(INDICES)
@@ -379,21 +400,21 @@ CONTAINS
         !
         DO IPHASE = 1, NUMPHASES
             !
-            CALL CRYSTALTYPEGET(CTYPE(IPHASE), DEV=P_HAT_VEC)
+            CALL CRYSTALTYPEGET(CTYPE(IPHASE), DEV = P_HAT_VEC)
             CALL FIND_INDICES(NUMIND, IPHASE, MY_PHASE, INDICES)
-            N_SLIP=CTYPE(IPHASE)%NUMSLIP
-            !            
+            N_SLIP = CTYPE(IPHASE)%NUMSLIP
+            !
             IF(ASSOCIATED(E_VEC_TMP)) THEN
                 !
                 DEALLOCATE(E_VEC_TMP)
-                !            
+                !
             ENDIF
             !
-            ALLOCATE(E_VEC_TMP(0:TVEC1,0:(N-1),0:(NUMIND-1)))
-            CALL VEC_D_VEC5(KEINV(:,IPHASE), XLAMBDA(:,:,INDICES), E_VEC_TMP, &
-                & N, NUMIND)
+            ALLOCATE(E_VEC_TMP(0:TVEC1, 0:(N - 1), 0:(NUMIND - 1)))
+            CALL VEC_D_VEC5(KEINV(:, IPHASE), XLAMBDA(:, :, INDICES), &
+                & E_VEC_TMP, N, NUMIND)
             !
-            E_VEC(:,:,INDICES) = E_VEC_TMP
+            E_VEC(:, :, INDICES) = E_VEC_TMP
             !
             IF(ASSOCIATED(E_ELAS_TMP)) THEN
                 !
@@ -401,52 +422,52 @@ CONTAINS
                 !
             ENDIF
             !
-            ALLOCATE(E_ELAS_TMP(0:DIMS1,0:DIMS1,0:(N-1),0:(NUMIND-1)))
-            CALL VEC_MAT_SYMM_GRN(E_VEC(:, :, INDICES),E_ELAS_TMP, N, NUMIND)
-            !            
-            E_ELAS(:,:,:,INDICES) = E_ELAS_TMP
+            ALLOCATE(E_ELAS_TMP(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(NUMIND - 1)))
+            CALL VEC_MAT_SYMM_GRN(E_VEC(:, :, INDICES), E_ELAS_TMP, N, NUMIND)
+            !
+            E_ELAS(:, :, :, INDICES) = E_ELAS_TMP
             !
             ! Added parameter check for anisotropic rate sensitivity
             DO ISLIP = 0, N_SLIP - 1
                 !
-                TAU(:,INDICES) = 0.0D0
-                !               
+                TAU(:, INDICES) = 0.0D0
+                !
                 DO I = 0, TVEC1
                     !
-                    TAU(:,INDICES) = TAU(:,INDICES) + P_HAT_VEC(I+1,ISLIP+1) * &
-                        & XLAMBDA(I,:,INDICES)/CRSS(ISLIP,:,INDICES)
+                    TAU(:, INDICES) = TAU(:, INDICES) + &
+                        & P_HAT_VEC(I + 1, ISLIP + 1) * XLAMBDA(I, :, INDICES) &
+                        & / CRSS(ISLIP, :, INDICES)
                     !
                 ENDDO
-                !                
-                TAUA(:,INDICES) = DABS(TAU(:,INDICES))
-                !                
-                DO IN = 0, (N-1)
+                !
+                TAUA(:, INDICES) = DABS(TAU(:, INDICES))
+                !
+                DO IN = 0, (N - 1)
                     !
                     IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .FALSE.) THEN
                         !
-                        WHERE (TAUA(IN,INDICES) .LE. TOOSMALL(IPHASE)) &
-                            & TAUA(IN,INDICES) = 0.0D0
-                        GDOT(ISLIP, IN, :) = CRYSTAL_PARM(1,IPHASE)*&
-                            &TAU(IN,:)*TAUA(IN,:)**XN(IPHASE) 
+                        WHERE (TAUA(IN, INDICES) .LE. TOOSMALL(IPHASE)) &
+                            & TAUA(IN, INDICES) = 0.0D0
+                        GDOT(ISLIP, IN, :) = CRYSTAL_PARM(1, IPHASE) * &
+                            & TAU(IN, :) * TAUA(IN, :) ** XN(IPHASE)
                         !
                     ELSE IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .TRUE.) THEN
                         !
-                        WHERE (TAUA(IN,INDICES).LE.ATOOSMALL(ISLIP,IPHASE)) &
-                            & TAUA(IN,INDICES) = 0.0D0
-                        GDOT(ISLIP, IN, :) = CRYSTAL_PARM(1,IPHASE)*&
-                            &TAU(IN,:)*TAUA(IN,:)**AXN(ISLIP,IPHASE) 
+                        WHERE (TAUA(IN, INDICES) .LE. ATOOSMALL(ISLIP, IPHASE))&
+                            & TAUA(IN, INDICES) = 0.0D0
+                        GDOT(ISLIP, IN, :) = CRYSTAL_PARM(1, IPHASE) * &
+                            & TAU(IN, :) * TAUA(IN, :) ** AXN(ISLIP, IPHASE)
                         !
                     ENDIF
                     !
                 ENDDO
-                ! 
+                !
             ENDDO !N_SLIP
-            !    
-            CALL DP_WP_HAT(P_HAT_VEC, DP_HAT_VEC, &
-                & WP_HAT_VEC, E_ELAS, E_BAR, W_VEC_LAT, GDOT, &
-                & N_SLIP, DT, N, M, NUMIND, INDICES)
             !
-            CALL WP_HAT_MAT5X5(WP_HAT_VEC,WP_HAT_MATX, N, M, NUMIND, INDICES)
+            CALL DP_WP_HAT(P_HAT_VEC, DP_HAT_VEC, WP_HAT_VEC, E_ELAS, E_BAR, &
+                & W_VEC_LAT, GDOT, N_SLIP, DT, N, M, NUMIND, INDICES)
+            !
+            CALL WP_HAT_MAT5X5(WP_HAT_VEC, WP_HAT_MATX, N, M, NUMIND, INDICES)
             !
             IF(ASSOCIATED(WP_X_E_TMP)) THEN
                 !
@@ -457,19 +478,18 @@ CONTAINS
             ALLOCATE(WP_X_E_TMP(0:TVEC1, 0:(N - 1), 0:(NUMIND - 1)))
             CALL MAT_X_VEC5(WP_HAT_MATX(:, :, :, INDICES), &
                 & E_VEC(:, :, INDICES), WP_X_E_TMP, N, NUMIND)
-            !            
-            WP_X_E(:, :, INDICES)=WP_X_E_TMP
             !
-            CALL RESIDUAL(RES, FJ,&
-                & D_VEC_LAT, E_VEC, E_BAR_VEC,&
-                & DP_HAT_VEC, WP_X_E, C1, N, M, NUMIND, INDICES)
+            WP_X_E(:, :, INDICES) = WP_X_E_TMP
+            !
+            CALL RESIDUAL(RES, FJ, D_VEC_LAT, E_VEC, E_BAR_VEC, DP_HAT_VEC, &
+                & WP_X_E, C1, N, M, NUMIND, INDICES)
             !
             DEALLOCATE(INDICES)
             DEALLOCATE(WP_X_E_TMP)
             DEALLOCATE(E_VEC_TMP)
             DEALLOCATE(E_ELAS_TMP)
             DEALLOCATE(P_HAT_VEC)
-            !         
+            !
         ENDDO !NUMPHASES
         !
         ! Line Search.
@@ -485,7 +505,7 @@ CONTAINS
             IF(ANY(FACT .LT. 0.001)) THEN
                 !
                 WRITE(DFLT_U, '(A,I0,I0)') 'Warning:       . Error in line &
-                    &search' 
+                    &search'
                 !WRITE(DFLT_U, '(A,I0,I0)') 'Warning:       . Error in line &
                 !    &search ', COUNT(FACT .LT. 0.1), ITER_NEWTON
                 WHERE(FACT .LT. 0.001) NEWTON_OK = .FALSE.
@@ -496,67 +516,71 @@ CONTAINS
             XLAMBDA(1, :, :) = SIG_0(1, :, :) + FACT * DEL_S(1, :, :)
             XLAMBDA(2, :, :) = SIG_0(2, :, :) + FACT * DEL_S(2, :, :)
             XLAMBDA(3, :, :) = SIG_0(3, :, :) + FACT * DEL_S(3, :, :)
-            XLAMBDA(4, :, :) = SIG_0(4, :, :) + FACT * DEL_S(4, :, :)      
+            XLAMBDA(4, :, :) = SIG_0(4, :, :) + FACT * DEL_S(4, :, :)
             !
             DO IPHASE = 1, NUMPHASES
                 !
-                CALL CRYSTALTYPEGET(CTYPE(IPHASE), DEV=P_HAT_VEC)
+                CALL CRYSTALTYPEGET(CTYPE(IPHASE), DEV = P_HAT_VEC)
                 CALL FIND_INDICES(NUMIND, IPHASE, MY_PHASE, INDICES)
-                N_SLIP=CTYPE(IPHASE)%NUMSLIP
+                N_SLIP = CTYPE(IPHASE)%NUMSLIP
                 !
                 IF(ASSOCIATED(E_VEC_TMP)) THEN
-                    !                  
+                    !
                     DEALLOCATE(E_VEC_TMP)
-                    !                
+                    !
                 ENDIF
                 !
-                ALLOCATE(E_VEC_TMP(0:TVEC1,0:(N-1),0:(NUMIND-1)))
-                CALL VEC_D_VEC5(KEINV(:,IPHASE), XLAMBDA(:,:,INDICES), &
+                ALLOCATE(E_VEC_TMP(0:TVEC1, 0:(N - 1), 0:(NUMIND - 1)))
+                CALL VEC_D_VEC5(KEINV(:, IPHASE), XLAMBDA(:, :, INDICES), &
                     & E_VEC_TMP, N, NUMIND)
-                !                
+                !
                 E_VEC(:,:,INDICES) = E_VEC_TMP
                 !
                 IF(ASSOCIATED(E_ELAS_TMP)) THEN
-                    !                  
+                    !
                     DEALLOCATE(E_ELAS_TMP)
-                    !                
+                    !
                 ENDIF
                 !
-                ALLOCATE(E_ELAS_TMP(0:DIMS1,0:DIMS1,0:(N-1),0:(NUMIND-1)))
-                CALL VEC_MAT_SYMM_GRN(E_VEC(:,:,INDICES),E_ELAS_TMP, N,NUMIND)
-                !                
-                E_ELAS(:,:,:,INDICES)=E_ELAS_TMP
+                ALLOCATE(E_ELAS_TMP(0:DIMS1, 0:DIMS1, 0:(N - 1), &
+                    & 0:(NUMIND - 1)))
+                CALL VEC_MAT_SYMM_GRN(E_VEC(:, :, INDICES), E_ELAS_TMP, N, &
+                    & NUMIND)
+                !
+                E_ELAS(:, :, :, INDICES) = E_ELAS_TMP
                 !
                 DO ISLIP = 0, N_SLIP - 1
                     !
-                    TAU(:,INDICES) = 0.0D0
-                    !                  
+                    TAU(:, INDICES) = 0.0D0
+                    !
                     DO I = 0, TVEC1
                         !
-                        TAU(:,INDICES)=TAU(:,INDICES)+P_HAT_VEC(I+1,ISLIP+1)*&
-                            & XLAMBDA(I, :, INDICES) / CRSS(ISLIP,:,INDICES)
+                        TAU(:, INDICES) = TAU(:, INDICES) + &
+                            & P_HAT_VEC(I + 1, ISLIP + 1) * &
+                            & XLAMBDA(I, :, INDICES) / CRSS(ISLIP, :, INDICES)
                         !
                     ENDDO
-                    ! 
-                    TAUA(:,INDICES) = DABS(TAU(:,INDICES))
                     !
-                    DO IN = 0, N-1
+                    TAUA(:, INDICES) = DABS(TAU(:, INDICES))
+                    !
+                    DO IN = 0, N - 1
                         !
                         ! Added parameter check for anisotropic rate sensitivity
                         IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .FALSE.) THEN
                             !
-                            WHERE(TAUA(IN,INDICES).LE.TOOSMALL(IPHASE)) &
-                                & TAUA(IN,INDICES) = 0.0
-                            GDOT(ISLIP, IN, :) = CRYSTAL_PARM(1,IPHASE)*&
-                                &TAU(IN,:)*TAUA(IN,:)**XN(IPHASE)
+                            WHERE(TAUA(IN, INDICES) .LE. TOOSMALL(IPHASE)) &
+                                & TAUA(IN, INDICES) = 0.0D0
+                            GDOT(ISLIP, IN, :) = CRYSTAL_PARM(1, IPHASE)*&
+                                &TAU(IN, :) * TAUA(IN, :) ** XN(IPHASE)
                             !
                         ELSE IF &
                         & (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .TRUE.) THEN
                             !
-                            WHERE(TAUA(IN,INDICES).LE.ATOOSMALL(ISLIP,IPHASE)) &
-                                & TAUA(IN,INDICES) = 0.0
-                            GDOT(ISLIP, IN, :) = CRYSTAL_PARM(1,IPHASE)*&
-                                &TAU(IN,:)*TAUA(IN,:)**AXN(ISLIP,IPHASE)
+                            WHERE(TAUA(IN, INDICES) .LE. &
+                                & ATOOSMALL(ISLIP, IPHASE)) &
+                                & TAUA(IN, INDICES) = 0.0D0
+                            GDOT(ISLIP, IN, :) = CRYSTAL_PARM(1, IPHASE) * &
+                                &TAU(IN, :) * TAUA(IN, :) ** AXN(ISLIP, IPHASE)
                             !
                         END IF
                         !
@@ -564,9 +588,8 @@ CONTAINS
                     !
                 ENDDO !N_SLIP
                 !
-                CALL DP_WP_HAT(P_HAT_VEC, DP_HAT_VEC, &
-                    & WP_HAT_VEC, E_ELAS, E_BAR, W_VEC_LAT, GDOT, &
-                    & N_SLIP, DT, N, M, NUMIND, INDICES)
+                CALL DP_WP_HAT(P_HAT_VEC, DP_HAT_VEC, WP_HAT_VEC, E_ELAS, &
+                    & E_BAR, W_VEC_LAT, GDOT, N_SLIP, DT, N, M, NUMIND, INDICES)
                 !
                 CALL WP_HAT_MAT5X5(WP_HAT_VEC,WP_HAT_MATX, N, M, NUMIND, &
                     & INDICES)
@@ -583,9 +606,8 @@ CONTAINS
                 !
                 WP_X_E(:, :, INDICES) = WP_X_E_TMP
                 !
-                CALL RESIDUAL(RES_AUX, FJ,&
-                    & D_VEC_LAT, E_VEC, E_BAR_VEC, DP_HAT_VEC, WP_X_E,&
-                    & C1, N, M, NUMIND, INDICES)
+                CALL RESIDUAL(RES_AUX, FJ, D_VEC_LAT, E_VEC, E_BAR_VEC, &
+                    & DP_HAT_VEC, WP_X_E, C1, N, M, NUMIND, INDICES)
                 !
                 DEALLOCATE(INDICES)
                 DEALLOCATE(WP_X_E_TMP)
@@ -646,7 +668,7 @@ CONTAINS
             RETURN
             !
         ENDIF
-        ! 
+        !
     ENDDO
     !
     IRC = -2
@@ -681,15 +703,15 @@ CONTAINS
     !---------------------------------------------------------------------------
     !
     DO IM = 0, M-1
-        !    
+        !
         DO IN = 0, N-1
             !
             DO J = 0, TVEC1
-                !               
-                DO I = 0, TVEC1          
-                    !                
+                !
+                DO I = 0, TVEC1
+                    !
                     FJAC(I, J, IN, IM) = W_MATX(I, J, IN, IM) * KEINV(J)
-                    !               
+                    !
                 ENDDO
                 !
                 FJAC(J, J, IN, IM) = FJAC(J, J, IN, IM) + KEINV(J) * DTI
@@ -697,14 +719,14 @@ CONTAINS
             ENDDO
             !
             DO ISLIP = 0, N_SLIP-1
-                !            
-                FJAC(:,:,IN,IM) = FJAC(:,:,IN,IM) + &
-                    & DGDOT(ISLIP,IN,IM) * PPT(:,:,ISLIP)
-                !            
+                !
+                FJAC(:, :, IN, IM) = FJAC(:, :, IN, IM) + &
+                    & DGDOT(ISLIP, IN, IM) * PPT(:, :, ISLIP)
+                !
             ENDDO
             !
         ENDDO
-        !      
+        !
     ENDDO
     !
     RETURN
@@ -730,27 +752,27 @@ CONTAINS
     REAL(RK) :: SQR3
     !
     !---------------------------------------------------------------------------
-    !      
+    !
     SQR3 = DSQRT(3.D0)
     !
-    WP_HAT_MATX(:,:,:,INDICES) = 0.0
+    WP_HAT_MATX(:,:,:,INDICES) = 0.0D0
     !
     WP_HAT_MATX(0, 2, :, INDICES) =   WP_HAT(0, :, INDICES) * 2.0D0
     WP_HAT_MATX(0, 3, :, INDICES) =   WP_HAT(1, :, INDICES)
     WP_HAT_MATX(0, 4, :, INDICES) = - WP_HAT(2, :, INDICES)
-    !                                          
+    !
     WP_HAT_MATX(1, 3, :, INDICES) = - WP_HAT(1, :, INDICES) * SQR3
     WP_HAT_MATX(1, 4, :, INDICES) = - WP_HAT(2, :, INDICES) * SQR3
-    !                                          
+    !
     WP_HAT_MATX(2, 0, :, INDICES) = - WP_HAT(0, :, INDICES) * 2.0D0
     WP_HAT_MATX(2, 3, :, INDICES) =   WP_HAT(2, :, INDICES)
     WP_HAT_MATX(2, 4, :, INDICES) =   WP_HAT(1, :, INDICES)
-    !                                          
+    !
     WP_HAT_MATX(3, 0, :, INDICES) = - WP_HAT(1, :, INDICES)
     WP_HAT_MATX(3, 1, :, INDICES) =   WP_HAT(1, :, INDICES) * SQR3
     WP_HAT_MATX(3, 2, :, INDICES) = - WP_HAT(2, :, INDICES)
     WP_HAT_MATX(3, 4, :, INDICES) =   WP_HAT(0, :, INDICES)
-    !                                          
+    !
     WP_HAT_MATX(4, 0, :, INDICES) =   WP_HAT(2, :, INDICES)
     WP_HAT_MATX(4, 1, :, INDICES) =   WP_HAT(2, :, INDICES) * SQR3
     WP_HAT_MATX(4, 2, :, INDICES) = - WP_HAT(1, :, INDICES)
@@ -782,28 +804,28 @@ CONTAINS
     !
     SQR3 = DSQRT(3.D0)
     !
-    WP_HAT_MATX(:,:,:,:) = 0.0
+    WP_HAT_MATX(:,:,:,:) = 0.0D0
     !
     WP_HAT_MATX(0, 2, :, :) =   WP_HAT(0, :, :) * 2.0D0
     WP_HAT_MATX(0, 3, :, :) =   WP_HAT(1, :, :)
     WP_HAT_MATX(0, 4, :, :) = - WP_HAT(2, :, :)
-    !                                      
+    !
     WP_HAT_MATX(1, 3, :, :) = - WP_HAT(1, :, :) * SQR3
     WP_HAT_MATX(1, 4, :, :) = - WP_HAT(2, :, :) * SQR3
-    !                                      
+    !
     WP_HAT_MATX(2, 0, :, :) = - WP_HAT(0, :, :) * 2.0D0
     WP_HAT_MATX(2, 3, :, :) =   WP_HAT(2, :, :)
     WP_HAT_MATX(2, 4, :, :) =   WP_HAT(1, :, :)
-    !                                      
+    !
     WP_HAT_MATX(3, 0, :, :) = - WP_HAT(1, :, :)
     WP_HAT_MATX(3, 1, :, :) =   WP_HAT(1, :, :) * SQR3
     WP_HAT_MATX(3, 2, :, :) = - WP_HAT(2, :, :)
     WP_HAT_MATX(3, 4, :, :) =   WP_HAT(0, :, :)
-    !                                      
+    !
     WP_HAT_MATX(4, 0, :, :) =   WP_HAT(2, :, :)
     WP_HAT_MATX(4, 1, :, :) =   WP_HAT(2, :, :) * SQR3
     WP_HAT_MATX(4, 2, :, :) = - WP_HAT(1, :, :)
-    WP_HAT_MATX(4, 3, :, :) = - WP_HAT(0, :, :)   
+    WP_HAT_MATX(4, 3, :, :) = - WP_HAT(0, :, :)
     !
     RETURN
     !
@@ -841,9 +863,9 @@ CONTAINS
     RES(:,INDICES) = 0.0D0
     !
     DO I = 0, TVEC1
-        !         
+        !
         RES(:,INDICES) = RES(:,INDICES) + RHS(I, :, INDICES)* RHS(I, :, INDICES)
-        !      
+        !
     ENDDO
     !
     RES(:,INDICES) = DSQRT(RES(:,INDICES))
@@ -878,7 +900,7 @@ CONTAINS
         !
         WHERE ( (ABS(STIF(I, I, :, :)) .LT. VTINY) .AND. (.NOT. DONE) ) &
             & NEWTON_OK = .FALSE.
-        !    
+        !
     ENDDO
     !
     RETURN
@@ -912,7 +934,7 @@ CONTAINS
     TEMPJ = 0.0D0
     TEMPS = 0.0D0
     !
-    ! RC 6/24/2016: Reordered loops for better memory striding      
+    ! RC 6/24/2016: Reordered loops for better memory striding
     DO J = 0, TVEC1
         !
         DO I = 0, TVEC1

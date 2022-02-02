@@ -34,6 +34,7 @@ PRIVATE
 INTEGER, PARAMETER :: CLASS_FCC = 1
 INTEGER, PARAMETER :: CLASS_BCC = 2
 INTEGER, PARAMETER :: CLASS_HCP = 3
+INTEGER, PARAMETER :: CLASS_BCT = 4
 INTEGER :: DECOMP_DFLT = DECOMP_MPSIM
 !
 TYPE CRYSTALTYPETYPE
@@ -62,16 +63,19 @@ PUBLIC :: CRYSTALTYPETYPE
 PUBLIC :: CLASS_FCC
 PUBLIC :: CLASS_BCC
 PUBLIC :: CLASS_HCP
+PUBLIC :: CLASS_BCT
 PUBLIC :: DECOMP_MPSIM
 PUBLIC :: DECOMP_FEMEVPS
 !
 PUBLIC :: CRYSTALTYPECREATE
 PUBLIC :: CRYSTALTYPEGET
 !
-CONTAINS 
+CONTAINS
     !
-    FUNCTION CRYSTALTYPECREATE(CTYPE, C_OVER_A, HRATIO_HCP, HRATIO_HCP_PRISM, &
-        & DECOMP) RESULT(SELF)
+    FUNCTION CRYSTALTYPECREATE(CTYPE, C_OVER_A, HRATIO_HCP_PYR, &
+        & HRATIO_HCP_PRISM, HRATIO_BCT_A, HRATIO_BCT_B, HRATIO_BCT_C, &
+        & HRATIO_BCT_D, HRATIO_BCT_E, HRATIO_BCT_F, HRATIO_BCT_G, &
+        & HRATIO_BCT_H, HRATIO_BCT_I, DECOMP) RESULT(SELF)
     !
     ! Create a crystal type object
     !
@@ -86,8 +90,17 @@ CONTAINS
     !
     INTEGER, INTENT(IN) :: CTYPE
     REAL(RK), INTENT(IN), OPTIONAL :: C_OVER_A
-    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_HCP
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_HCP_PYR
     REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_HCP_PRISM
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_BCT_A
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_BCT_B
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_BCT_C
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_BCT_D
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_BCT_E
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_BCT_F
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_BCT_G
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_BCT_H
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_BCT_I
     INTEGER, INTENT(IN), OPTIONAL :: DECOMP
     TYPE(CRYSTALTYPETYPE), POINTER :: SELF
     !
@@ -95,13 +108,33 @@ CONTAINS
     !
     INTEGER(IK) :: MYSTAT
     !
-    REAL(RK), PARAMETER :: DFLT_HRATIO_HCP = 1.0D0
+    REAL(RK), PARAMETER :: DFLT_HRATIO_HCP_PYR = 1.0D0
     REAL(RK), PARAMETER :: DFLT_HRATIO_HCP_PRISM = 1.0D0
     REAL(RK), PARAMETER :: DFLT_CRATIO = 1.0D0
+    !
+    REAL(RK), PARAMETER :: DFLT_HRATIO_BCT_A = 1.0D0
+    REAL(RK), PARAMETER :: DFLT_HRATIO_BCT_B = 1.0D0
+    REAL(RK), PARAMETER :: DFLT_HRATIO_BCT_C = 1.0D0
+    REAL(RK), PARAMETER :: DFLT_HRATIO_BCT_D = 1.0D0
+    REAL(RK), PARAMETER :: DFLT_HRATIO_BCT_E = 1.0D0
+    REAL(RK), PARAMETER :: DFLT_HRATIO_BCT_F = 1.0D0
+    REAL(RK), PARAMETER :: DFLT_HRATIO_BCT_G = 1.0D0
+    REAL(RK), PARAMETER :: DFLT_HRATIO_BCT_H = 1.0D0
+    REAL(RK), PARAMETER :: DFLT_HRATIO_BCT_I = 1.0D0
     !
     REAL(RK) :: HRHCP_PYR
     REAL(RK) :: HRHCP_PRISM
     REAL(RK) :: CRATIO
+    !
+    REAL(RK) :: HRBCT_A
+    REAL(RK) :: HRBCT_B
+    REAL(RK) :: HRBCT_C
+    REAL(RK) :: HRBCT_D
+    REAL(RK) :: HRBCT_E
+    REAL(RK) :: HRBCT_F
+    REAL(RK) :: HRBCT_G
+    REAL(RK) :: HRBCT_H
+    REAL(RK) :: HRBCT_I
     !
     !---------------------------------------------------------------------------
     !
@@ -132,13 +165,13 @@ CONTAINS
             !
         END IF
         !
-        IF (PRESENT(HRATIO_HCP) ) THEN
+        IF (PRESENT(HRATIO_HCP_PYR) ) THEN
             !
-            HRHCP_PYR = HRATIO_HCP
+            HRHCP_PYR = HRATIO_HCP_PYR
             !
         ELSE
             !
-            HRHCP_PYR = DFLT_HRATIO_HCP
+            HRHCP_PYR = DFLT_HRATIO_HCP_PYR
             !
         END IF
         !
@@ -153,13 +186,122 @@ CONTAINS
         END IF
         !
         CALL SCHMIDTENSORS(CTYPE, SELF%SCHMID_3X3, C_OVER_A = CRATIO, &
-            & HRATIO_HCP = HRHCP_PYR, HRATIO_HCP_PRISM = HRHCP_PRISM)
+            & HRATIO_HCP_PYR = HRHCP_PYR, HRATIO_HCP_PRISM = HRHCP_PRISM)
+        !
+    CASE (CLASS_BCT)
+        !
+        IF (PRESENT(C_OVER_A) ) THEN
+            !
+            CRATIO = C_OVER_A
+            !
+        ELSE
+            !
+            CRATIO = DFLT_CRATIO
+            !
+        END IF
+        !
+        IF (PRESENT(HRATIO_BCT_A) ) THEN
+            !
+            HRBCT_A = HRATIO_BCT_A
+            !
+        ELSE
+            !
+            HRBCT_A = DFLT_HRATIO_BCT_A
+            !
+        END IF
+        !
+        IF (PRESENT(HRATIO_BCT_B) ) THEN
+            !
+            HRBCT_B = HRATIO_BCT_B
+            !
+        ELSE
+            !
+            HRBCT_B = DFLT_HRATIO_BCT_B
+            !
+        END IF
+        !
+        IF (PRESENT(HRATIO_BCT_C) ) THEN
+            !
+            HRBCT_C = HRATIO_BCT_C
+            !
+        ELSE
+            !
+            HRBCT_C = DFLT_HRATIO_BCT_C
+            !
+        END IF
+        !
+        IF (PRESENT(HRATIO_BCT_D) ) THEN
+            !
+            HRBCT_D = HRATIO_BCT_D
+            !
+        ELSE
+            !
+            HRBCT_D = DFLT_HRATIO_BCT_D
+            !
+        END IF
+        !
+        IF (PRESENT(HRATIO_BCT_E) ) THEN
+            !
+            HRBCT_E = HRATIO_BCT_E
+            !
+        ELSE
+            !
+            HRBCT_E = DFLT_HRATIO_BCT_E
+            !
+        END IF
+        !
+        IF (PRESENT(HRATIO_BCT_F) ) THEN
+            !
+            HRBCT_F = HRATIO_BCT_F
+            !
+        ELSE
+            !
+            HRBCT_F = DFLT_HRATIO_BCT_F
+            !
+        END IF
+        !
+        IF (PRESENT(HRATIO_BCT_G) ) THEN
+            !
+            HRBCT_G = HRATIO_BCT_G
+            !
+        ELSE
+            !
+            HRBCT_G = DFLT_HRATIO_BCT_G
+            !
+        END IF
+        !
+        IF (PRESENT(HRATIO_BCT_H) ) THEN
+            !
+            HRBCT_H = HRATIO_BCT_H
+            !
+        ELSE
+            !
+            HRBCT_H = DFLT_HRATIO_BCT_H
+            !
+        END IF
+        !
+        IF (PRESENT(HRATIO_BCT_I) ) THEN
+            !
+            HRBCT_I = HRATIO_BCT_I
+            !
+        ELSE
+            !
+            HRBCT_I = DFLT_HRATIO_BCT_I
+            !
+        END IF
+        !
+        CALL SCHMIDTENSORS(CTYPE, SELF%SCHMID_3X3, C_OVER_A = CRATIO, &
+            & HRATIO_BCT_A = HRBCT_A, HRATIO_BCT_B = HRBCT_B, &
+            & HRATIO_BCT_C = HRBCT_C, HRATIO_BCT_D = HRBCT_D, &
+            & HRATIO_BCT_E = HRBCT_E, HRATIO_BCT_F = HRBCT_F, &
+            & HRATIO_BCT_G = HRBCT_G, HRATIO_BCT_H = HRBCT_H, &
+            & HRATIO_BCT_I = HRBCT_I)
         !
     CASE DEFAULT
     !
     END SELECT
     !
-    SELF%NUMSLIP = SIZE(SELF%SCHMID_3X3, DIM=3)
+    SELF%NUMSLIP = SIZE(SELF%SCHMID_3X3, DIM = 3)
     !
     IF (PRESENT(DECOMP)) THEN
         !
@@ -177,7 +319,7 @@ CONTAINS
     ! Retrieve the single-crystal yield surface VERTICES for crystal type.
     ! Note: FCC/BCC should be the same. These values are presently hard-coded
     ! from the values in the legacy VERTICES files from DPLab. - JC
-    ! 
+    !
     IF (CTYPE .EQ. 1) THEN ! CLASS_FCC
         !
         ! Initialize SELF values for FCC.
@@ -206,7 +348,7 @@ CONTAINS
         CALL TENSOR3DDECOMPOSE(SELF%VERTICES3X3, DEV = SELF%VERTICES, &
             & DECOMP = SELF%DECOMP)
         !
-    ELSE IF (CTYPE .EQ. 3) THEN ! CLASS_HCP
+    ELSE IF ((CTYPE .EQ. 3) .OR. (CTYPE .EQ. 4)) THEN ! CLASS_HCP, CLASS_BCT
         !
         ! Initialize SELF values for HCP.
         SELF%NUMVERTICES = 240
@@ -223,15 +365,17 @@ CONTAINS
     ELSE
         !
         SELF%NUMVERTICES = 0
-        !  
+        !
     END IF
     !
     END FUNCTION CRYSTALTYPECREATE
     !
     !===========================================================================
     !
-    SUBROUTINE SCHMIDTENSORS(CTYPE, SCHMID, C_OVER_A, HRATIO_HCP, &
-        & HRATIO_HCP_PRISM)
+    SUBROUTINE SCHMIDTENSORS(CTYPE, SCHMID, C_OVER_A, HRATIO_HCP_PYR, &
+        & HRATIO_HCP_PRISM, HRATIO_BCT_A, HRATIO_BCT_B, HRATIO_BCT_C, &
+        & HRATIO_BCT_D, HRATIO_BCT_E, HRATIO_BCT_F, HRATIO_BCT_G, &
+        & HRATIO_BCT_H, HRATIO_BCT_I)
     !
     ! Create Schmid tensors for specified crystal type
     !
@@ -242,171 +386,247 @@ CONTAINS
     ! SCHMID: Schmid tensors
     ! C_OVER_A: Hexagonal c/a ratio
     ! HRATIO_HCP: Ratio of pyramidal strengths to basal/prismatic
+    ! HRATIO_BCT: Ratios of BCT slip strengths
     !
     INTEGER, INTENT(IN) :: CTYPE
     REAL(RK), POINTER :: SCHMID(:, :, :)
     REAL(RK), INTENT(IN), OPTIONAL :: C_OVER_A
-    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_HCP
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_HCP_PYR
     REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_HCP_PRISM
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_BCT_A
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_BCT_B
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_BCT_C
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_BCT_D
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_BCT_E
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_BCT_F
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_BCT_G
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_BCT_H
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_BCT_I
     !
     ! Locals:
     !
-    ! Parameters
-    !
-    REAL(RK), PARAMETER :: Z = 0.0D0
-    REAL(RK), PARAMETER :: P2 = 1.0D0 / DSQRT(2.0D0)
-    REAL(RK), PARAMETER :: P3 = 1.0D0 / DSQRT(3.0D0)
-    REAL(RK), PARAMETER :: M2 = -P2
-    REAL(RK), PARAMETER :: M3 = -P3
+    INTEGER :: I
     !
     ! Cubic data
     !
-    ! Parameters
+    REAL(RK) :: CUB_110_C(3, 12) = 0.0D0
+    REAL(RK) :: CUB_111_C(3, 12) = 0.0D0
     !
-    REAL(RK), PARAMETER :: P6_1 = 1.0D0 / DSQRT(6.0D0)
-    REAL(RK), PARAMETER :: P6_2 = 2.0D0 * P6_1
-    REAL(RK), PARAMETER :: M6_1 = -P6_1
-    REAL(RK), PARAMETER :: M6_2 = -P6_2
-    REAL(RK), PARAMETER :: P14_1 = 1.0D0 / DSQRT(14.0D0)
-    REAL(RK), PARAMETER :: P14_2 = 2.0D0 / DSQRT(14.0D0)
-    REAL(RK), PARAMETER :: P14_3 = 3.0D0 / DSQRT(14.0D0)
-    REAL(RK), PARAMETER :: M14_1=-P14_1
-    REAL(RK), PARAMETER :: M14_2=-P14_2
-    REAL(RK), PARAMETER :: M14_3=-P14_3
+    ! 110, Miller notation
     !
-    ! Slip normals and directions
+    REAL(RK), PARAMETER, DIMENSION(3, 12) :: CUB_110 = RESHAPE(SOURCE = (/ &
+        & 0.0D0,  1.0D0, -1.0D0, &
+        & 1.0D0,  0.0D0, -1.0D0, &
+        & 1.0D0, -1.0D0,  0.0D0, &
+        & 0.0D0,  1.0D0,  1.0D0, &
+        & 1.0D0,  0.0D0,  1.0D0, &
+        & 1.0D0, -1.0D0,  0.0D0, &
+        & 0.0D0,  1.0D0,  1.0D0, &
+        & 1.0D0,  0.0D0, -1.0D0, &
+        & 1.0D0,  1.0D0,  0.0D0, &
+        & 0.0D0,  1.0D0, -1.0D0, &
+        & 1.0D0,  0.0D0,  1.0D0, &
+        & 1.0D0,  1.0D0,  0.0D0  &
+        & /), SHAPE = (/3, 12/))
     !
-    REAL(RK), PARAMETER, DIMENSION(36) :: CUB_111_DAT = (/ &
-        & P3, P3, P3,     P3, P3, P3,    P3, P3, P3, &
-        & P3, P3, M3,     P3, P3, M3,    P3, P3, M3, &
-        & P3, M3, P3,     P3, M3, P3,    P3, M3, P3, &
-        & P3, M3, M3,     P3, M3, M3,    P3, M3, M3  &
-        & /)
-    REAL(RK), PARAMETER, DIMENSION(3, 12) :: &
-        & CUB_111 = RESHAPE(SOURCE = CUB_111_DAT, SHAPE = (/3, 12/))
+    ! 111, Miller notation
     !
-    REAL(RK), PARAMETER, DIMENSION(36) :: CUB_110_DAT = (/ &
-        & Z, P2, M2,     P2, Z, M2,     P2, M2, Z, &
-        & Z, P2, P2,     P2, Z, P2,     P2, M2, Z, &
-        & Z, P2, P2,     P2, Z, M2,     P2, P2, Z, &
-        & Z, P2, M2,     P2, Z, P2,     P2, P2, Z  &
-        & /)
-    REAL(RK), PARAMETER, DIMENSION(3, 12) :: &
-        & CUB_110 = RESHAPE(SOURCE = CUB_110_DAT, SHAPE = (/3, 12/))
+    REAL(RK), PARAMETER, DIMENSION(3, 12) :: CUB_111 = RESHAPE(SOURCE = (/ &
+        & 1.0D0,  1.0D0,  1.0D0, &
+        & 1.0D0,  1.0D0,  1.0D0, &
+        & 1.0D0,  1.0D0,  1.0D0, &
+        & 1.0D0,  1.0D0, -1.0D0, &
+        & 1.0D0,  1.0D0, -1.0D0, &
+        & 1.0D0,  1.0D0, -1.0D0, &
+        & 1.0D0, -1.0D0,  1.0D0, &
+        & 1.0D0, -1.0D0,  1.0D0, &
+        & 1.0D0, -1.0D0,  1.0D0, &
+        & 1.0D0, -1.0D0, -1.0D0, &
+        & 1.0D0, -1.0D0, -1.0D0, &
+        & 1.0D0, -1.0D0, -1.0D0  &
+        & /), SHAPE = (/3, 12/))
     !
-    REAL(RK), PARAMETER, DIMENSION(36) :: CUB_211_DAT = (/&
-       & M6_1, M6_1, P6_2,     M6_1, P6_2, M6_1,     P6_2, M6_1, M6_1, &
-       & M6_1, M6_1, M6_2,     M6_1, P6_2, P6_1,     P6_2, M6_1, P6_1, &
-       & M6_1, P6_1, P6_2,     M6_1, M6_2, M6_1,     P6_2, P6_1, M6_1, &
-       & M6_1, P6_1, M6_2,     M6_1, M6_2, P6_1,     P6_2, P6_1, P6_1  &
-       & /)
-    REAL(RK), PARAMETER, DIMENSION(3, 12) :: &
-       & CUB_211 = RESHAPE(SOURCE = CUB_211_DAT, SHAPE = (/3, 12/))
+    ! 211, Miller notation (higher order, not currently utilized)
     !
-    REAL(RK), PARAMETER, DIMENSION(36) :: CUB_123_A_DAT = (/ &
-        & M14_1, M14_2, P14_3,   M14_1, P14_3, M14_2,   P14_3, M14_1, M14_2, &
-        & M14_1, M14_2, M14_3,   M14_1, P14_3, P14_2,   P14_3, M14_1, P14_2, &
-        & M14_1, P14_2, P14_3,   M14_1, M14_3, M14_2,   P14_3, P14_1, M14_2, &
-        & M14_1, P14_2, M14_3,   M14_1, M14_3, P14_2,   P14_3, P14_1, P14_2  &
-        & /)
-    REAL(RK), PARAMETER, DIMENSION(3, 12) :: &
-        & CUB_123_A = RESHAPE(SOURCE = CUB_123_A_DAT, SHAPE = (/3, 12/))
+    REAL(RK), PARAMETER, DIMENSION(3, 12) :: CUB_211 = RESHAPE(SOURCE = (/ &
+        & -1.0D0, -1.0D0,  2.0D0, &
+        & -1.0D0,  2.0D0, -1.0D0, &
+        &  2.0D0, -1.0D0, -1.0D0, &
+        & -1.0D0, -1.0D0, -2.0D0, &
+        & -1.0D0,  2.0D0,  1.0D0, &
+        &  2.0D0, -1.0D0,  1.0D0, &
+        & -1.0D0,  1.0D0,  2.0D0, &
+        & -1.0D0, -2.0D0, -1.0D0, &
+        &  2.0D0,  1.0D0, -1.0D0, &
+        & -1.0D0,  1.0D0, -2.0D0, &
+        & -1.0D0, -2.0D0,  1.0D0, &
+        &  2.0D0,  1.0D0,  1.0D0  &
+        & /), SHAPE = (/3, 12/))
     !
-    REAL(RK), PARAMETER, DIMENSION(36) :: CUB_123_B_DAT = (/ &
-       & M14_2, M14_1, P14_3,   M14_2, P14_3, M14_1,   P14_3, M14_2, M14_1, &
-       & M14_2, M14_1, M14_3,   M14_2, P14_3, P14_1,   P14_3, M14_2, P14_1, &
-       & M14_2, P14_1, P14_3,   M14_2, M14_3, M14_1,   P14_3, P14_2, M14_1, &
-       & M14_2, P14_1, M14_3,   M14_2, M14_3, P14_1,   P14_3, P14_2, P14_1  &
-       & /)
-    REAL(RK), PARAMETER, DIMENSION(3, 12) :: &
-       & CUB_123_B = RESHAPE(SOURCE = CUB_123_B_DAT, SHAPE = (/3, 12/))
+    ! 123 (A), Miller notation (higher order, not currently utilized)
     !
-    ! HCP Data
+    REAL(RK), PARAMETER, DIMENSION(3, 12) :: CUB_123A = RESHAPE(SOURCE = (/ &
+        & -1.0D0, -2.0D0,  3.0D0, &
+        & -1.0D0,  3.0D0, -2.0D0, &
+        &  3.0D0, -1.0D0, -2.0D0, &
+        & -1.0D0, -2.0D0, -3.0D0, &
+        & -1.0D0,  3.0D0,  2.0D0, &
+        &  3.0D0, -1.0D0,  2.0D0, &
+        & -1.0D0,  2.0D0,  3.0D0, &
+        & -1.0D0, -3.0D0, -2.0D0, &
+        &  3.0D0,  1.0D0, -2.0D0, &
+        & -1.0D0,  2.0D0, -3.0D0, &
+        & -1.0D0, -3.0D0,  2.0D0, &
+        &  3.0D0,  1.0D0,  2.0D0  &
+        & /), SHAPE = (/3, 12/))
     !
-    ! Parameters
+    ! 123 (B), Miller notation (higher order, not currently utilized)
     !
-    REAL(RK), PARAMETER :: ONE = 1.0D0, HALF = 0.5D0
-    REAL(RK), PARAMETER :: COS_30 = HALF * DSQRT(3.0D0)
+    REAL(RK), PARAMETER, DIMENSION(3, 12) :: CUB_123B = RESHAPE(SOURCE = (/ &
+        & -2.0D0, -1.0D0,  3.0D0, &
+        & -2.0D0,  3.0D0, -1.0D0, &
+        &  3.0D0, -2.0D0, -1.0D0, &
+        & -2.0D0, -1.0D0, -3.0D0, &
+        & -2.0D0,  3.0D0,  1.0D0, &
+        &  3.0D0, -2.0D0,  1.0D0, &
+        & -2.0D0,  1.0D0,  3.0D0, &
+        & -2.0D0, -3.0D0, -1.0D0, &
+        &  3.0D0,  2.0D0, -1.0D0, &
+        & -2.0D0,  1.0D0, -3.0D0, &
+        & -2.0D0, -3.0D0,  1.0D0, &
+        &  3.0D0,  2.0D0,  1.0D0  &
+        & /), SHAPE = (/3, 12/))
     !
-    ! Basal plane normals
+    ! HCP data
     !
-    REAL(RK), PARAMETER, DIMENSION(3, 3) :: &
-        & HEX_BASAL_SN = RESHAPE(&
-            & SOURCE = (/&
-                & Z, Z, ONE,     Z, Z, ONE,     Z, Z, ONE &
-                & /), &
-            & SHAPE = (/3, 3/))
+    REAL(RK) :: HCP_N_C(3, 18) = 0.0D0
+    REAL(RK) :: HCP_D_C(3, 18) = 0.0D0
+    REAL(RK) :: SCALE = 0.0D0
     !
-    ! Basal slip directions
+    ! Plane normals, Miller-Bravais notation
     !
-    REAL(RK), PARAMETER, DIMENSION(3, 3) :: &
-        & HEX_BASAL_SD = RESHAPE(&
-            & SOURCE = (/&
-                & ONE, Z, Z,     -HALF, COS_30, Z,     -HALF,  -COS_30, Z &
-                & /), &
-            & SHAPE = (/3, 3/))
+    REAL(RK), PARAMETER, DIMENSION(4, 18) :: HCP_N = RESHAPE(SOURCE = (/ &
+        &  0.0D0,  0.0D0,  0.0D0,  1.0D0, &
+        &  0.0D0,  0.0D0,  0.0D0,  1.0D0, &
+        &  0.0D0,  0.0D0,  0.0D0,  1.0D0, &
+        &  0.0D0,  1.0D0, -1.0D0,  0.0D0, &
+        & -1.0D0,  0.0D0,  1.0D0,  0.0D0, &
+        &  1.0D0, -1.0D0,  0.0D0,  0.0D0, &
+        &  1.0D0,  0.0D0, -1.0D0,  1.0D0, &
+        &  1.0D0,  0.0D0, -1.0D0,  1.0D0, &
+        &  0.0D0,  1.0D0, -1.0D0,  1.0D0, &
+        &  0.0D0,  1.0D0, -1.0D0,  1.0D0, &
+        & -1.0D0,  1.0D0,  0.0D0,  1.0D0, &
+        & -1.0D0,  1.0D0,  0.0D0,  1.0D0, &
+        & -1.0D0,  0.0D0,  1.0D0,  1.0D0, &
+        & -1.0D0,  0.0D0,  1.0D0,  1.0D0, &
+        &  0.0D0, -1.0D0,  1.0D0,  1.0D0, &
+        &  0.0D0, -1.0D0,  1.0D0,  1.0D0, &
+        &  1.0D0, -1.0D0,  0.0D0,  1.0D0, &
+        &  1.0D0, -1.0D0,  0.0D0,  1.0D0  &
+        & /), SHAPE = (/4, 18/))
     !
-    ! Prismatic plane normals
+    ! Slip directions, Miller-Bravais notation
     !
-    REAL(RK), PARAMETER, DIMENSION(3, 3) :: &
-        & HEX_PRIS_SN = RESHAPE(&
-            & SOURCE = (/&
-                & Z, ONE, Z,     -COS_30, -HALF,  Z,     COS_30, -HALF,  Z &
-                & /), &
-            & SHAPE = (/3, 3/))
+    REAL(RK), PARAMETER, DIMENSION(4, 18) :: HCP_D = RESHAPE(SOURCE = (/ &
+        &  2.0D0, -1.0D0, -1.0D0,  0.0D0, &
+        & -1.0D0,  2.0D0, -1.0D0,  0.0D0, &
+        & -1.0D0, -1.0D0,  2.0D0,  0.0D0, &
+        &  2.0D0, -1.0D0, -1.0D0,  0.0D0, &
+        & -1.0D0,  2.0D0, -1.0D0,  0.0D0, &
+        & -1.0D0, -1.0D0,  2.0D0,  0.0D0, &
+        & -2.0D0,  1.0D0,  1.0D0,  3.0D0, &
+        & -1.0D0, -1.0D0,  2.0D0,  3.0D0, &
+        & -1.0D0, -1.0D0,  2.0D0,  3.0D0, &
+        &  1.0D0, -2.0D0,  1.0D0,  3.0D0, &
+        &  1.0D0, -2.0D0,  1.0D0,  3.0D0, &
+        &  2.0D0, -1.0D0, -1.0D0,  3.0D0, &
+        &  2.0D0, -1.0D0, -1.0D0,  3.0D0, &
+        &  1.0D0,  1.0D0, -2.0D0,  3.0D0, &
+        &  1.0D0,  1.0D0, -2.0D0,  3.0D0, &
+        & -1.0D0,  2.0D0, -1.0D0,  3.0D0, &
+        & -1.0D0,  2.0D0, -1.0D0,  3.0D0, &
+        & -2.0D0,  1.0D0,  1.0D0,  3.0D0  &
+        & /),SHAPE = (/4, 18/))
     !
-    ! Prismatic slip directions
+    ! BCT data
     !
-    REAL(RK), PARAMETER, DIMENSION(3, 3) :: &
-        & HEX_PRIS_SD = RESHAPE(&
-            & SOURCE = (/&
-                & ONE, Z, Z,     -HALF, COS_30, Z,     -HALF, -COS_30, Z &
-                & /), &
-            & SHAPE = (/3, 3/))
+    REAL(RK) :: BCT_N_C(3, 32) = 0.0D0
+    REAL(RK) :: BCT_D_C(3, 32) = 0.0D0
     !
-    ! Pyramidal plane normals (in Miller-Bravais notation)
+    ! Plane normals, Miller notation
     !
-    REAL(RK), PARAMETER, DIMENSION(4, 12) :: &
-        & HEX_PYR1_SN = RESHAPE( &
-            & SOURCE = (/ &
-                & 1.0,  0.0, -1.0,  1.0, &
-                & 1.0,  0.0, -1.0,  1.0, &
-                & 0.0,  1.0, -1.0,  1.0, &
-                & 0.0,  1.0, -1.0,  1.0, &
-                & -1.0,  1.0,  0.0,  1.0, &
-                & -1.0,  1.0,  0.0,  1.0, &
-                & -1.0,  0.0,  1.0,  1.0, &
-                & -1.0,  0.0,  1.0,  1.0, &
-                & 0.0, -1.0,  1.0,  1.0, &
-                & 0.0, -1.0,  1.0,  1.0, &
-                & 1.0, -1.0,  0.0,  1.0, &
-                & 1.0, -1.0,  0.0,  1.0  &
-                & /), &
-            & SHAPE = (/4,  12/))
+    REAL(RK), PARAMETER, DIMENSION(3, 32) :: BCT_SN = RESHAPE(SOURCE = (/ &
+        &  1.0D0,  0.0D0,  0.0D0, &
+        &  0.0D0,  1.0D0,  0.0D0, &
+        &  1.0D0,  1.0D0,  0.0D0, &
+        &  1.0D0, -1.0D0,  0.0D0, &
+        &  1.0D0,  0.0D0,  0.0D0, &
+        &  0.0D0,  1.0D0,  0.0D0, &
+        &  1.0D0,  1.0D0,  0.0D0, &
+        &  1.0D0,  1.0D0,  0.0D0, &
+        &  1.0D0, -1.0D0,  0.0D0, &
+        &  1.0D0, -1.0D0,  0.0D0, &
+        &  1.0D0,  1.0D0,  0.0D0, &
+        &  1.0D0, -1.0D0,  0.0D0, &
+        &  1.0D0,  0.0D0,  0.0D0, &
+        &  1.0D0,  0.0D0,  0.0D0, &
+        &  0.0D0,  1.0D0,  0.0D0, &
+        &  0.0D0,  1.0D0,  0.0D0, &
+        &  0.0D0,  0.0D0,  1.0D0, &
+        &  0.0D0,  0.0D0,  1.0D0, &
+        &  0.0D0,  0.0D0,  1.0D0, &
+        &  0.0D0,  0.0D0,  1.0D0, &
+        &  1.0D0,  0.0D0,  1.0D0, &
+        &  1.0D0,  0.0D0, -1.0D0, &
+        &  0.0D0,  1.0D0,  1.0D0, &
+        &  0.0D0,  1.0D0, -1.0D0, &
+        &  1.0D0,  2.0D0,  1.0D0, &
+        & -1.0D0,  2.0D0,  1.0D0, &
+        & -1.0D0, -2.0D0,  1.0D0, &
+        &  1.0D0, -2.0D0,  1.0D0, &
+        &  2.0D0,  1.0D0,  1.0D0, &
+        & -2.0D0,  1.0D0,  1.0D0, &
+        & -2.0D0, -1.0D0,  1.0D0, &
+        &  2.0D0, -1.0D0,  1.0D0 &
+        & /), SHAPE = (/3,  32/))
     !
-    ! Pyramidal slip directions (in Miller-Bravais notation)
+    ! Slip directions, Miller notation
     !
-    REAL(RK), PARAMETER, DIMENSION(4, 12) :: &
-        & HEX_PYR1_SD = RESHAPE(&
-            & SOURCE = (/ &
-                & -2.0,  1.0,  1.0,  3.0, &
-                & -1.0, -1.0,  2.0,  3.0, &
-                & -1.0, -1.0,  2.0,  3.0, &
-                & 1.0, -2.0,  1.0,  3.0, &
-                & 1.0, -2.0,  1.0,  3.0, &
-                & 2.0, -1.0, -1.0,  3.0, &
-                & 2.0, -1.0, -1.0,  3.0, &
-                & 1.0,  1.0, -2.0,  3.0, &
-                & 1.0,  1.0, -2.0,  3.0, &
-                & -1.0,  2.0, -1.0,  3.0, &
-                & -1.0,  2.0, -1.0,  3.0, &
-                & -2.0,  1.0,  1.0,  3.0  &
-                & /), &
-            & SHAPE = (/4,  12/))
-    !
-    REAL(RK) :: SNRM(3, 12)
-    REAL(RK) :: SDIR(3, 12)
-    REAL(RK) :: RESCALE
+    REAL(RK), PARAMETER, DIMENSION(3, 32) :: BCT_SD = RESHAPE(SOURCE = (/ &
+        &  0.0D0,  0.0D0,  1.0D0, &
+        &  0.0D0,  0.0D0,  1.0D0, &
+        &  0.0D0,  0.0D0,  1.0D0, &
+        &  0.0D0,  0.0D0,  1.0D0, &
+        &  0.0D0,  1.0D0,  0.0D0, &
+        &  1.0D0,  0.0D0,  0.0D0, &
+        &  1.0D0, -1.0D0,  1.0D0, &
+        & -1.0D0,  1.0D0,  1.0D0, &
+        &  1.0D0,  1.0D0,  1.0D0, &
+        & -1.0D0, -1.0D0,  1.0D0, &
+        & -1.0D0,  1.0D0,  0.0D0, &
+        &  1.0D0,  1.0D0,  0.0D0, &
+        &  0.0D0,  1.0D0,  1.0D0, &
+        &  0.0D0,  1.0D0, -1.0D0, &
+        &  1.0D0,  0.0D0,  1.0D0, &
+        &  1.0D0,  0.0D0, -1.0D0, &
+        &  1.0D0,  0.0D0,  0.0D0, &
+        &  0.0D0,  1.0D0,  0.0D0, &
+        &  1.0D0,  1.0D0,  0.0D0, &
+        &  1.0D0, -1.0D0,  0.0D0, &
+        &  1.0D0,  0.0D0, -1.0D0, &
+        &  1.0D0,  0.0D0,  1.0D0, &
+        &  0.0D0,  1.0D0, -1.0D0, &
+        &  0.0D0,  1.0D0,  1.0D0, &
+        & -1.0D0,  0.0D0,  1.0D0, &
+        &  1.0D0,  0.0D0,  1.0D0, &
+        &  1.0D0,  0.0D0,  1.0D0, &
+        & -1.0D0,  0.0D0,  1.0D0, &
+        &  0.0D0, -1.0D0,  1.0D0, &
+        &  0.0D0, -1.0D0,  1.0D0, &
+        &  0.0D0,  1.0D0,  1.0D0, &
+        &  0.0D0,  1.0D0,  1.0D0 &
+        & /), SHAPE = (/3,  32/))
     !
     ! Construct Schmid tensors
     !
@@ -415,89 +635,155 @@ CONTAINS
     CASE (CLASS_FCC)
         !
         ALLOCATE(SCHMID(3, 3, 12))
+        SCHMID = 0.0D0
         !
-        SCHMID(1, 1, :) = CUB_110(1, :) * CUB_111(1, :)
-        SCHMID(2, 1, :) = CUB_110(2, :) * CUB_111(1, :)
-        SCHMID(3, 1, :) = CUB_110(3, :) * CUB_111(1, :)
-        SCHMID(1, 2, :) = CUB_110(1, :) * CUB_111(2, :)
-        SCHMID(2, 2, :) = CUB_110(2, :) * CUB_111(2, :)
-        SCHMID(3, 2, :) = CUB_110(3, :) * CUB_111(2, :)
-        SCHMID(1, 3, :) = CUB_110(1, :) * CUB_111(3, :)
-        SCHMID(2, 3, :) = CUB_110(2, :) * CUB_111(3, :)
-        SCHMID(3, 3, :) = CUB_110(3, :) * CUB_111(3, :)
+        ! Normalize Cartesian vectors
+        !
+        DO I = 1, 12
+            !
+            CUB_110_C(:, I) = CUB_110(:, I) / NORM2(CUB_110(:, I))
+            CUB_111_C(:, I) = CUB_111(:, I) / NORM2(CUB_111(:, I))
+            !
+            SCHMID(:, :, I) = MATMUL(RESHAPE(CUB_110_C(:, I), (/3, 1/)), &
+                & RESHAPE(CUB_111_C(:, I), (/1, 3/)))
+            !
+        END DO
         !
     CASE (CLASS_BCC)
         !
         ALLOCATE(SCHMID(3, 3, 12))
+        SCHMID = 0.0D0
         !
-        SCHMID(1, 1, :) = CUB_111(1, :) * CUB_110(1, :)
-        SCHMID(2, 1, :) = CUB_111(2, :) * CUB_110(1, :)
-        SCHMID(3, 1, :) = CUB_111(3, :) * CUB_110(1, :)
-        SCHMID(1, 2, :) = CUB_111(1, :) * CUB_110(2, :)
-        SCHMID(2, 2, :) = CUB_111(2, :) * CUB_110(2, :)
-        SCHMID(3, 2, :) = CUB_111(3, :) * CUB_110(2, :)
-        SCHMID(1, 3, :) = CUB_111(1, :) * CUB_110(3, :)
-        SCHMID(2, 3, :) = CUB_111(2, :) * CUB_110(3, :)
-        SCHMID(3, 3, :) = CUB_111(3, :) * CUB_110(3, :)
+        ! Normalize Cartesian vectors
+        !
+        DO I = 1, 12
+            !
+            CUB_110_C(:, I) = CUB_110(:, I) / NORM2(CUB_110(:, I))
+            CUB_111_C(:, I) = CUB_111(:, I) / NORM2(CUB_111(:, I))
+            !
+            SCHMID(:, :, I) = MATMUL(RESHAPE(CUB_111_C(:, I), (/3, 1/)), &
+                & RESHAPE(CUB_110_C(:, I), (/1, 3/)))
+            !
+        END DO
         !
     CASE (CLASS_HCP)
         !
         ALLOCATE(SCHMID(3, 3, 18))
+        SCHMID = 0.0D0
         !
-        ! Basal
+        ! Convert Miller-Bravais notation to Cartesian (orthonormal)
         !
-        SCHMID(1, 1, 1:3) = HEX_BASAL_SD(1, :) * HEX_BASAL_SN(1, :)
-        SCHMID(2, 1, 1:3) = HEX_BASAL_SD(2, :) * HEX_BASAL_SN(1, :)
-        SCHMID(3, 1, 1:3) = HEX_BASAL_SD(3, :) * HEX_BASAL_SN(1, :)
-        SCHMID(1, 2, 1:3) = HEX_BASAL_SD(1, :) * HEX_BASAL_SN(2, :)
-        SCHMID(2, 2, 1:3) = HEX_BASAL_SD(2, :) * HEX_BASAL_SN(2, :)
-        SCHMID(3, 2, 1:3) = HEX_BASAL_SD(3, :) * HEX_BASAL_SN(2, :)
-        SCHMID(1, 3, 1:3) = HEX_BASAL_SD(1, :) * HEX_BASAL_SN(3, :)
-        SCHMID(2, 3, 1:3) = HEX_BASAL_SD(2, :) * HEX_BASAL_SN(3, :)
-        SCHMID(3, 3, 1:3) = HEX_BASAL_SD(3, :) * HEX_BASAL_SN(3, :)
+        HCP_N_C(1, :) = HCP_N(1, :)
+        HCP_N_C(2, :) = (2.0D0 * HCP_N(2, :) + HCP_N(1, :)) / DSQRT(3.0D0)
+        HCP_N_C(3, :) = HCP_N(4, :) / C_OVER_A
         !
-        ! Prismatic
+        HCP_D_C(1, :) = 1.5D0 * HCP_D(1, :)
+        HCP_D_C(2, :) = (HCP_D(2, :) + 0.5D0 * HCP_D(1, :)) * DSQRT(3.0D0)
+        HCP_D_C(3, :) = HCP_D(4, :) * C_OVER_A
         !
-        RESCALE  = 1.0D0 / HRATIO_HCP_PRISM
+        ! Normalize Cartesian vectors
         !
-        SCHMID(1, 1, 4:6) = RESCALE * HEX_PRIS_SD(1, :) * HEX_PRIS_SN(1, :)
-        SCHMID(2, 1, 4:6) = RESCALE * HEX_PRIS_SD(2, :) * HEX_PRIS_SN(1, :)
-        SCHMID(3, 1, 4:6) = RESCALE * HEX_PRIS_SD(3, :) * HEX_PRIS_SN(1, :)
-        SCHMID(1, 2, 4:6) = RESCALE * HEX_PRIS_SD(1, :) * HEX_PRIS_SN(2, :)
-        SCHMID(2, 2, 4:6) = RESCALE * HEX_PRIS_SD(2, :) * HEX_PRIS_SN(2, :)
-        SCHMID(3, 2, 4:6) = RESCALE * HEX_PRIS_SD(3, :) * HEX_PRIS_SN(2, :)
-        SCHMID(1, 3, 4:6) = RESCALE * HEX_PRIS_SD(1, :) * HEX_PRIS_SN(3, :)
-        SCHMID(2, 3, 4:6) = RESCALE * HEX_PRIS_SD(2, :) * HEX_PRIS_SN(3, :)
-        SCHMID(3, 3, 4:6) = RESCALE * HEX_PRIS_SD(3, :) * HEX_PRIS_SN(3, :)
+        DO I = 1, 18
+            !
+            HCP_N_C(:, I) = HCP_N_C(:, I) / NORM2(HCP_N_C(:, I))
+            HCP_D_C(:, I) = HCP_D_C(:, I) / NORM2(HCP_D_C(:, I))
+            !
+            SCHMID(:, :, I) = MATMUL(RESHAPE(HCP_D_C(:, I), (/3, 1/)), &
+                & RESHAPE(HCP_N_C(:, I), (/1, 3/)))
+            !
+            IF ((I .GE. 4) .AND. (I .LE. 6)) THEN
+                !
+                SCALE  = 1.0D0 / HRATIO_HCP_PRISM
+                SCHMID(:, :, I) = SCALE * SCHMID(:, :, I)
+                !
+            ELSE IF ((I .GE. 7) .AND. (I .LE. 18)) THEN
+                !
+                SCALE  = 1.0D0 / HRATIO_HCP_PYR
+                SCHMID(:, :, I) = SCALE * SCHMID(:, :, I)
+                !
+            END IF
+            !
+        END DO
         !
-        ! Pyramidal
+    CASE (CLASS_BCT)
         !
-        RESCALE  = 1.0D0 / HRATIO_HCP
+        ALLOCATE(SCHMID(3, 3, 32))
+        SCHMID = 0.0D0
         !
-        ! Convert Miller indices to spatial directions.
+        ! Convert Miller notation to Cartesian
         !
-        SNRM(1, :) = HEX_PYR1_SN(1, :)
-        SNRM(2, :) = (2.0D0 * HEX_PYR1_SN(2, :) + SNRM(1, :)) / DSQRT(3.0D0)
-        SNRM(3, :) = HEX_PYR1_SN(4, :) / C_OVER_A
-        SNRM = SNRM / SPREAD(SOURCE = DSQRT(SUM(SNRM * SNRM, DIM = 1)), &
-            & DIM = 1, NCOPIES = 3)
-
-        SDIR(1, :) = 1.5D0  *HEX_PYR1_SD(1, :)
-        SDIR(2, :) =(HEX_PYR1_SD(2, :) + 0.5D0 * HEX_PYR1_SD(1, :)) * &
-            & DSQRT(3.0D0)
-        SDIR(3, :) = HEX_PYR1_SD(4, :) * C_OVER_A
-        SDIR = SDIR / SPREAD(SOURCE = DSQRT(SUM(SDIR * SDIR, DIM = 1)), &
-            & DIM = 1, NCOPIES = 3)
+        BCT_N_C(1,:) = BCT_SN(1,:)
+        BCT_N_C(2,:) = BCT_SN(2,:)
+        BCT_N_C(3,:) = BCT_SN(3,:) / C_OVER_A
         !
-        SCHMID(1, 1, 7:18) = RESCALE * SDIR(1, :) * SNRM(1, :)
-        SCHMID(2, 1, 7:18) = RESCALE * SDIR(2, :) * SNRM(1, :)
-        SCHMID(3, 1, 7:18) = RESCALE * SDIR(3, :) * SNRM(1, :)
-        SCHMID(1, 2, 7:18) = RESCALE * SDIR(1, :) * SNRM(2, :)
-        SCHMID(2, 2, 7:18) = RESCALE * SDIR(2, :) * SNRM(2, :)
-        SCHMID(3, 2, 7:18) = RESCALE * SDIR(3, :) * SNRM(2, :)
-        SCHMID(1, 3, 7:18) = RESCALE * SDIR(1, :) * SNRM(3, :)
-        SCHMID(2, 3, 7:18) = RESCALE * SDIR(2, :) * SNRM(3, :)
-        SCHMID(3, 3, 7:18) = RESCALE * SDIR(3, :) * SNRM(3, :)
+        BCT_D_C(1,:) = BCT_SD(1,:)
+        BCT_D_C(2,:) = BCT_SD(2,:)
+        BCT_D_C(3,:) = BCT_SD(3,:) * C_OVER_A
+        !
+        ! Normalize Cartesian vectors, construct Schmid tensors
+        !
+        DO I = 1, 32
+            !
+            ! Normalize
+            !
+            BCT_N_C(:, I) = BCT_N_C(:, I) / NORM2(BCT_N_C(:, I))
+            BCT_D_C(:, I) = BCT_D_C(:, I) / NORM2(BCT_D_C(:, I))
+            !
+            ! D*N^T
+            !
+            SCHMID(:, :, I) = MATMUL(RESHAPE(BCT_D_C(:, I), (/3, 1/)), &
+                & RESHAPE(BCT_N_C(:, I), (/1, 3/)))
+            !
+            ! Scale by relative strengths
+            !
+            IF ((I .GE. 3) .AND. (I .LE. 4)) THEN
+                !
+                SCALE  = 1.0D0 / HRATIO_BCT_A
+                SCHMID(:, :, I) = SCALE * SCHMID(:, :, I)
+                !
+            ELSE IF ((I .GE. 5) .AND. (I .LE. 6)) THEN
+                !
+                SCALE  = 1.0D0 / HRATIO_BCT_B
+                SCHMID(:, :, I) = SCALE * SCHMID(:, :, I)
+                !
+            ELSE IF ((I .GE. 7) .AND. (I .LE. 10)) THEN
+                !
+                SCALE  = 1.0D0 / HRATIO_BCT_C
+                SCHMID(:, :, I) = SCALE * SCHMID(:, :, I)
+                !
+            ELSE IF ((I .GE. 11) .AND. (I .LE. 12)) THEN
+                !
+                SCALE  = 1.0D0 / HRATIO_BCT_D
+                SCHMID(:, :, I) = SCALE * SCHMID(:, :, I)
+                !
+            ELSE IF ((I .GE. 13) .AND. (I .LE. 16)) THEN
+                !
+                SCALE  = 1.0D0 / HRATIO_BCT_E
+                SCHMID(:, :, I) = SCALE * SCHMID(:, :, I)
+                !
+            ELSE IF ((I .GE. 17) .AND. (I .LE. 18)) THEN
+                !
+                SCALE  = 1.0D0 / HRATIO_BCT_F
+                SCHMID(:, :, I) = SCALE * SCHMID(:, :, I)
+                !
+            ELSE IF ((I .GE. 19) .AND. (I .LE. 20)) THEN
+                !
+                SCALE  = 1.0D0 / HRATIO_BCT_G
+                SCHMID(:, :, I) = SCALE * SCHMID(:, :, I)
+                !
+            ELSE IF ((I .GE. 21) .AND. (I .LE. 24)) THEN
+                !
+                SCALE  = 1.0D0 / HRATIO_BCT_H
+                SCHMID(:, :, I) = SCALE * SCHMID(:, :, I)
+                !
+            ELSE IF ((I .GE. 25) .AND. (I .LE. 32)) THEN
+                !
+                SCALE  = 1.0D0 / HRATIO_BCT_I
+                SCHMID(:, :, I) = SCALE * SCHMID(:, :, I)
+                !
+            END IF
+            !
+        END DO
         !
     CASE DEFAULT
         !
@@ -1533,6 +1819,10 @@ CONTAINS
         VERTICES = VERT_FCC
         !
     ELSE IF (CTYPE .EQ. 3) THEN ! CLASS_HCP
+        !
+        VERTICES = VERT_HCP
+        !
+    ELSE IF (CTYPE .EQ. 4) THEN ! CLASS_BCT
         !
         VERTICES = VERT_HCP
         !

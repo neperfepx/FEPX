@@ -22,16 +22,15 @@ USE DIMENSIONS_MOD, ONLY: DIMS1, TVEC, TVEC1, MAXSLIP1, NGRAIN1, &
     & ANISOTROPIC_EVPS, VTINY
 USE DRIVER_UTILITIES_MOD, ONLY: VELOCITY_ITERATION, CALC_MESH_DIM, EST_AVG_MOD,&
     & UPDATE_STATE_EVPS, CALC_STRESS_STRAIN
-USE FIBER_AVERAGE_MOD, ONLY: RUN_FIBER_AVERAGE
 USE KINEMATICS_MOD, ONLY: PLASTICVELGRADSYMSKW, CALC_TOTAL_WORK,&
     & CALC_PLASTIC_WORK
 USE MATRIX_OPERATIONS_MOD, ONLY: CALC_ELVOL, SOLVE_LIN_SYS_3, &
     & STRAIN_EQUIV_3X3, VEC6_MAT_SYMM
 USE MICROSTRUCTURE_MOD, ONLY: NUMPHASES, GAMMADOT
 USE READ_INPUT_MOD, ONLY: KDIM1, EL_SUB1, EL_SUP1, DOF_SUB1, DOF_SUP1, COORDS,&
-    & OPTIONS, BCS_OPTIONS, UNIAXIAL_OPTIONS, FIBER_AVERAGE_OPTIONS, &
-    & TRIAXCSR_OPTIONS, PRINT_OPTIONS, NODES, READ_RESTART_FIELD, D_TOT, &
-    & EL_WORK_N, EL_WORKP_N, EL_WORK_RATE_N, EL_WORKP_RATE_N, EL_WORK, EL_WORKP
+    & OPTIONS, BCS_OPTIONS, UNIAXIAL_OPTIONS, TRIAXCSR_OPTIONS, PRINT_OPTIONS, &
+    & NODES, READ_RESTART_FIELD, D_TOT, EL_WORK_N, EL_WORKP_N, EL_WORK_RATE_N, &
+    & EL_WORKP_RATE_N, EL_WORK, EL_WORKP
 USE SURFACE_MOD, ONLY: NSURFACES, COMPUTE_AREA
 USE UNITS_MOD, ONLY: DFLT_U, FORCE_U1, FORCE_U2, FORCE_U3, FORCE_U4, FORCE_U5,&
     & FORCE_U6, CONV_U, OUNITS, BCS_ITER_1_U, REPORT_U
@@ -287,8 +286,7 @@ CONTAINS
         !
         ! Initialize elvol arrays (and associated) iff it needs to be printed
         !
-        IF ((PRINT_OPTIONS%PRINT_ELVOL) .OR. &
-            & (FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE)) THEN
+        IF (PRINT_OPTIONS%PRINT_ELVOL) THEN
             !
             ALLOCATE(ELVOL(EL_SUB1:EL_SUP1))
             ALLOCATE(ELVOL_0(EL_SUB1:EL_SUP1))
@@ -877,8 +875,7 @@ CONTAINS
             !
         END IF
         !
-        IF ((PRINT_OPTIONS%PRINT_ELVOL) .OR. &
-            & (FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE)) THEN
+        IF (PRINT_OPTIONS%PRINT_ELVOL) THEN
             !
             CALL PART_GATHER(ECOORDS, COORDS, NODES, DTRACE)
             CALL CALC_ELVOL(ELVOL, ECOORDS)
@@ -963,22 +960,17 @@ CONTAINS
                     !
                 END IF
                 !
-                IF (FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE) THEN
-                    !
-                    CALL RUN_FIBER_AVERAGE(ISTEP, C_ANGS, ELAS_TOT6, DPEFF, &
-                        & CRSS, ELVOL)
-                    !
-                ENDIF
-                !
             ENDIF
             !
             ! Check that maximum strain has not been exceeded
             !
             IF (MAXVAL(ABS(MACRO_ENG_STRAIN)) .GE. MAX_STRAIN) THEN
                 !
-                CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP, PRINT_FLAG)
+                ! MPK - 10/2021: Don't write that we have completed the final
+                !   step. We are currently in the middle of a step.
+                CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP - 1, PRINT_FLAG)
                 !
-                CALL PAR_QUIT('Error  :     > Maximum eng. strain exceeded.')
+                CALL PAR_QUIT('Info   :     > Maximum eng. strain exceeded.')
                 !
             ENDIF
             !
@@ -986,9 +978,11 @@ CONTAINS
             !
             IF (CURR_EQSTRAIN .GE. MAX_EQSTRAIN) THEN
                 !
-                CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP, PRINT_FLAG)
+                ! MPK - 10/2021: Don't write that we have completed the final
+                !   step. We are currently in the middle of a step.
+                CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP - 1, PRINT_FLAG)
                 !
-                CALL PAR_QUIT('Error  :     > Maximum eqv. strain exceeded.')
+                CALL PAR_QUIT('Info   :     > Maximum eqv. strain exceeded.')
                 !
             ENDIF
             !
@@ -1354,16 +1348,12 @@ CONTAINS
     IF (MYID .EQ. 0) THEN
         !
         WRITE(DFLT_U,'(A)') 'Info   : Reading restart control information...'
-        WRITE(DFLT_U,'(A)') 'Info   :   - Restart parameters:'
-        WRITE(DFLT_U,'(A, I0)')       'Info   :     > Current Increment: ', &
-            & INCR + 1
-        WRITE(DFLT_U,'(A, I0)')       'Info   :     > Current Step:      ', &
-            & ISTEP
-        WRITE(DFLT_U,'(A, E14.4)')    'Info   :     > Current Time:  ', TIME
-        WRITE(DFLT_U,'(A, 3(E14.4))') 'Info   :     > Current Load:  ', &
+        WRITE(DFLT_U,'(A)') 'Info   :   - Previous simulation ended with final:'
+        WRITE(DFLT_U,'(A, I0)') 'Info   :     > Increments: ', INCR
+        WRITE(DFLT_U,'(A, I0)') 'Info   :     > Steps:      ', ISTEP - 1
+        WRITE(DFLT_U,'(A, E14.4)') 'Info   :     > Time:  ', TIME
+        WRITE(DFLT_U,'(A, 3(E14.4))') 'Info   :     > Normal loads:  ', &
             & CURR_LOAD
-        WRITE(DFLT_U,'(A, 3(E14.4))') 'Info   :     > Previous Load: ', &
-            & PREV_LOAD
         !
     ENDIF
     !

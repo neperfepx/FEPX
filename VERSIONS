@@ -1,6 +1,15 @@
-New in 1.2.2-3 (26 Jan 2022):
+New in 1.3.0 (02 Feb 2022):
 - Bug fix related to orientation assignment - users should update.
-- Bug fixes and code improvements
+- Bug fix related to reading mesh version - users should update.
+- Bug fix related to allocation of work variables - users should update.
+- Other minor bug fixes and code improvements.
+- Added BCT crystal type with 10 different slip modes. Refer to
+  documentation for a full description of new crystal type.
+- Added testing capabilities: See documentation for description.
+- Added model for precipitation based strengthening: See documentation
+  for full description of model.
+- Removed fiber averaging routines, migrated to Neper: See Neper
+  documentation for description of new usage.
 
 New in 1.2.0 (11 Jun 2021):
 - Amendments to simulation output: changed definition and calculation of

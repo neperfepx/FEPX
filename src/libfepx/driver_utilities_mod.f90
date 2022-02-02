@@ -391,7 +391,8 @@ CONTAINS
             C11 = ELAS_COEFFS(0,IPHASE)
             C12 = ELAS_COEFFS(1,IPHASE)
             C44 = ELAS_COEFFS(3,IPHASE)
-            E_PHASE = (C11-C12+3*C44)*(C11+2*C12)/(2*C11+3*C12+C44)
+            E_PHASE = (C11 - C12 + 3 * C44) * (C11 + 2 * C12) / &
+                & (2 * C11 + 3 * C12 + C44)
             !
         ELSE IF (IPHASE .EQ. 3) THEN
             !
@@ -401,13 +402,29 @@ CONTAINS
             C12 = ELAS_COEFFS(1,IPHASE)
             C13 = ELAS_COEFFS(2,IPHASE)
             C44 = ELAS_COEFFS(3,IPHASE)
-            C33 = C11+C12-C13
-            C66 = (C11-C12)/2
+            C33 = C11 + C12 - C13
+            C66 = (C11 - C12) / 2
             !
-            F = (2*C11+C33)/3
-            G = (C12+2*C13)/3
-            H = (2*C44+C66)/3
-            E_PHASE = (F-G+3*H)*(F+2*G)/(2*F+3*G+H)
+            F = (2 * C11 + C33) / 3
+            G = (C12 + 2 * C13) / 3
+            H = (2 * C44 + C66) / 3
+            E_PHASE = (F - G + 3 * H) * (F + 2 * G) / (2 * F + 3 * G + H)
+            !
+        ELSE IF (IPHASE .EQ. 4) THEN
+            !
+            ! Tetragonal (BCT)
+            !
+            C11 = ELAS_COEFFS(0,IPHASE)
+            C12 = ELAS_COEFFS(1,IPHASE)
+            C13 = ELAS_COEFFS(2,IPHASE)
+            C44 = ELAS_COEFFS(3,IPHASE)
+            C66 = ELAS_COEFFS(4,IPHASE)
+            C33 = C11 + C12 - C13
+            !
+            F = (2 * C11 + C33) / 3
+            G = (C12 + 2 * C13) / 3
+            H = (2 * C44 + C66) / 3
+            E_PHASE = (F - G + 3 * H) * (F + 2 * G) / (2 * F + 3 * G + H)
             !
         ELSE
             !

@@ -35,7 +35,6 @@ USE LIBF95, ONLY: NEWUNITNUMBER
 USE DIMENSIONS_MOD, ONLY: DIMS1, TVEC, TVEC1, MAXSLIP1, NGRAIN1, &
     & ANISOTROPIC_EVPS
 USE DRIVER_UTILITIES_MOD, ONLY: UPDATE_STATE_EVPS, CALC_STRESS_STRAIN
-USE FIBER_AVERAGE_MOD, ONLY: RUN_FIBER_AVERAGE
 USE ITERATE_STRESS_EVPS_MOD, ONLY: ITMETHOD_EVPS
 USE KINEMATICS_MOD, ONLY: PLASTICVELGRADSYMSKW, CALC_TOTAL_WORK,&
     & CALC_PLASTIC_WORK
@@ -43,10 +42,9 @@ USE MATRIX_OPERATIONS_MOD, ONLY: CALC_ELVOL, STRAIN_EQUIV_3X3, VEC6_MAT_SYMM
 USE MICROSTRUCTURE_MOD, ONLY: NUMPHASES, GAMMADOT, GACCUMSHEAR, ACCUMSHEAR_CEN
 USE QUADRATURE_MOD, ONLY: NQPT1
 USE READ_INPUT_MOD, ONLY: KDIM1, EL_SUB1, EL_SUP1, DOF_SUB1, DOF_SUP1, COORDS,&
-    & OPTIONS, BCS_OPTIONS, UNIAXIAL_OPTIONS, FIBER_AVERAGE_OPTIONS, &
-    & UNIAXIAL_LOAD_TARGET, UNIAXIAL_STRAIN_TARGET, PRINT_OPTIONS, NODES, &
-    & READ_RESTART_FIELD, D_TOT, EL_WORK_N, EL_WORKP_N, EL_WORK_RATE_N, &
-    & EL_WORKP_RATE_N, EL_WORK, EL_WORKP
+    & OPTIONS, BCS_OPTIONS, UNIAXIAL_OPTIONS, UNIAXIAL_LOAD_TARGET, &
+    & UNIAXIAL_STRAIN_TARGET, PRINT_OPTIONS, NODES, READ_RESTART_FIELD, D_TOT, &
+    & EL_WORK_N, EL_WORKP_N, EL_WORK_RATE_N, EL_WORKP_RATE_N, EL_WORK, EL_WORKP
 USE SURFACE_MOD, ONLY: NSURFACES, COMPUTE_AREA
 USE UNITS_MOD, ONLY: DFLT_U, FORCE_U1, FORCE_U2, FORCE_U3, FORCE_U4, FORCE_U5,&
     & FORCE_U6, CONV_U, OUNITS, REPORT_U
@@ -236,8 +234,7 @@ CONTAINS
         !
         ! Initialize elvol array (and associated) iff it needs to be printed
         !
-        IF ((PRINT_OPTIONS%PRINT_ELVOL) .OR. &
-            & (FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE)) THEN
+        IF (PRINT_OPTIONS%PRINT_ELVOL) THEN
             !
             ALLOCATE(ELVOL(EL_SUB1:EL_SUP1))
             ALLOCATE(ECOORDS(0:KDIM1, EL_SUB1:EL_SUP1))
@@ -556,8 +553,7 @@ CONTAINS
             !
         END IF
         !
-        IF ((PRINT_OPTIONS%PRINT_ELVOL) .OR. &
-            & (FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE)) THEN
+        IF (PRINT_OPTIONS%PRINT_ELVOL) THEN
             !
             CALL PART_GATHER(ECOORDS, COORDS, NODES, DTRACE)
             CALL CALC_ELVOL(ELVOL, ECOORDS)
@@ -646,13 +642,6 @@ CONTAINS
                     CALL WRITE_UNIAXIAL_RESTART(INCR, TIME, LOAD, AREA, AREA0, &
                         & CURRENT_STEP, PREVIOUS_LOAD, STEP_COMPLETE, &
                         & DTIME_OLD, PREV_STRAIN, CURR_STRAIN, ISTEP)
-                    !
-                END IF
-                !
-                IF (FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE) THEN
-                    !
-                    CALL RUN_FIBER_AVERAGE(ISTEP, C_ANGS, ELAS_TOT6, DPEFF, &
-                        & CRSS, ELVOL)
                     !
                 END IF
                 !
@@ -1238,16 +1227,12 @@ CONTAINS
     IF (MYID .EQ. 0) THEN
         !
         WRITE(DFLT_U,'(A)') 'Info   : Reading restart control information...'
-        WRITE(DFLT_U,'(A)') 'Info   :   - Restart parameters:'
-        WRITE(DFLT_U,'(A, I0)')       'Info   :     > Prior Increments: ', &
-            & INCR
-        WRITE(DFLT_U,'(A, I0)')       'Info   :     > Prior Steps:      ', &
-            & CURRENT_STEP - 1
-        WRITE(DFLT_U,'(A, E14.4)')    'Info   :     > Prior Time:   ', TIME
-        WRITE(DFLT_U,'(A, 3(E14.4))') 'Info   :     > Current Load: ', &
+        WRITE(DFLT_U,'(A)') 'Info   :   - Previous simulation ended with final:'
+        WRITE(DFLT_U,'(A, I0)') 'Info   :     > Increments: ', INCR
+        WRITE(DFLT_U,'(A, I0)') 'Info   :     > Steps:      ', CURRENT_STEP - 1
+        WRITE(DFLT_U,'(A, E14.4)') 'Info   :     > Time:  ', TIME
+        WRITE(DFLT_U,'(A, 3(E14.4))') 'Info   :     > Normal loads:  ', &
             & CURRENT_LOAD
-        WRITE(DFLT_U,'(A, 3(E14.4))') 'Info   :     > Previous Load:', &
-            & PREVIOUS_LOAD
         !
     ENDIF
     !

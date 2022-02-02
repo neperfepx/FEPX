@@ -21,7 +21,6 @@ USE TIMER_MOD
 !
 USE DIMENSIONS_MOD
 USE DRIVER_UTILITIES_MOD
-USE FIBER_AVERAGE_MOD, ONLY: RUN_FIBER_AVERAGE
 USE KINEMATICS_MOD
 USE MATRIX_OPERATIONS_MOD, ONLY: CALC_ELVOL, SOLVE_LIN_SYS_3, &
     & STRAIN_EQUIV_3X3, VEC6_MAT_SYMM
@@ -214,8 +213,7 @@ CONTAINS
         !
         ! Initialize elvol arrays (and associated) iff it needs to be printed
         !
-	    IF ((PRINT_OPTIONS%PRINT_ELVOL) .OR. &
-            & (FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE)) THEN
+	    IF (PRINT_OPTIONS%PRINT_ELVOL) THEN
             !
             ALLOCATE(ELVOL(EL_SUB1:EL_SUP1))
             ALLOCATE(ELVOL_0(EL_SUB1:EL_SUP1))
@@ -258,8 +256,7 @@ CONTAINS
         !
         ! Initialize elvol arrays (and associated) iff it needs to be printed
         !
-        IF ((PRINT_OPTIONS%PRINT_ELVOL) .OR. &
-            & (FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE)) THEN
+        IF (PRINT_OPTIONS%PRINT_ELVOL) THEN
             !
             ALLOCATE(ELVOL(EL_SUB1:EL_SUP1))
             ALLOCATE(ELVOL_0(EL_SUB1:EL_SUP1))
@@ -1104,8 +1101,7 @@ CONTAINS
             !
         END IF
         !
-        IF ((PRINT_OPTIONS%PRINT_ELVOL) .OR. &
-            & (FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE)) THEN
+        IF (PRINT_OPTIONS%PRINT_ELVOL) THEN
             !
             CALL PART_GATHER(ECOORDS, COORDS, NODES, DTRACE)
             CALL CALC_ELVOL(ELVOL, ECOORDS)
@@ -1172,22 +1168,13 @@ CONTAINS
                         & RSTAR_N, WTS, CRSS, CRSS_N, E_ELAS_KK_BAR, &
                         & SIG_VEC_N, EQSTRAIN, EQPLSTRAIN, GAMMA, EL_WORK_N, &
                         & EL_WORKP_N, EL_WORK_RATE_N, EL_WORKP_RATE_N, &
-                        & PLSTRAIN, TOTSTRAIN, ISTEP - NDWELLS)
+                        & PLSTRAIN, TOTSTRAIN, ISTEP)
                     !
-                    CALL WRITE_TRIAXCLR_RESTART(ISTEP + 1 - NDWELLS, &
+                    CALL WRITE_TRIAXCLR_RESTART(ISTEP, &
                         & CURR_LOAD, PREV_LOAD, .TRUE., INCR + 1, TIME, &
                         & SURF_LOAD_ARRAY, AREA, AREA0, LENGTH, LENGTH0, &
                         & CURR_VEL, PREV_ACTION, CURR_ACTION, &
                         & INITIAL_LOAD_DWELL_VEL, INITIAL_UNLOAD_DWELL_VEL)
-                    !
-                ENDIF
-                !
-                IF (FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE) THEN
-                    !
-                    ! CALL TIMERSTART(LIGHTUP_TIMER)
-                    CALL RUN_FIBER_AVERAGE(ISTEP, C_ANGS, ELAS_TOT6, DPEFF, &
-                        & CRSS, ELVOL)
-                    ! CALL TIMERSTOP(LIGHTUP_TIMER)
                     !
                 ENDIF
                 !
@@ -1223,6 +1210,26 @@ CONTAINS
                 !
             ENDIF
             !
+            ! Check that maximum strain has not been exceeded
+            !
+            IF (MAXVAL(ABS(MACRO_ENG_STRAIN)) .GE. MAX_STRAIN) THEN
+                !
+                CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP, PRINT_FLAG)
+                !
+                CALL PAR_QUIT('Error  :     > Maximum eng. strain exceeded.')
+                !
+            ENDIF
+            !
+            ! Check that maximum eqstrain has not been exceeded
+            !
+            IF (CURR_EQSTRAIN .GE. MAX_EQSTRAIN) THEN
+                !
+                CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP, PRINT_FLAG)
+                !
+                CALL PAR_QUIT('Error  :     > Maximum eqv. strain exceeded.')
+                !
+            ENDIF
+            !
             ISTEP = ISTEP + 1
             FIRST_INCR_IN_STEP = .TRUE.
             INCR_COUNT = 1
@@ -1242,27 +1249,32 @@ CONTAINS
                 !
             ENDIF
             !
+            ! Check that maximum strain has not been exceeded
+            !
+            IF (MAXVAL(ABS(MACRO_ENG_STRAIN)) .GE. MAX_STRAIN) THEN
+                !
+                ! MPK - 10/2021: Don't write that we have completed the final
+                !   step. We are currently in the middle of a step.
+                CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP - 1, PRINT_FLAG)
+                !
+                CALL PAR_QUIT('Info   :     > Maximum eng. strain exceeded.')
+                !
+            ENDIF
+            !
+            ! Check that maximum eqstrain has not been exceeded
+            !
+            IF (CURR_EQSTRAIN .GE. MAX_EQSTRAIN) THEN
+                !
+                ! MPK - 10/2021: Don't write that we have completed the final
+                !   step. We are currently in the middle of a step.
+                CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP - 1, PRINT_FLAG)
+                !
+                CALL PAR_QUIT('Info   :     > Maximum eqv. strain exceeded.')
+                !
+            ENDIF
+            !
         ENDIF
-        !
-        ! Check that maximum strain has not been exceeded
-        !
-        IF (MAXVAL(ABS(MACRO_ENG_STRAIN)) .GE. MAX_STRAIN) THEN
-            !
-            CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP, PRINT_FLAG)
-            !
-            CALL PAR_QUIT('Error  :     > Maximum eng. strain exceeded.')
-            !
-        ENDIF
-        !
-        ! Check that maximum eqstrain has not been exceeded
-        !
-        IF (CURR_EQSTRAIN .GE. MAX_EQSTRAIN) THEN
-            !
-            CALL WRITE_REPORT_FILE_COMPLETE_STEPS(ISTEP, PRINT_FLAG)
-            !
-            CALL PAR_QUIT('Error  :     > Maximum eqv. strain exceeded.')
-            !
-        ENDIF
+
         !
         INCR = INCR + 1
         START_RELOAD = .FALSE.
@@ -1670,15 +1682,12 @@ CONTAINS
     IF (MYID .EQ. 0) THEN
         !
         WRITE(DFLT_U,'(A)') 'Info   : Reading restart control information...'
-        WRITE(DFLT_U,'(A)') 'Info   :   - Restart parameters:'
-        WRITE(DFLT_U,'(A, I0)')       'Info   :     > Current Increment: ', INCR
-        WRITE(DFLT_U,'(A, I0)')       'Info   :     > Current Step:      ', &
-            & ISTEP
-        WRITE(DFLT_U,'(A, E14.4)')    'Info   :     > Current Time:  ', TIME
-        WRITE(DFLT_U,'(A, 3(E14.4))') 'Info   :     > Current Load:  ', &
+        WRITE(DFLT_U,'(A)') 'Info   :   - Previous simulation ended with final:'
+        WRITE(DFLT_U,'(A, I0)') 'Info   :     > Increments: ', INCR - 1
+        WRITE(DFLT_U,'(A, I0)') 'Info   :     > Steps:      ', ISTEP
+        WRITE(DFLT_U,'(A, E14.4)') 'Info   :     > Time:  ', TIME
+        WRITE(DFLT_U,'(A, 3(E14.4))') 'Info   :     > Normal loads:  ', &
             & CURR_LOAD
-        WRITE(DFLT_U,'(A, 3(E14.4))') 'Info   :     > Previous Load: ', &
-            & PREV_LOAD
         !
     ENDIF
     !

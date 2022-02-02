@@ -21,6 +21,10 @@
 /lib/libparallel/modules_parallel
 /src/build/
 /build/
+/doc/build/
+
+# Ignore FEPX post files
+post.*
 
 # Ignore AppleDouble files and Mac .DS_Store files
 ._*
@@ -59,3 +63,9 @@ VERSIONS-e
 /examples/4_restart/cycle2.sim/
 /examples/5_external/post.*
 /examples/5_external.sim/
+
+# Website
+docs
+
+# Sphinx files
+__pycache__

@@ -404,6 +404,63 @@ CONTAINS
                         !
                     END IF
                     !
+                ! Else, check if the element is BCT.
+                ELSE IF (CRYS_OPTIONS%CRYSTAL_TYPE(PHASE(J)) .EQ. 4) THEN
+                    !
+                    ! Next, check if the hardening is isotropic or anisotropic.
+                    IF ((OPTIONS%HARD_TYPE .EQ. 'isotropic') .OR. &
+                        & (OPTIONS%HARD_TYPE .EQ. 'cyclic_isotropic')) THEN
+                        !
+                        WRITE(IO, '(10(E13.7,1X))') (HARD(0, IGRAIN, J)), &
+                            & CRYS_OPTIONS%HRATIO_BCT_A(PHASE(J)) &
+                            & * (HARD(0, IGRAIN, J)), &
+                            & CRYS_OPTIONS%HRATIO_BCT_B(PHASE(J)) &
+                            & * (HARD(0, IGRAIN, J)), &
+                            & CRYS_OPTIONS%HRATIO_BCT_C(PHASE(J)) &
+                            & * (HARD(0, IGRAIN, J)), &
+                            & CRYS_OPTIONS%HRATIO_BCT_D(PHASE(J)) &
+                            & * (HARD(0, IGRAIN, J)), &
+                            & CRYS_OPTIONS%HRATIO_BCT_E(PHASE(J)) &
+                            & * (HARD(0, IGRAIN, J)), &
+                            & CRYS_OPTIONS%HRATIO_BCT_F(PHASE(J)) &
+                            & * (HARD(0, IGRAIN, J)), &
+                            & CRYS_OPTIONS%HRATIO_BCT_G(PHASE(J)) &
+                            & * (HARD(0, IGRAIN, J)), &
+                            & CRYS_OPTIONS%HRATIO_BCT_H(PHASE(J)) &
+                            & * (HARD(0, IGRAIN, J)), &
+                            & CRYS_OPTIONS%HRATIO_BCT_I(PHASE(J)) &
+                            & * (HARD(0, IGRAIN, J))
+                        !
+                    ELSE IF (OPTIONS%HARD_TYPE .EQ. 'latent') THEN
+                        !
+                        WRITE(IO, '(32(E13.7,1X))') &
+                            & HARD(0:1, IGRAIN, J), &
+                            & CRYS_OPTIONS%HRATIO_BCT_A(PHASE(J)) &
+                            & * HARD(2:3, IGRAIN, J), &
+                            & CRYS_OPTIONS%HRATIO_BCT_B(PHASE(J)) &
+                            & * HARD(4:5, IGRAIN, J), &
+                            & CRYS_OPTIONS%HRATIO_BCT_C(PHASE(J)) &
+                            & * HARD(6:9, IGRAIN, J), &
+                            & CRYS_OPTIONS%HRATIO_BCT_D(PHASE(J)) &
+                            & * HARD(10:11, IGRAIN, J), &
+                            & CRYS_OPTIONS%HRATIO_BCT_E(PHASE(J)) &
+                            & * HARD(12:15, IGRAIN, J), &
+                            & CRYS_OPTIONS%HRATIO_BCT_F(PHASE(J)) &
+                            & * HARD(16:17, IGRAIN, J), &
+                            & CRYS_OPTIONS%HRATIO_BCT_G(PHASE(J)) &
+                            & * HARD(18:19, IGRAIN, J), &
+                            & CRYS_OPTIONS%HRATIO_BCT_H(PHASE(J)) &
+                            & * HARD(20:23, IGRAIN, J), &
+                            & CRYS_OPTIONS%HRATIO_BCT_I(PHASE(J)) &
+                            & * HARD(24:31, IGRAIN, J)
+                        !
+                    ELSE
+                        !
+                        CALL PAR_QUIT('Error  :     > Invalid hardening type &
+                            &provided.')
+                        !
+                    END IF
+                    !
                 END IF
                 !
             END DO
@@ -564,8 +621,23 @@ CONTAINS
                 !
                 DO IGRAIN = 0, NGRAIN1
                     !
-                    WRITE(IO, '(18(e13.7,1x))') (GAMMADOT(J, IGRAIN, I), &
-                        & J = 0, MAXSLIP1)
+                    IF ((CRYS_OPTIONS%CRYSTAL_TYPE(PHASE(I)) .EQ. 1) .OR. &
+                        & (CRYS_OPTIONS%CRYSTAL_TYPE(PHASE(I)) .EQ. 2)) THEN
+                        !
+                        WRITE(IO, '(12(e13.7,1x))') (GAMMADOT(J, IGRAIN, I), &
+                            & J = 0, 11)
+                        !
+                    ELSE IF (CRYS_OPTIONS%CRYSTAL_TYPE(PHASE(I)) .EQ. 3) THEN
+                        !
+                        WRITE(IO, '(18(e13.7,1x))') (GAMMADOT(J, IGRAIN, I), &
+                            & J = 0, 17)
+                        !
+                    ELSE IF (CRYS_OPTIONS%CRYSTAL_TYPE(PHASE(I)) .EQ. 4) THEN
+                        !
+                        WRITE(IO, '(32(e13.7,1x))') (GAMMADOT(J, IGRAIN, I), &
+                            & J = 0, 31)
+                        !
+                    END IF
                     !
                 END DO
                 !
@@ -806,8 +878,23 @@ CONTAINS
                 !
                 DO IGRAIN = 0, NGRAIN1
                     !
-                    WRITE(IO, '(18(e13.7,1x))') (GAMMA(J, IGRAIN, I), &
-                        & J = 0, MAXSLIP1)
+                    IF ((CRYS_OPTIONS%CRYSTAL_TYPE(PHASE(I)) .EQ. 1) .OR. &
+                        & (CRYS_OPTIONS%CRYSTAL_TYPE(PHASE(I)) .EQ. 2)) THEN
+                        !
+                        WRITE(IO, '(12(e13.7,1x))') (GAMMA(J, IGRAIN, I), &
+                            & J = 0, 11)
+                        !
+                    ELSE IF (CRYS_OPTIONS%CRYSTAL_TYPE(PHASE(I)) .EQ. 3) THEN
+                        !
+                        WRITE(IO, '(18(e13.7,1x))') (GAMMA(J, IGRAIN, I), &
+                            & J = 0, 17)
+                        !
+                    ELSE IF (CRYS_OPTIONS%CRYSTAL_TYPE(PHASE(I)) .EQ. 4) THEN
+                        !
+                        WRITE(IO, '(32(e13.7,1x))') (GAMMA(J, IGRAIN, I), &
+                            & J = 0, 31)
+                        !
+                    END IF
                     !
                 END DO
                 !
@@ -981,21 +1068,7 @@ CONTAINS
             !
         END DO
         !
-        ! Print number of phases
-        !
-        WRITE(OUNITS(REPORT_U), '(/,A,I0)', ADVANCE='NO') 'number_of_phases ', &
-            & NUMPHASES
-        !
-        ! Print number of slip systems and the orientation definition
-        !
-        WRITE(OUNITS(REPORT_U), '(/,A)', ADVANCE='NO') 'number_of_slip_systems '
-        !
-        DO I = 1, NUMPHASES
-            !
-            WRITE(OUNITS(REPORT_U), '(I0, A)', ADVANCE='NO') CTYPE(I)%NUMSLIP, &
-                & ' '
-            !
-        END DO
+        ! Print the orientation definition
         !
         WRITE(OUNITS(REPORT_U), '(/,A,A,A,A)') 'orientation_definition ', &
             & TRIM(ORIENTATION_OPTIONS%ORIENTATION_PARAMETERIZATION), ':', &
@@ -1765,7 +1838,7 @@ CONTAINS
             !
         END DO
         !
-        IF (ISTEP - 1 .EQ. 1) THEN
+        IF (ISTEP .EQ. 1) THEN
             !
             RST_NUM = RST_NUM + 2
             WRITE(RST_NUM_STR, '(I0)') RST_NUM

@@ -73,13 +73,13 @@ CONTAINS
     REAL(RK) :: E_BAR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: E_ELAS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: W_VEC_GRN(0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    !           
+    !
     REAL(RK) :: STIF_VP(0:TVEC1, 0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: STIF_EVP(0:TVEC1, 0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: TAN_STIF_VP(0:TVEC1, 0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: TAN_STIF_EVP(0:TVEC1, 0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: KEINV_ALL(0:TVEC1, 0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    !            
+    !
     REAL(RK) :: RSS(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: GDOT(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     REAL(RK) :: COMP(0:NGRAIN1, EL_SUB1:EL_SUP1)
@@ -97,7 +97,7 @@ CONTAINS
     !
     INTEGER  :: IPHASE, NUMIND
     INTEGER  :: MY_PHASE(0:(EL_SUP1-EL_SUB1))
-    REAL(RK) :: ANISO_M_TEMP(0:17)
+    REAL(RK) :: ANISO_M_TEMP(0:MAXSLIP1)
     REAL(RK) :: ANISO_M_MIN
     !
     !---------------------------------------------------------------------------
@@ -130,19 +130,19 @@ CONTAINS
         IF (ASSOCIATED(E_VEC_TMP)) THEN
             !
             DEALLOCATE(E_VEC_TMP)
-            !        
+            !
         ENDIF
         !
         ALLOCATE(E_VEC_TMP(0:TVEC1,0:NGRAIN1,0:NUMIND-1))
-        !        
+        !
         CALL VEC_D_VEC5(KEINV(:,IPHASE), SIG_VEC(:,:,INDICES), E_VEC_TMP, &
             & NGRAIN, NUMIND)
         !
         E_VEC(:,:,INDICES)=E_VEC_TMP
-        !        
+        !
         DEALLOCATE(INDICES)
         DEALLOCATE(E_VEC_TMP)
-        !    
+        !
     ENDDO !NUMPHASES
     !
     ! Rotate e_bar_vec to current configuration (lattice axes).
@@ -172,10 +172,10 @@ CONTAINS
     DO I = 0, DIMS1
         !
         W_VEC_GRN(I, :, :) = SPREAD(W_VEC(I, :), DIM = 1,  NCOPIES = NGRAIN)
-        !    
+        !
     ENDDO
     !
-    ! Compute elasto-visco-plastic crystal stiffness and 
+    ! Compute elasto-visco-plastic crystal stiffness and
     !   visco-plastic crystal compliance.
     !
     TAN_STIF_VP = 0.0D0
@@ -220,17 +220,45 @@ CONTAINS
                 !
             ELSE IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .TRUE.) THEN
                 !
-                ANISO_M_TEMP(0:2)  = CRYS_OPTIONS%ANISO_M(IPHASE,1)
-                ANISO_M_TEMP(3:5)  = CRYS_OPTIONS%ANISO_M(IPHASE,2)
-                ANISO_M_TEMP(6:17) = CRYS_OPTIONS%ANISO_M(IPHASE,3)
-                !
-                CALL POWER_LAW(GDOT(ISLIP, :, :), RSS(ISLIP, :, :), &
-                    & ANISO_M_TEMP(ISLIP), CRYSTAL_PARM(1,IPHASE), &
-                    & T_MIN(IPHASE), NGRAIN, M_EL, NUMIND, INDICES-EL_SUB1)
-                !
-                CALL COMPLIANCE(COMP, RSS(ISLIP, :, :),&
-                    & GDOT(ISLIP, :, :), CRSS(ISLIP,:,:), ANISO_M_TEMP(ISLIP), &
-                    & T_MIN(IPHASE), NGRAIN, M_EL, NUMIND, INDICES-EL_SUB1)
+                IF (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 3) THEN
+                    !
+                    ANISO_M_TEMP(0:2)  = CRYS_OPTIONS%ANISO_M(IPHASE, 1)
+                    ANISO_M_TEMP(3:5)  = CRYS_OPTIONS%ANISO_M(IPHASE, 2)
+                    ANISO_M_TEMP(6:17) = CRYS_OPTIONS%ANISO_M(IPHASE, 3)
+                    !
+                    CALL POWER_LAW(GDOT(ISLIP, :, :), RSS(ISLIP, :, :), &
+                        & ANISO_M_TEMP(ISLIP), CRYSTAL_PARM(1,IPHASE), &
+                        & T_MIN(IPHASE), NGRAIN, M_EL, NUMIND, INDICES-EL_SUB1)
+                    !
+                    CALL COMPLIANCE(COMP, RSS(ISLIP, :, :),&
+                        & GDOT(ISLIP, :, :), CRSS(ISLIP,:,:), &
+                        & ANISO_M_TEMP(ISLIP), T_MIN(IPHASE), NGRAIN, M_EL, &
+                        & NUMIND, INDICES-EL_SUB1)
+                    !
+                ELSE IF (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 4) &
+                    THEN
+                    !
+                    ANISO_M_TEMP(0:1)  = CRYS_OPTIONS%ANISO_M(IPHASE, 1)
+                    ANISO_M_TEMP(2:3)  = CRYS_OPTIONS%ANISO_M(IPHASE, 2)
+                    ANISO_M_TEMP(4:5) = CRYS_OPTIONS%ANISO_M(IPHASE, 3)
+                    ANISO_M_TEMP(6:9)  = CRYS_OPTIONS%ANISO_M(IPHASE, 4)
+                    ANISO_M_TEMP(10:11)  = CRYS_OPTIONS%ANISO_M(IPHASE, 5)
+                    ANISO_M_TEMP(12:15) = CRYS_OPTIONS%ANISO_M(IPHASE, 6)
+                    ANISO_M_TEMP(16:17)  = CRYS_OPTIONS%ANISO_M(IPHASE, 7)
+                    ANISO_M_TEMP(18:19)  = CRYS_OPTIONS%ANISO_M(IPHASE, 8)
+                    ANISO_M_TEMP(20:23) = CRYS_OPTIONS%ANISO_M(IPHASE, 9)
+                    ANISO_M_TEMP(24:31)  = CRYS_OPTIONS%ANISO_M(IPHASE, 10)
+                    !
+                    CALL POWER_LAW(GDOT(ISLIP, :, :), RSS(ISLIP, :, :), &
+                        & ANISO_M_TEMP(ISLIP), CRYSTAL_PARM(1,IPHASE), &
+                        & T_MIN(IPHASE), NGRAIN, M_EL, NUMIND, INDICES-EL_SUB1)
+                    !
+                    CALL COMPLIANCE(COMP, RSS(ISLIP, :, :),&
+                        & GDOT(ISLIP, :, :), CRSS(ISLIP,:,:), &
+                        & ANISO_M_TEMP(ISLIP), T_MIN(IPHASE), NGRAIN, M_EL, &
+                        & NUMIND, INDICES-EL_SUB1)
+                    !
+                END IF
                 !
             END IF
             !
@@ -298,7 +326,15 @@ CONTAINS
             !
         ELSEIF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .TRUE.) THEN
             !
-            ANISO_M_MIN = MINVAL(CRYS_OPTIONS%ANISO_M(IPHASE,:))
+            IF (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 3) THEN
+                !
+                ANISO_M_MIN = MINVAL(CRYS_OPTIONS%ANISO_M(IPHASE, 1:3))
+                !
+            ELSE IF (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 4) THEN
+                !
+                ANISO_M_MIN = MINVAL(CRYS_OPTIONS%ANISO_M(IPHASE, :))
+                !
+            END IF
             !
             DO K = 0, NGRAIN1
                 !
@@ -321,9 +357,9 @@ CONTAINS
             !
         ENDIF
         !
-    ENDDO !NUMPHASES 
+    ENDDO !NUMPHASES
     !
-    ! Spread keinv to all crystals and transform it to sample axes.  
+    ! Spread keinv to all crystals and transform it to sample axes.
     ! deb - 6/11/2000
     !
     keinv_all = 0.0D0
@@ -405,14 +441,14 @@ CONTAINS
     CALL FIND_WP_HAT(WP_HAT_VEC, E_ELAS, E_BAR, W_VEC_GRN, GDOT, QR5X5, &
         & DTIME, NGRAIN, M_EL)
     !
-    CALL WP_HAT_MAT5X5_ALL(WP_HAT_VEC, WP_HAT_MAT, NGRAIN, M_EL)  
+    CALL WP_HAT_MAT5X5_ALL(WP_HAT_VEC, WP_HAT_MAT, NGRAIN, M_EL)
     !
     CALL MAT_X_VEC5(WP_HAT_MAT, E_VEC_SM, WP_X_E, NGRAIN, M_EL)
     !
     WP_X_E = WP_X_E - 1. / DTIME * E_BAR_SM
     !
     CALL MAT_X_VEC5(STIF_EVP, WP_X_E, F_ELAS, NGRAIN, M_EL)
-    ! 
+    !
     ! Averaged values of stif_evp, f_elas
     !
     DO J = 0, TVEC1

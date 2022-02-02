@@ -5,7 +5,7 @@
 # Top-level CMakeLists.txt for building FEPX
 cmake_minimum_required(VERSION 3.0)
 project(fepx Fortran)
-set(FEPX_VERSION \"1.2.2-3\")
+set(FEPX_VERSION \"1.3.0\")
 
 # Prepare CMake for Fortran and locate MPI package
 enable_language(Fortran)
@@ -15,6 +15,8 @@ find_package(MPI REQUIRED)
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build: Debug Release" FORCE)
 endif()
+
+set(BUILD_TESTING_MODE "Normal" CACHE STRING "Choose the testing mode: Normal Minimal Writing")
 
 # Option for verbose build
 option(VERBOSE "Build verbose Makefiles" OFF)
@@ -99,3 +101,25 @@ install(TARGETS fepx DESTINATION bin
 
 # Notify the user how to continue after `cmake ..`
 message(STATUS "FEPX is set to be installed in: ${CMAKE_INSTALL_PREFIX}/bin")
+
+# Testing ######################################################################
+
+include(CTest)
+
+file(GLOB_RECURSE tests ../tests/*/*.cmake)
+
+if(BUILD_TESTING)
+  foreach(test ${tests})
+    get_filename_component(test_name ${test} NAME)
+    string(REPLACE ".cmake" "" test_name ${test_name})
+    get_filename_component(test_dir ${test} DIRECTORY)
+    get_filename_component(test_path ${test} PATH)
+    string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/../tests/" "" test_label ${test_dir})
+    add_test(NAME ${test_label}
+             COMMAND ${CMAKE_COMMAND}
+             -Dtest_prog=$<TARGET_FILE:fepx>
+             -Dtest_mode=${BUILD_TESTING_MODE}
+             -P ${test}
+             WORKING_DIRECTORY ${test_dir})
+  endforeach()
+endif()

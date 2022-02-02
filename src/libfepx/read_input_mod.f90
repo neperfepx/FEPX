@@ -77,10 +77,15 @@ MODULE READ_INPUT_MOD
 !  EXEC_C12
 !  EXEC_C13
 !  EXEC_C44
+!  EXEC_C66
 !  EXEC_C_OVER_A
 !  EXEC_CYCLIC_A
 !  EXEC_CYCLIC_C
 !  EXEC_LATENT_PARAMETERS
+!  EXEC_A_P
+!  EXEC_F_P
+!  EXEC_B_P
+!  EXEC_R_P
 ! Uniaxial control options:
 !  EXEC_NUMBER_OF_STRAIN_STEPS
 !  EXEC_NUMBER_OF_STRAIN_RATE_JUMPS
@@ -105,10 +110,6 @@ MODULE READ_INPUT_MOD
 !  EXEC_LOAD_RATE_JUMP
 !  EXEC_NUMBER_OF_DWELL_EPISODES
 !  EXEC_DWELL_EPISODE
-! Powder diffraction options:
-!  EXEC_RUN_POWDER_DIFFRACTION
-!  EXEC_READ_VOLUME
-!  EXEC_READ_INTERIOR
 !
 ! From libf95:
 !
@@ -218,6 +219,7 @@ TYPE OPTIONS_TYPE
     INTEGER :: RESTART_FILE_HANDLING
     INTEGER :: RESTART_INITIAL_STEP
     LOGICAL :: SAT_EVO
+    LOGICAL :: PRECIP_HARD
     CHARACTER(LEN=18) :: HARD_TYPE
     LOGICAL :: READ_ORI_FROM_FILE
     CHARACTER(LEN=MAX_FILE_LEN) :: ORI_FILE
@@ -289,16 +291,30 @@ TYPE CRYS_OPTIONS_TYPE
     REAL(RK), ALLOCATABLE :: N(:)
     REAL(RK), ALLOCATABLE :: C11(:)
     REAL(RK), ALLOCATABLE :: C12(:)
-    REAL(RK), ALLOCATABLE :: C13(:)
+    REAL(RK), ALLOCATABLE :: C13(:) ! HCP and BCT only
     REAL(RK), ALLOCATABLE :: C44(:)
-    ! HCP specific parameter data.
-    REAL(RK), ALLOCATABLE :: C_OVER_A(:)
-    REAL(RK), ALLOCATABLE :: PRISMATIC_TO_BASAL(:)
-    REAL(RK), ALLOCATABLE :: PYRAMIDAL_TO_BASAL(:)
-    ! Hardening related parameters.
+    REAL(RK), ALLOCATABLE :: C66(:) ! BCT only
+    REAL(RK), ALLOCATABLE :: C_OVER_A(:) ! HCP and BCT only
+    REAL(RK), ALLOCATABLE :: PRISMATIC_TO_BASAL(:) ! HCP only
+    REAL(RK), ALLOCATABLE :: PYRAMIDAL_TO_BASAL(:) ! HCP only
+    REAL(RK), ALLOCATABLE :: HRATIO_BCT_A(:) ! BCT only
+    REAL(RK), ALLOCATABLE :: HRATIO_BCT_B(:) ! BCT only
+    REAL(RK), ALLOCATABLE :: HRATIO_BCT_C(:) ! BCT only
+    REAL(RK), ALLOCATABLE :: HRATIO_BCT_D(:) ! BCT only
+    REAL(RK), ALLOCATABLE :: HRATIO_BCT_E(:) ! BCT only
+    REAL(RK), ALLOCATABLE :: HRATIO_BCT_F(:) ! BCT only
+    REAL(RK), ALLOCATABLE :: HRATIO_BCT_G(:) ! BCT only
+    REAL(RK), ALLOCATABLE :: HRATIO_BCT_H(:) ! BCT only
+    REAL(RK), ALLOCATABLE :: HRATIO_BCT_I(:) ! BCT only
+    ! Hardening-related parameters.
     REAL(RK), ALLOCATABLE :: CYCLIC_A(:)
     REAL(RK), ALLOCATABLE :: CYCLIC_C(:)
     REAL(RK), ALLOCATABLE :: LATENT_PARAMETERS(:,:)
+    ! Precipitation hardening parameters
+    REAL(RK), ALLOCATABLE :: A_P(:)
+    REAL(RK), ALLOCATABLE :: F_P(:)
+    REAL(RK), ALLOCATABLE :: B_P(:)
+    REAL(RK), ALLOCATABLE :: R_P(:)
     !
     ! Rate dependence options for HCP materials
     LOGICAL,  ALLOCATABLE :: USE_ANISO_M(:)
@@ -307,6 +323,7 @@ TYPE CRYS_OPTIONS_TYPE
 END TYPE CRYS_OPTIONS_TYPE
 !
 TYPE UNIAXIAL_CONTROL_TYPE
+    !
     ! Uniaxial strain target parameters.
     INTEGER :: NUMBER_OF_STRAIN_STEPS
     INTEGER :: NUMBER_OF_STRAIN_RATE_JUMPS
@@ -357,17 +374,6 @@ TYPE TRIAXCLR_OPTIONS_TYPE
     !
 END TYPE TRIAXCLR_OPTIONS_TYPE
 !
-TYPE FIBER_AVERAGE_OPTIONS_TYPE
-    !
-    LOGICAL :: RUN_FIBER_AVERAGE
-    LOGICAL :: READ_VOLUME
-    LOGICAL :: READ_INTERIOR
-    CHARACTER(LEN=MAX_FILE_LEN) :: FIBER_AVERAGE_FILE
-    CHARACTER(LEN=MAX_FILE_LEN) :: VOLUME_FILE
-    CHARACTER(LEN=MAX_FILE_LEN) :: INTERIOR_FILE
-    !
-END TYPE FIBER_AVERAGE_OPTIONS_TYPE
-!
 TYPE(OPTIONS_TYPE) :: OPTIONS
 TYPE(PRINT_OPTIONS_TYPE) :: PRINT_OPTIONS
 TYPE(BOUNDARY_CONDITIONS_TYPE) :: BCS_OPTIONS
@@ -375,7 +381,6 @@ TYPE(CRYS_OPTIONS_TYPE) :: CRYS_OPTIONS
 TYPE(UNIAXIAL_CONTROL_TYPE) :: UNIAXIAL_OPTIONS
 TYPE(TRIAXCSR_OPTIONS_TYPE) :: TRIAXCSR_OPTIONS
 TYPE(TRIAXCLR_OPTIONS_TYPE) :: TRIAXCLR_OPTIONS
-TYPE(FIBER_AVERAGE_OPTIONS_TYPE) :: FIBER_AVERAGE_OPTIONS
 !
 !  Deformation control :
 !
@@ -1068,7 +1073,7 @@ CONTAINS
     ! Read in the mesh version string.
     READ(IO, '(A)', IOSTAT = IERR) MESH_VERSION
     !
-    IF (MESH_VERSION .NE. '2.2.1') &
+    IF (MESH_VERSION(1:3) .NE. '2.2') &
         &CALL PAR_QUIT('Error  :     > Incorrect mesh version provided.')
     !
     ! Read the end of section footer.
@@ -2420,6 +2425,7 @@ CONTAINS
     OPTIONS%RESTART_INITIAL_STEP = -1
     OPTIONS%READ_ORI_FROM_FILE = .FALSE.
     OPTIONS%SAT_EVO = .FALSE.
+    OPTIONS%PRECIP_HARD = .FALSE.
     OPTIONS%ORI_FILE = ''
     OPTIONS%READ_PHASE_FROM_FILE = .FALSE.
     OPTIONS%PHASE_FILE = ''
@@ -2490,14 +2496,6 @@ CONTAINS
     TRIAXCLR_OPTIONS%MAX_STRAIN_INCR = 0.001D0
     TRIAXCLR_OPTIONS%MAX_STRAIN = 0.2D0
     TRIAXCLR_OPTIONS%MAX_EQSTRAIN = 0.2D0
-    !
-    ! Fiber averaging options
-    FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE = .FALSE.
-    FIBER_AVERAGE_OPTIONS%READ_VOLUME = .FALSE.
-    FIBER_AVERAGE_OPTIONS%READ_INTERIOR = .FALSE.
-    FIBER_AVERAGE_OPTIONS%FIBER_AVERAGE_FILE = ''
-    FIBER_AVERAGE_OPTIONS%VOLUME_FILE = ''
-    FIBER_AVERAGE_OPTIONS%INTERIOR_FILE = ''
     !
     END SUBROUTINE INITIALIZE_OPTIONS
     !
@@ -2594,6 +2592,8 @@ CONTAINS
         & EXEC_C13, STATUS)) RETURN
     IF (EXECCOMMAND('c44', CMDLINE, &
         & EXEC_C44, STATUS)) RETURN
+    IF (EXECCOMMAND('c66', CMDLINE, &
+        & EXEC_C66, STATUS)) RETURN
     IF (EXECCOMMAND('c_over_a', CMDLINE, &
         & EXEC_C_OVER_A, STATUS)) RETURN
     IF (EXECCOMMAND('cyclic_a', CMDLINE, &
@@ -2602,6 +2602,14 @@ CONTAINS
         & EXEC_CYCLIC_C, STATUS)) RETURN
     IF (EXECCOMMAND('latent_parameters', CMDLINE, &
         & EXEC_LATENT_PARAMETERS, STATUS)) RETURN
+    IF (EXECCOMMAND('a_p', CMDLINE, &
+        & EXEC_A_P, STATUS)) RETURN
+    IF (EXECCOMMAND('f_p', CMDLINE, &
+        & EXEC_F_P, STATUS)) RETURN
+    IF (EXECCOMMAND('b_p', CMDLINE, &
+        & EXEC_B_P, STATUS)) RETURN
+    IF (EXECCOMMAND('r_p', CMDLINE, &
+        & EXEC_R_P, STATUS)) RETURN
     !
     ! Uniaxial control options
     IF (EXECCOMMAND('number_of_strain_steps', CMDLINE, &
@@ -2650,14 +2658,6 @@ CONTAINS
         & EXEC_NUMBER_OF_DWELL_EPISODES, STATUS)) RETURN
     IF (EXECCOMMAND('dwell_episode', CMDLINE, &
         & EXEC_DWELL_EPISODE, STATUS)) RETURN
-    !
-    ! Fiber averaging options
-    IF (EXECCOMMAND('run_fiber_average', CMDLINE, &
-        & EXEC_RUN_FIBER_AVERAGE, STATUS)) RETURN
-    IF (EXECCOMMAND('read_volume', CMDLINE, &
-        & EXEC_READ_VOLUME, STATUS)) RETURN
-    IF (EXECCOMMAND('read_interior', CMDLINE, &
-        & EXEC_READ_INTERIOR, STATUS)) RETURN
     !
     IF (CONVERGENCEKEYWORDINPUT(CMDLINE, STATUS)) RETURN
     !
@@ -3458,18 +3458,35 @@ CONTAINS
     ALLOCATE(CRYS_OPTIONS%C12(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
     ALLOCATE(CRYS_OPTIONS%C13(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
     ALLOCATE(CRYS_OPTIONS%C44(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%C66(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
     ! HCP specific arrays
     ALLOCATE(CRYS_OPTIONS%C_OVER_A(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
     ALLOCATE(CRYS_OPTIONS%PRISMATIC_TO_BASAL(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
     ALLOCATE(CRYS_OPTIONS%PYRAMIDAL_TO_BASAL(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ! BCT specific arrays
+    ALLOCATE(CRYS_OPTIONS%HRATIO_BCT_A(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%HRATIO_BCT_B(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%HRATIO_BCT_C(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%HRATIO_BCT_D(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%HRATIO_BCT_E(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%HRATIO_BCT_F(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%HRATIO_BCT_G(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%HRATIO_BCT_H(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%HRATIO_BCT_I(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
     ! Hardening specific arrays
     ALLOCATE(CRYS_OPTIONS%CYCLIC_A(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
     ALLOCATE(CRYS_OPTIONS%CYCLIC_C(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
     ALLOCATE(CRYS_OPTIONS%LATENT_PARAMETERS(1:CRYS_OPTIONS%NUMBER_OF_PHASES, &
-                & 1:8))
-    ! Rate dependence options for HCP materials
+                & 1:11))
+    ! Precipitation based hardening arrays
+    ALLOCATE(CRYS_OPTIONS%A_P(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%F_P(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%B_P(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    ALLOCATE(CRYS_OPTIONS%R_P(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
+    !
+    ! Rate dependence options for HCP/BCT materials
     ALLOCATE(CRYS_OPTIONS%USE_ANISO_M(1:CRYS_OPTIONS%NUMBER_OF_PHASES))
-    ALLOCATE(CRYS_OPTIONS%ANISO_M(1:CRYS_OPTIONS%NUMBER_OF_PHASES, 1:3))
+    ALLOCATE(CRYS_OPTIONS%ANISO_M(1:CRYS_OPTIONS%NUMBER_OF_PHASES, 1:10))
     !
     CRYS_OPTIONS%CRYSTAL_TYPE = -1
     CRYS_OPTIONS%M = -1.0D0
@@ -3484,14 +3501,31 @@ CONTAINS
     CRYS_OPTIONS%C12 = -1.0D0
     CRYS_OPTIONS%C13 = -1.0D0
     CRYS_OPTIONS%C44 = -1.0D0
+    CRYS_OPTIONS%C66 = -1.0D0
     !
     CRYS_OPTIONS%C_OVER_A = -1.0D0
     CRYS_OPTIONS%PRISMATIC_TO_BASAL = -1.0D0
     CRYS_OPTIONS%PYRAMIDAL_TO_BASAL = -1.0D0
     !
+    CRYS_OPTIONS%HRATIO_BCT_A = -1.0D0
+    CRYS_OPTIONS%HRATIO_BCT_B = -1.0D0
+    CRYS_OPTIONS%HRATIO_BCT_C = -1.0D0
+    CRYS_OPTIONS%HRATIO_BCT_D = -1.0D0
+    CRYS_OPTIONS%HRATIO_BCT_E = -1.0D0
+    CRYS_OPTIONS%HRATIO_BCT_F = -1.0D0
+    CRYS_OPTIONS%HRATIO_BCT_G = -1.0D0
+    CRYS_OPTIONS%HRATIO_BCT_H = -1.0D0
+    CRYS_OPTIONS%HRATIO_BCT_I = -1.0D0
+    !
     CRYS_OPTIONS%CYCLIC_A = -1.0D0
     CRYS_OPTIONS%CYCLIC_C = -1.0D0
     CRYS_OPTIONS%LATENT_PARAMETERS = -1.0D0
+    !
+    CRYS_OPTIONS%A_P = -1.0D0
+    CRYS_OPTIONS%F_P = -1.0D0
+    CRYS_OPTIONS%B_P = -1.0D0
+    CRYS_OPTIONS%R_P = -1.0D0
+    !
     CRYS_OPTIONS%ANISO_M = -1.0D0
     CRYS_OPTIONS%USE_ANISO_M = .FALSE.
     !
@@ -3512,17 +3546,21 @@ CONTAINS
     !
     SELECT CASE (TRIM(ADJUSTL(A)))
         !
-        CASE ('FCC','Fcc','fcc')
+        CASE ('FCC', 'Fcc', 'fcc')
             !
             CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) = 1
             !
-        CASE ('BCC','Bcc','bcc')
+        CASE ('BCC', 'Bcc', 'bcc')
             !
             CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) = 2
             !
-        CASE ('HCP','Hcp','hcp')
+        CASE ('HCP', 'Hcp', 'hcp')
             !
             CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) = 3
+            !
+        CASE ('BCT', 'Bct', 'bct')
+            !
+            CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) = 4
             !
         CASE DEFAULT
             !
@@ -3564,7 +3602,8 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
     INTEGER, INTENT(OUT) :: S ! STATUS
     INTEGER :: NSPACE, NVALS, II
-    REAL(RK) :: TEMP_M, TEMP_M1, TEMP_M2, TEMP_M3
+    REAL(RK) :: TEMP_M, TEMP_M1, TEMP_M2, TEMP_M3, TEMP_M4, TEMP_M5, TEMP_M6, &
+        & TEMP_M7, TEMP_M8, TEMP_M9, TEMP_M10
     CHARACTER(LEN=256) :: LINE
     !
     !---------------------------------------------------------------------------
@@ -3680,6 +3719,82 @@ CONTAINS
                 !
         END SELECT
         !
+    ! Else if current phase is BCT, attempt a few options for `m'
+    ELSE IF (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 4) THEN
+        !
+        ! Restructured input to be less ambiguous edge cases on input
+        !
+        ! Attempt to read the line as-is to determine the number of inputs
+        READ(A, '(A)') LINE
+        !
+        ! Trim the full string into `NVALS' number of inputs
+        II = 1
+        NSPACE = COUNT( (/ (LINE(II:II), II=1, LEN_TRIM(LINE)) /) == " ")
+        NVALS = NSPACE + 1
+        !
+        SELECT CASE(NVALS)
+            !
+            CASE(1)
+                !
+                ! If one value, read in the isotropic `m'
+                !
+                READ(A, *, IOSTAT=IOERR) TEMP_M
+                !
+                IF (IOERR .NE. 0) THEN
+                    !
+                    S = 1
+                    RETURN
+                    !
+                ELSE
+                    !
+                    S = 0
+                    !
+                    ! Assign singular value to appropriate array
+                    CRYS_OPTIONS%M(CRYS_OPTIONS%PHASE) = TEMP_M
+                    !
+                END IF
+                !
+            CASE(10)
+                !
+                ! If ten values, read in the anisotropic `m'
+                !
+                READ(A, *, IOSTAT=IOERR) TEMP_M1, TEMP_M2, TEMP_M3, TEMP_M4, &
+                    & TEMP_M5, TEMP_M6, TEMP_M7, TEMP_M8, TEMP_M9, TEMP_M10
+                !
+                IF (IOERR .NE. 0) THEN
+                    !
+                    S = 1
+                    RETURN
+                    !
+                ELSE
+                    !
+                    S = 0
+                    !
+                    ! Enable logical and assign temp values into array for phase
+                    CRYS_OPTIONS%USE_ANISO_M(CRYS_OPTIONS%PHASE) = .TRUE.
+                    CRYS_OPTIONS%ANISO_M(CRYS_OPTIONS%PHASE, 1) = TEMP_M1
+                    CRYS_OPTIONS%ANISO_M(CRYS_OPTIONS%PHASE, 2) = TEMP_M2
+                    CRYS_OPTIONS%ANISO_M(CRYS_OPTIONS%PHASE, 3) = TEMP_M3
+                    CRYS_OPTIONS%ANISO_M(CRYS_OPTIONS%PHASE, 4) = TEMP_M4
+                    CRYS_OPTIONS%ANISO_M(CRYS_OPTIONS%PHASE, 5) = TEMP_M5
+                    CRYS_OPTIONS%ANISO_M(CRYS_OPTIONS%PHASE, 6) = TEMP_M6
+                    CRYS_OPTIONS%ANISO_M(CRYS_OPTIONS%PHASE, 7) = TEMP_M7
+                    CRYS_OPTIONS%ANISO_M(CRYS_OPTIONS%PHASE, 8) = TEMP_M7
+                    CRYS_OPTIONS%ANISO_M(CRYS_OPTIONS%PHASE, 9) = TEMP_M8
+                    CRYS_OPTIONS%ANISO_M(CRYS_OPTIONS%PHASE, 10) = TEMP_M10
+                    !
+                END IF
+                !
+            CASE DEFAULT
+                !
+                ! The input is not 1 or 10 values so exit!
+                !
+                CALL PAR_QUIT&
+                    &('Error  :     > One or ten values expected for&
+                    & "m" in BCT phases.')
+                !
+        END SELECT
+        !
     ! Exception error handling for future proofing
     ELSE
         !
@@ -3744,6 +3859,8 @@ CONTAINS
     INTEGER, INTENT(OUT) :: S ! STATUS
     INTEGER :: NSPACE, NVALS, II
     REAL(RK) :: PRISM_TEMP, PYRAM_TEMP
+    REAL(RK) :: G0BCT2, G0BCT3, G0BCT4, G0BCT5, G0BCT6, G0BCT7, G0BCT8, &
+        & G0BCT9, G0BCT10
     CHARACTER(LEN=256) :: LINE
     !
     !---------------------------------------------------------------------------
@@ -3766,7 +3883,7 @@ CONTAINS
             !
             CASE(1)
                 !
-                ! If one value, read in the isotropic `m'
+                ! If one value, read in the isotropic `g0'
                 !
                 READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%G_0(CRYS_OPTIONS%PHASE)
                 !
@@ -3843,6 +3960,76 @@ CONTAINS
                 CALL PAR_QUIT&
                     &('Error  :     > Three values expected for&
                     & "g_0" in HCP phases.')
+                !
+        END SELECT
+    !
+    ! Else if current phase is BCT, attempt to read in ten values for `g_0'
+    ELSE IF (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 4) THEN
+        !
+        ! Restructured input to be less ambiguous edge cases on input
+        !
+        ! Attempt to read the line as-is to determine the number of inputs
+        READ(A, '(A)') LINE
+        !
+        ! Trim the full string into `NVALS' number of inputs
+        II = 1
+        NSPACE = COUNT( (/ (LINE(II:II), II=1, LEN_TRIM(LINE)) /) == " ")
+        NVALS = NSPACE + 1
+        !
+        SELECT CASE(NVALS)
+            !
+            CASE(10)
+                !
+                ! If three values, read in the anisotropic `g_0'
+                !
+                READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%G_0(CRYS_OPTIONS%PHASE), &
+                    & G0BCT2, G0BCT3, G0BCT4, G0BCT5, G0BCT6, G0BCT7, G0BCT8, &
+                    & G0BCT9, G0BCT10
+                !
+                IF (IOERR .NE. 0) THEN
+                    !
+                    S = 1
+                    ! Explicitly handle this error by the user since it acts on
+                    ! a newly deprecated feature.
+                    CALL PAR_QUIT('Error  :     > Ten values for `g_0` &
+                        &expected for BCT materials.')
+                    !
+                ELSE
+                    !
+                    S = 0
+                    !
+                    ! Scale the temporary variables by read-in `g_0'
+                    ! (basal strength) in order to retrieve the internal
+                    ! slip family strength ratios
+                    !
+                    CRYS_OPTIONS%HRATIO_BCT_A(CRYS_OPTIONS%PHASE) = &
+                        & G0BCT2 / CRYS_OPTIONS%G_0(CRYS_OPTIONS%PHASE)
+                    CRYS_OPTIONS%HRATIO_BCT_B(CRYS_OPTIONS%PHASE) = &
+                        & G0BCT3 / CRYS_OPTIONS%G_0(CRYS_OPTIONS%PHASE)
+                    CRYS_OPTIONS%HRATIO_BCT_C(CRYS_OPTIONS%PHASE) = &
+                        & G0BCT4 / CRYS_OPTIONS%G_0(CRYS_OPTIONS%PHASE)
+                    CRYS_OPTIONS%HRATIO_BCT_D(CRYS_OPTIONS%PHASE) = &
+                        & G0BCT5 / CRYS_OPTIONS%G_0(CRYS_OPTIONS%PHASE)
+                    CRYS_OPTIONS%HRATIO_BCT_E(CRYS_OPTIONS%PHASE) = &
+                        & G0BCT6 / CRYS_OPTIONS%G_0(CRYS_OPTIONS%PHASE)
+                    CRYS_OPTIONS%HRATIO_BCT_F(CRYS_OPTIONS%PHASE) = &
+                        & G0BCT7 / CRYS_OPTIONS%G_0(CRYS_OPTIONS%PHASE)
+                    CRYS_OPTIONS%HRATIO_BCT_G(CRYS_OPTIONS%PHASE) = &
+                        & G0BCT8 / CRYS_OPTIONS%G_0(CRYS_OPTIONS%PHASE)
+                    CRYS_OPTIONS%HRATIO_BCT_H(CRYS_OPTIONS%PHASE) = &
+                        & G0BCT9 / CRYS_OPTIONS%G_0(CRYS_OPTIONS%PHASE)
+                    CRYS_OPTIONS%HRATIO_BCT_I(CRYS_OPTIONS%PHASE) = &
+                        & G0BCT10 / CRYS_OPTIONS%G_0(CRYS_OPTIONS%PHASE)
+                    !
+                END IF
+                !
+            CASE DEFAULT
+                !
+                ! The input is not 3 values so exit!
+                !
+                CALL PAR_QUIT&
+                    &('Error  :     > Ten values expected for&
+                    & "g_0" in BCT phases.')
                 !
         END SELECT
         !
@@ -4016,8 +4203,9 @@ CONTAINS
     !---------------------------------------------------------------------------
     !
     ! Read in data and store to allocated array in proper phase location.
-    ! Do not allow for non-HCP phase to read c13 in!
-    IF (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 3) THEN
+    ! Do not allow for non-HCP OR BCT phases to read c13 in!
+    IF ((CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 3) .OR. &
+        & (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 4)) THEN
         !
         READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%C13(CRYS_OPTIONS%PHASE)
         !
@@ -4065,6 +4253,39 @@ CONTAINS
     !
     !===========================================================================
     !
+    SUBROUTINE EXEC_C66(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Read in data and store to allocated array in proper phase location.
+    ! Do not allow for non-BCT phase to read c66 in!
+    IF (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 4) THEN
+        !
+        READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%C66(CRYS_OPTIONS%PHASE)
+        !
+        IF (IOERR .NE. 0) THEN
+            !
+            S = 1
+            RETURN
+            !
+        END IF
+        !
+    ELSE
+        !
+        CALL PAR_QUIT&
+            &('Error  :     > C66 input for FCC, BCC, or HCP crystals invalid.')
+        !
+    END IF
+    !
+    S = 0
+    !
+    END SUBROUTINE EXEC_C66
+    !
+    !===========================================================================
+    !
     SUBROUTINE EXEC_C_OVER_A(A, S)
     !
     CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
@@ -4073,7 +4294,8 @@ CONTAINS
     !---------------------------------------------------------------------------
     !
     ! Read in data and store to allocated array in proper phase location
-    IF (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 3) THEN
+    IF ((CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 3) .OR. &
+        & (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE) .EQ. 4)) THEN
         !
         READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%C_OVER_A(CRYS_OPTIONS%PHASE)
         !
@@ -4161,63 +4383,85 @@ CONTAINS
         SELECT CASE (CRYS_OPTIONS%CRYSTAL_TYPE(CRYS_OPTIONS%PHASE))
             !
             CASE (1) ! FCC
-            !
-            READ(A, *, IOSTAT=IOERR) &
-                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 1), &
-                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 2), &
-                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 3), &
-                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 4), &
-                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 5)
-            !
-            IF (IOERR .NE. 0) THEN
                 !
-                S = 1
-                RETURN
+                READ(A, *, IOSTAT=IOERR) &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 1), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 2), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 3), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 4), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 5)
                 !
-            END IF
-            !
+                IF (IOERR .NE. 0) THEN
+                    !
+                    S = 1
+                    RETURN
+                    !
+                END IF
+                !
             CASE (2) ! BCC
-            !
-            READ(A, *, IOSTAT=IOERR) &
-                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 1), &
-                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 2), &
-                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 3), &
-                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 4), &
-                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 5), &
-                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 6), &
-                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 7)
-            !
-            IF (IOERR .NE. 0) THEN
                 !
-                S = 1
-                RETURN
+                READ(A, *, IOSTAT=IOERR) &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 1), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 2), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 3), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 4), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 5), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 6), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 7)
                 !
-            END IF
-            !
+                IF (IOERR .NE. 0) THEN
+                    !
+                    S = 1
+                    RETURN
+                    !
+                END IF
+                !
             CASE (3) ! HCP
-            !
-            READ(A, *, IOSTAT=IOERR) &
-                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 1), &
-                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 2), &
-                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 3), &
-                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 4), &
-                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 5), &
-                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 6), &
-                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 7), &
-                & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 8)
-            !
-            IF (IOERR .NE. 0) THEN
                 !
-                S = 1
-                RETURN
+                READ(A, *, IOSTAT=IOERR) &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 1), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 2), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 3), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 4), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 5), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 6), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 7), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 8)
                 !
-            END IF
-            !
+                IF (IOERR .NE. 0) THEN
+                    !
+                    S = 1
+                    RETURN
+                    !
+                END IF
+                !
+            CASE (4) ! BCT
+                !
+                READ(A, *, IOSTAT=IOERR) &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 1), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 2), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 3), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 4), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 5), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 6), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 7), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 8), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 9), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 10), &
+                    & CRYS_OPTIONS%LATENT_PARAMETERS(CRYS_OPTIONS%PHASE, 11)
+                !
+                IF (IOERR .NE. 0) THEN
+                    !
+                    S = 1
+                    RETURN
+                    !
+                END IF
+                !
             CASE DEFAULT
-            !
-            CALL PAR_QUIT('Error  :     > Invalid latent hardening parameters &
-                &provided.')
-            !
+                !
+                CALL PAR_QUIT('Error  :     > Invalid latent hardening &
+                    &parameters provided.')
+                !
         END SELECT
         !
     END IF
@@ -4225,6 +4469,98 @@ CONTAINS
     S = 0
     !
     END SUBROUTINE EXEC_LATENT_PARAMETERS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE EXEC_A_P(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%A_P(CRYS_OPTIONS%PHASE)
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_A_P
+    !
+    !===========================================================================
+    !    !
+    SUBROUTINE EXEC_F_P(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%F_P(CRYS_OPTIONS%PHASE)
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_F_P
+    !
+    !===========================================================================
+    !    !
+    SUBROUTINE EXEC_B_P(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%B_P(CRYS_OPTIONS%PHASE)
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_B_P
+    !
+    !===========================================================================
+    !    !
+    SUBROUTINE EXEC_R_P(A, S)
+    !
+    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
+    INTEGER, INTENT(OUT) :: S ! STATUS
+    !
+    !---------------------------------------------------------------------------
+    !
+    READ(A, *, IOSTAT=IOERR) CRYS_OPTIONS%R_P(CRYS_OPTIONS%PHASE)
+    !
+    IF (IOERR .NE. 0) THEN
+        !
+        S = 1
+        !
+    ELSE
+        !
+        S = 0
+        !
+    END IF
+    !
+    END SUBROUTINE EXEC_R_P
     !
     !===========================================================================
     !
@@ -5078,54 +5414,6 @@ CONTAINS
     S = 0
     !
     END SUBROUTINE EXEC_DWELL_EPISODE
-    !
-    !===========================================================================
-    !
-    SUBROUTINE EXEC_RUN_FIBER_AVERAGE(A, S)
-    !
-    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
-    INTEGER, INTENT(OUT) :: S ! STATUS
-    !
-    !---------------------------------------------------------------------------
-    !
-    ! The external file must be named 'simulation.fib'.
-    FIBER_AVERAGE_OPTIONS%RUN_FIBER_AVERAGE = .TRUE.
-    !
-    S = 0
-    !
-    END SUBROUTINE EXEC_RUN_FIBER_AVERAGE
-    !
-    !===========================================================================
-    !
-    SUBROUTINE EXEC_READ_VOLUME(A, S)
-    !
-    CHARACTER(LEN=*), INTENT(IN) :: A ! command argument string
-    INTEGER, INTENT(OUT) :: S ! STATUS
-    !
-    !---------------------------------------------------------------------------
-    !
-    ! The external file must be named 'simulation.vol'.
-    FIBER_AVERAGE_OPTIONS%READ_VOLUME = .TRUE.
-    !
-    S = 0
-    !
-    END SUBROUTINE EXEC_READ_VOLUME
-    !
-    !===========================================================================
-    !
-    SUBROUTINE EXEC_READ_INTERIOR(A, S)
-    !
-    CHARACTER(LEN=*), INTENT(IN)  :: A ! command argument string
-    INTEGER, INTENT(OUT) :: S ! STATUS
-    !
-    !---------------------------------------------------------------------------
-    !
-    ! The external file must be named 'simulation.int'.
-    FIBER_AVERAGE_OPTIONS%READ_INTERIOR = .TRUE.
-    !
-    S = 0
-    !
-    END SUBROUTINE EXEC_READ_INTERIOR
     !
     !===========================================================================
     !

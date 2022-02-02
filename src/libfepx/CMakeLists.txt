@@ -19,7 +19,6 @@ file(GLOB libfepx_src
     driver_triaxcsr_mod.f90
     driver_uniaxial_control_mod.f90
     driver_utilities_mod.f90
-    fiber_average_mod.f90
     hardening_mod.f90
     iterate_stress_evps_mod.f90
     iterate_stress_vp_mod.f90
