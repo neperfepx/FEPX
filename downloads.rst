@@ -10,10 +10,31 @@ It you use FEPX for your own work, please mention it explicitly and cite one the
 Current Official Release
 ------------------------
 
-The current official release (and previous ones) is available on the `GitHub repository <https://github.com/acmelab-ua/FEPX/releases>`_.
+The current official release (and previous ones) is available from the `Releases <https://github.com/acmelab-ua/FEPX/releases>`_ section of the `GitHub repository <https://github.com/acmelab-ua/FEPX>`_.
 
 Latest Version
 --------------
 
-The latest version is available on the :code:`main` branch of the GitHub repository, which is available from https://github.com/acmelab-ua/FEPX. This is also the place for code contributions, see the :ref:`community` page.
+The latest version is available on the :code:`main` branch of the `GitHub repository <https://github.com/acmelab-ua/FEPX>`_.  To get the latest version as a Git user, run:
 
+.. code-block:: console
+
+  $ git clone https://github.com/acmelab-ua/FEPX.git
+
+which will download the repository.  To update the repository at any later time, run:
+
+.. code-block:: console
+
+  $ git pull origin main
+
+from within the repository.
+
+To get the latest version as a non-Git user, run:
+
+.. code-block:: console
+
+  $ wget https://github.com/acmelab-ua/FEPX/archive/refs/heads/main.zip
+
+which will download only the latest version.  Alternatively, you may click on :data:`Code` / :data:`Download ZIP` on the `GitHub repository <https://github.com/acmelab-ua/FEPX>`_.
+
+The `GitHub repository <https://github.com/acmelab-ua/FEPX>`_ is also the place for interactions, see the :ref:`community` page.
