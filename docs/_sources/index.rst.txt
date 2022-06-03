@@ -4,9 +4,14 @@ FEPX: Finite Element Polycrystal Plasticity
 +++++++++++++++++++++++++++++++++++++++++++
 
 .. image:: imgs/home-fepx.png
-   :width: 100%
-   :align: center
+   :width: 67%
+   :align: left
 
+
+|
+|
+|
+|
 FEPX is a finite element software package for polycrystal plasticity. It can model both the global and local mechanical behaviors of large polycrystalline aggregates with complex microstructures via a scalable parallel framework.
 
 .. note::
