@@ -8,6 +8,12 @@ Here is a tentative list of the works (journal papers and books) using FEPX. If 
 2022
 ----
 
+- DC Pagan, CR Pash, AR Benson, MP Kasemer, *Graph neural network modeling of grain-scale anisotropic elastic behavior using simulated and measured microscale data*, **arXiv:2205.06324**.
+
+- R Li, R Quey, Y Zhang, M Kobayashi, J Oddershede, D Juul Jensen, *A CPFEM based theoretical analysis of strains resolved by the microstructural feature tracking method*, **42nd Riso International Symposium on Materials Science, IOP Conf. Series: Materials Science and Engineering**, https://doi:10.1088/1757-899X/1249/1/012056.
+
+- JN Fuhg, L van Wees, M Obstalecki, P Shade, N Bouklas, M Kasemer, *Machine-learning convex and texture-dependent macroscopic yield from crystal plasticity simulations*, **Materialia**, https://doi.org/10.1016/j.mtla.2022.101446.
+
 - B Engel, M Huth, C Hyde, *Numerical investigation into the influence of grain orientation distribution on the local and global elastic-plastic behaviour of polycrystalline nickel-based superalloy INC-738 LC*, **Crystals**, https://doi.org/10.3390/cryst12010100.
 
 2021

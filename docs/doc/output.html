@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Simulation Output &mdash; FEPX 1.3.0 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -105,12 +106,12 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="simulation-output">
-<span id="id1"></span><h1>Simulation Output<a class="headerlink" href="#simulation-output" title="Permalink to this headline"></a></h1>
+  <section id="simulation-output">
+<span id="id1"></span><h1>Simulation Output<a class="headerlink" href="#simulation-output" title="Permalink to this headline">¶</a></h1>
 <p>In this section the output files are described. In general, the output can be broken down into four types: nodal output (variables that are calculated and printed at the finite element nodes), elemental output (variables that are calculated and printed at the finite elements), restart output (which contains all variables necessary to restart a simulation at a specific load step), and miscellaneous output (macroscopic forces and various simulation statistics).</p>
 <p>All desired output must be defined in the <code class="file docutils literal notranslate"><span class="pre">simulation.config</span></code> file (see: <a class="reference internal" href="input.html#printing-results"><span class="std std-ref">Printing Results</span></a> for a description of the print options). A (small) <code class="file docutils literal notranslate"><span class="pre">post.report</span></code> file is systematically printed, which contains information necessary for post-processing with Neper. All output described in this section is <em>raw</em> simulation output and can be post-processed into a more human-readable format with Neper’s <code class="xref py py-data docutils literal notranslate"><span class="pre">-S</span></code> module. Refer to the <a class="reference external" href="https://neper.info/docs/neper.pdf">Neper reference manual</a>, for a more complete description of the <code class="xref py py-data docutils literal notranslate"><span class="pre">-S</span></code> module.</p>
-<div class="section" id="nodal-output">
-<h2>Nodal Output<a class="headerlink" href="#nodal-output" title="Permalink to this headline"></a></h2>
+<section id="nodal-output">
+<h2>Nodal Output<a class="headerlink" href="#nodal-output" title="Permalink to this headline">¶</a></h2>
 <p>Nodal output prints a single variable per finite element node. Raw output is printed on a per-core basis, and the general file name structure is <code class="file docutils literal notranslate"><span class="pre">post.variable.core&lt;#&gt;</span></code>, where <code class="xref py py-data docutils literal notranslate"><span class="pre">variable</span></code> is the variable being printed, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;#&gt;</span></code> denotes the ID of the core on which the data is being printed. In general, the file structure is:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">step_number</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">core_start_dof</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">core_end_dof</span><span class="o">&gt;</span>
 <span class="o">&lt;</span><span class="n">node_N</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">values</span><span class="o">&gt;</span>
@@ -128,28 +129,28 @@
 <p>Below, the specific nodal values available for printing are explained in detail.</p>
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-Coordinates">
-<span id="cmdoption-arg-coordinates"></span><span class="sig-name descname"><span class="pre">Coordinates</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-arg-Coordinates" title="Permalink to this definition"></a></dt>
+<span id="cmdoption-arg-coordinates"></span><span class="sig-name descname"><span class="pre">Coordinates</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-arg-Coordinates" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.coo.core*</span></code> files, the coordinates are printed. Each nodal coordinate is described in the orthonormal Cartesian sample basis, and one coordinate is printed per line (3 values per line). The components of the coordinates are printed in the order:</p>
 <p><span class="math notranslate nohighlight">\(x, y, z\)</span></p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-Displacements">
-<span id="cmdoption-arg-displacements"></span><span class="sig-name descname"><span class="pre">Displacements</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-arg-Displacements" title="Permalink to this definition"></a></dt>
+<span id="cmdoption-arg-displacements"></span><span class="sig-name descname"><span class="pre">Displacements</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-arg-Displacements" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.disp.core*</span></code> files, the displacements are printed. Each nodal displacement is described in the orthonormal Cartesian sample basis, and one displacement is printed per line (3 values per line). The components of the displacements are printed in the order:</p>
 <p><span class="math notranslate nohighlight">\(d_x, d_y, d_z\)</span></p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-Velocities">
-<span id="cmdoption-arg-velocities"></span><span class="sig-name descname"><span class="pre">Velocities</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-arg-Velocities" title="Permalink to this definition"></a></dt>
+<span id="cmdoption-arg-velocities"></span><span class="sig-name descname"><span class="pre">Velocities</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-arg-Velocities" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.vel.core*</span></code> files, the velocities are printed. Each nodal velocity is described in the orthonormal Cartesian sample basis, and one velocity is printed per line (3 values per line). The components of the velocities are printed in the order:</p>
 <p><span class="math notranslate nohighlight">\(v_x, v_y, v_z\)</span></p>
 </dd></dl>
 
-</div>
-<div class="section" id="elemental-output">
-<h2>Elemental Output<a class="headerlink" href="#elemental-output" title="Permalink to this headline"></a></h2>
+</section>
+<section id="elemental-output">
+<h2>Elemental Output<a class="headerlink" href="#elemental-output" title="Permalink to this headline">¶</a></h2>
 <p>Elemental output prints a single variable per finite element. Raw output is printed on a per-core basis, and the general file name structure is <code class="file docutils literal notranslate"><span class="pre">post.variable.core&lt;#&gt;</span></code>, where <code class="xref py py-data docutils literal notranslate"><span class="pre">variable</span></code> is the variable being printed, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;#&gt;</span></code> denotes the ID of the core on which the data is being printed. In general, the file structure is:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">step_number</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">core_start_elt</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">core_end_elt</span><span class="o">&gt;</span>
 <span class="o">&lt;</span><span class="n">element_N</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">value</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">&gt;</span>
@@ -168,7 +169,7 @@
 <p>Below, the specific nodal values available for printing are explained in detail.</p>
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-Critical">
-<span id="cmdoption-arg-critical"></span><span class="sig-name descname"><span class="pre">Critical</span></span><span class="sig-prename descclassname"> <span class="pre">Resolved</span> <span class="pre">Shear</span> <span class="pre">Stress</span></span><a class="headerlink" href="#cmdoption-arg-Critical" title="Permalink to this definition"></a></dt>
+<span id="cmdoption-arg-critical"></span><span class="sig-name descname"><span class="pre">Critical</span></span><span class="sig-prename descclassname"> <span class="pre">Resolved</span> <span class="pre">Shear</span> <span class="pre">Stress</span></span><a class="headerlink" href="#cmdoption-arg-Critical" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.crss.core*</span></code> files, the critical resolved shear stress is printed. For the isotropic hardening assumption (<a class="reference internal" href="input.html#optional-input-parameters"><span class="std std-ref">Optional Input Parameters</span></a>), one value is printed per element. For anisotropic hardening assumptions, the critical resolved shear stress is printed for each slip system per element, one line of values per element.</p>
 <p>For body centered cubic crystal symmetry, values are printed in the order:</p>
 <p><span class="math notranslate nohighlight">\((0 1 \bar 1)[1 1 1],\,(1 0 \bar 1)[1 1 1],\,(1 \bar 1 0)[1 1 1],\,(0 1 1)[1 1 \bar 1],\,(1 0 1)[1 1 \bar 1],\,(1 \bar 1 0)[1 1 \bar 1],\)</span></p>
@@ -191,42 +192,42 @@
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-Deformation">
-<span id="cmdoption-arg-deformation"></span><span class="sig-name descname"><span class="pre">Deformation</span></span><span class="sig-prename descclassname"> <span class="pre">Rate</span> <span class="pre">Tensor</span></span><a class="headerlink" href="#cmdoption-arg-Deformation" title="Permalink to this definition"></a></dt>
+<span id="cmdoption-arg-deformation"></span><span class="sig-name descname"><span class="pre">Deformation</span></span><span class="sig-prename descclassname"> <span class="pre">Rate</span> <span class="pre">Tensor</span></span><a class="headerlink" href="#cmdoption-arg-Deformation" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.defrate.core*</span></code> files, the deformation rate tensor is printed. Each tensor, <span class="math notranslate nohighlight">\(\bf D\)</span>, is printed in the sample basis. The independent components are printed, one tensor per line (6 values per line). The components, <span class="math notranslate nohighlight">\(D _{ij}\)</span>, are printed in the order:</p>
 <p><span class="math notranslate nohighlight">\(D_{11},\,D_{22},\,D_{33},\,D_{23},\,D_{13},\,D_{12}\)</span></p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-Equivalent">
-<span id="cmdoption-arg-equivalent"></span><span class="sig-name descname"><span class="pre">Equivalent</span></span><span class="sig-prename descclassname"> <span class="pre">Deformation</span> <span class="pre">Rate</span></span><a class="headerlink" href="#cmdoption-arg-Equivalent" title="Permalink to this definition"></a></dt>
+<span id="cmdoption-arg-equivalent"></span><span class="sig-name descname"><span class="pre">Equivalent</span></span><span class="sig-prename descclassname"> <span class="pre">Deformation</span> <span class="pre">Rate</span></span><a class="headerlink" href="#cmdoption-arg-Equivalent" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.defrate-eq.core*</span></code> files, the equivalent deformation rate is printed. One scalar value is printed per element. The equivalent deformation rate, <span class="math notranslate nohighlight">\(D\)</span>, is calculated based on the deformation rate tensor, <span class="math notranslate nohighlight">\({\bf D}\)</span>, via the tensor inner product:</p>
 <p><span class="math notranslate nohighlight">\(D = \sqrt{ {2 \over 3} {\bf D} : {\bf D} }\)</span></p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-Plastic">
-<span id="cmdoption-arg-plastic"></span><span class="sig-name descname"><span class="pre">Plastic</span></span><span class="sig-prename descclassname"> <span class="pre">Deformation</span> <span class="pre">Rate</span> <span class="pre">Tensor</span></span><a class="headerlink" href="#cmdoption-arg-Plastic" title="Permalink to this definition"></a></dt>
+<span id="cmdoption-arg-plastic"></span><span class="sig-name descname"><span class="pre">Plastic</span></span><span class="sig-prename descclassname"> <span class="pre">Deformation</span> <span class="pre">Rate</span> <span class="pre">Tensor</span></span><a class="headerlink" href="#cmdoption-arg-Plastic" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.defrate-pl.core*</span></code> files, the deviatoric plastic deformation rate tensor is printed. Each tensor, <span class="math notranslate nohighlight">\({\bf D}^p\)</span>, is printed in the sample basis. The independent components are printed, one tensor per line (6 values per line). The components, <span class="math notranslate nohighlight">\(D^p_{ij}\)</span>, are printed in the order:</p>
 <p><span class="math notranslate nohighlight">\(D^p_{11},\,D^p_{22},\,D^p_{33},\,D^p_{23},\,D^p_{13},\,D^p_{12}\)</span></p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-0">
-<span class="sig-name descname"><span class="pre">Equivalent</span></span><span class="sig-prename descclassname"> <span class="pre">Plastic</span> <span class="pre">Deformation</span> <span class="pre">Rate</span></span><a class="headerlink" href="#cmdoption-arg-0" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Equivalent</span></span><span class="sig-prename descclassname"> <span class="pre">Plastic</span> <span class="pre">Deformation</span> <span class="pre">Rate</span></span><a class="headerlink" href="#cmdoption-arg-0" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.defrate-pl-eq.core*</span></code> files, the equivalent plastic deformation rate is printed. One scalar value is printed per element. The equivalent plastic deformation rate, <span class="math notranslate nohighlight">\(D^p\)</span>, is calculated based on the plastic deformation rate tensor, <span class="math notranslate nohighlight">\({\bf D}^p\)</span>, via the tensor inner product:</p>
 <p><span class="math notranslate nohighlight">\(D^p = \sqrt{ {2 \over 3} {\bf D}^p : {\bf D}^p }\)</span></p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-Elemental">
-<span id="cmdoption-arg-elemental"></span><span class="sig-name descname"><span class="pre">Elemental</span></span><span class="sig-prename descclassname"> <span class="pre">Volume</span></span><a class="headerlink" href="#cmdoption-arg-Elemental" title="Permalink to this definition"></a></dt>
+<span id="cmdoption-arg-elemental"></span><span class="sig-name descname"><span class="pre">Elemental</span></span><span class="sig-prename descclassname"> <span class="pre">Volume</span></span><a class="headerlink" href="#cmdoption-arg-Elemental" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.elt-vol.core*</span></code> files, the elemental volume is printed. One scalar value is printed per element. The elemental volume is calculated as the Gaussian integration of the determinant of the Jacobian matrix:</p>
 <p><span class="math notranslate nohighlight">\(V_{el} = \sum_{i=1}^{n_{qp}}{det(J_i) w_i }\)</span></p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-Crystallographic">
-<span id="cmdoption-arg-crystallographic"></span><span class="sig-name descname"><span class="pre">Crystallographic</span></span><span class="sig-prename descclassname"> <span class="pre">Orientation</span></span><a class="headerlink" href="#cmdoption-arg-Crystallographic" title="Permalink to this definition"></a></dt>
+<span id="cmdoption-arg-crystallographic"></span><span class="sig-name descname"><span class="pre">Crystallographic</span></span><span class="sig-prename descclassname"> <span class="pre">Orientation</span></span><a class="headerlink" href="#cmdoption-arg-Crystallographic" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.ori.core*</span></code> files, the crystallographic orientation is printed. Depending on the orientation parameterization used as input, the orientation values may range from 3 values per element (when using Rodrigues vector, Euler-Bunge angles and Euler-Kocks angles parameterizations) or 4 values per element (when using axis-angle or quaternion parameterizations). One orientation is printed per line (3 or 4 values per line).</p>
 <p>For Rodrigues: <span class="math notranslate nohighlight">\(r_1,\,r_2,\,r_3\)</span>, where the Rodrigues vector is <span class="math notranslate nohighlight">\({\bf r} = {\bf t} \tan{(\omega / 2)}\)</span>.</p>
 <p>For Euler-Bunge: <span class="math notranslate nohighlight">\(\phi_1,\,\theta,\,\phi_2\)</span> (where <span class="math notranslate nohighlight">\(\phi_1\)</span> is the rotation about the <span class="math notranslate nohighlight">\(z\)</span> axis, <span class="math notranslate nohighlight">\(\theta\)</span> is the rotation about the <span class="math notranslate nohighlight">\(x^{\prime}\)</span> axis, and <span class="math notranslate nohighlight">\(\phi_2\)</span> is the rotation about the <span class="math notranslate nohighlight">\(z^{\prime \prime}\)</span> axis, all in degrees).</p>
@@ -237,7 +238,7 @@
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-Slip">
-<span id="cmdoption-arg-slip"></span><span class="sig-name descname"><span class="pre">Slip</span></span><span class="sig-prename descclassname"> <span class="pre">System</span> <span class="pre">Shear</span></span><a class="headerlink" href="#cmdoption-arg-Slip" title="Permalink to this definition"></a></dt>
+<span id="cmdoption-arg-slip"></span><span class="sig-name descname"><span class="pre">Slip</span></span><span class="sig-prename descclassname"> <span class="pre">System</span> <span class="pre">Shear</span></span><a class="headerlink" href="#cmdoption-arg-Slip" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.slip.core*</span></code> files, the accumulated slip system shear is printed. The slip system shear is printed for each slip system per element, one line of values per element.</p>
 <p>For body centered cubic crystal symmetry, values are printed in the order:</p>
 <p><span class="math notranslate nohighlight">\((0 1 \bar 1)[1 1 1],\,(1 0 \bar 1)[1 1 1],\,(1 \bar 1 0)[1 1 1],\,(0 1 1)[1 1 \bar 1],\,(1 0 1)[1 1 \bar 1],\,(1 \bar 1 0)[1 1 \bar 1],\)</span>
@@ -260,7 +261,7 @@
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-1">
-<span class="sig-name descname"><span class="pre">Slip</span></span><span class="sig-prename descclassname"> <span class="pre">System</span> <span class="pre">Shear</span> <span class="pre">Rate</span></span><a class="headerlink" href="#cmdoption-arg-1" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Slip</span></span><span class="sig-prename descclassname"> <span class="pre">System</span> <span class="pre">Shear</span> <span class="pre">Rate</span></span><a class="headerlink" href="#cmdoption-arg-1" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.sliprate.core*</span></code> files, the slip system shear rate is printed. The slip system shear rate is printed for each slip system per element, one line of values per element.</p>
 <p>For body centered cubic crystal symmetry, values are printed in the order:</p>
 <p><span class="math notranslate nohighlight">\((0 1 \bar 1)[1 1 1],\,(1 0 \bar 1)[1 1 1],\,(1 \bar 1 0)[1 1 1],\,(0 1 1)[1 1 \bar 1],\,(1 0 1)[1 1 \bar 1],\,(1 \bar 1 0)[1 1 \bar 1],\)</span>
@@ -283,108 +284,108 @@
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-2">
-<span class="sig-name descname"><span class="pre">Plastic</span></span><span class="sig-prename descclassname"> <span class="pre">Spin</span> <span class="pre">Rate</span> <span class="pre">Tensor</span></span><a class="headerlink" href="#cmdoption-arg-2" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Plastic</span></span><span class="sig-prename descclassname"> <span class="pre">Spin</span> <span class="pre">Rate</span> <span class="pre">Tensor</span></span><a class="headerlink" href="#cmdoption-arg-2" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.spinrate.core*</span></code> files, the skew-symmetric plastic spin rate tensor is printed. Each tensor, <span class="math notranslate nohighlight">\({\bf W}^p\)</span>, is printed in the sample basis. The independent components are printed, one tensor per line (3 values per line). The components, <span class="math notranslate nohighlight">\(W^p_{ij}\)</span>, are printed in the order:</p>
 <p><span class="math notranslate nohighlight">\(W^p_{12}, W^p_{13}, W^p_{23}\)</span></p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-Total">
-<span id="cmdoption-arg-total"></span><span class="sig-name descname"><span class="pre">Total</span></span><span class="sig-prename descclassname"> <span class="pre">Strain</span> <span class="pre">Tensor</span></span><a class="headerlink" href="#cmdoption-arg-Total" title="Permalink to this definition"></a></dt>
+<span id="cmdoption-arg-total"></span><span class="sig-name descname"><span class="pre">Total</span></span><span class="sig-prename descclassname"> <span class="pre">Strain</span> <span class="pre">Tensor</span></span><a class="headerlink" href="#cmdoption-arg-Total" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.strain.core*</span></code> files, the total strain tensor is printed. Each tensor, <span class="math notranslate nohighlight">\(\bf E\)</span>, is printed in the sample basis. The independent components are printed, one tensor per line (6 values per line). The components, <span class="math notranslate nohighlight">\(E_{ij}\)</span>, are printed in the order:</p>
 <p><span class="math notranslate nohighlight">\(E_{11}, E_{22}, E_{33}, E_{23}, E_{13}, E_{12}\)</span></p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-3">
-<span class="sig-name descname"><span class="pre">Equivalent</span></span><span class="sig-prename descclassname"> <span class="pre">Total</span> <span class="pre">Strain</span></span><a class="headerlink" href="#cmdoption-arg-3" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Equivalent</span></span><span class="sig-prename descclassname"> <span class="pre">Total</span> <span class="pre">Strain</span></span><a class="headerlink" href="#cmdoption-arg-3" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.strain-eq.core*</span></code> files, the equivalent total strain is printed. One scalar value is printed per element. The equivalent total strain, <span class="math notranslate nohighlight">\(E\)</span>, is calculated based on the deviatoric portion of the total strain tensor, <span class="math notranslate nohighlight">\({\bf E}^\prime\)</span>. via the tensor inner product:</p>
 <p><span class="math notranslate nohighlight">\(E = \sqrt{ {2 \over 3} {\bf E}^\prime : {\bf E}^\prime}\)</span></p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-Elastic">
-<span id="cmdoption-arg-elastic"></span><span class="sig-name descname"><span class="pre">Elastic</span></span><span class="sig-prename descclassname"> <span class="pre">Strain</span> <span class="pre">Tensor</span></span><a class="headerlink" href="#cmdoption-arg-Elastic" title="Permalink to this definition"></a></dt>
+<span id="cmdoption-arg-elastic"></span><span class="sig-name descname"><span class="pre">Elastic</span></span><span class="sig-prename descclassname"> <span class="pre">Strain</span> <span class="pre">Tensor</span></span><a class="headerlink" href="#cmdoption-arg-Elastic" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.strain-el.core*</span></code> files, the elastic strain tensor is printed. Each tensor, <span class="math notranslate nohighlight">\(\bf {E}^e\)</span>, is printed in the sample basis. The independent components are printed, one tensor per line (6 values per line). The components, <span class="math notranslate nohighlight">\(E^e_{ij}\)</span>, are printed in the order:</p>
 <p><span class="math notranslate nohighlight">\(E^e_{11}, E^e_{22}, E^e_{33}, E^e_{23}, E^e_{13}, E^e_{12}\)</span></p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-4">
-<span class="sig-name descname"><span class="pre">Equivalent</span></span><span class="sig-prename descclassname"> <span class="pre">Elastic</span> <span class="pre">Strain</span></span><a class="headerlink" href="#cmdoption-arg-4" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Equivalent</span></span><span class="sig-prename descclassname"> <span class="pre">Elastic</span> <span class="pre">Strain</span></span><a class="headerlink" href="#cmdoption-arg-4" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.strain-el-eq.core*</span></code> files, the equivalent elastic strain is printed. One scalar value is printed per element. The equivalent elastic strain, <span class="math notranslate nohighlight">\(E^{e}\)</span>, is calculated based on the deviatoric portion of the elastic strain tensor, <span class="math notranslate nohighlight">\({\bf E}^{e \prime}\)</span>, via the tensor inner product:</p>
 <p><span class="math notranslate nohighlight">\(E^e = \sqrt{ {2 \over 3} {\bf E}^{e \prime} : {\bf E}^{e \prime}}\)</span></p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-5">
-<span class="sig-name descname"><span class="pre">Plastic</span></span><span class="sig-prename descclassname"> <span class="pre">Strain</span> <span class="pre">Tensor</span></span><a class="headerlink" href="#cmdoption-arg-5" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Plastic</span></span><span class="sig-prename descclassname"> <span class="pre">Strain</span> <span class="pre">Tensor</span></span><a class="headerlink" href="#cmdoption-arg-5" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.strain-pl.core*</span></code> files, the plastic strain tensor is printed. Each tensor, <span class="math notranslate nohighlight">\(\bf {E}^p\)</span>, is printed in the sample basis. The independent components are printed, one tensor per line (6 values per line). The components, <span class="math notranslate nohighlight">\(E^p_{ij}\)</span>, are printed in the order:</p>
 <p><span class="math notranslate nohighlight">\(E^p_{11}, E^p_{22}, E^p_{33}, E^p_{23}, E^p_{13}, E^p_{12}\)</span></p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-6">
-<span class="sig-name descname"><span class="pre">Equivalent</span></span><span class="sig-prename descclassname"> <span class="pre">Plastic</span> <span class="pre">Strain</span></span><a class="headerlink" href="#cmdoption-arg-6" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Equivalent</span></span><span class="sig-prename descclassname"> <span class="pre">Plastic</span> <span class="pre">Strain</span></span><a class="headerlink" href="#cmdoption-arg-6" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.strain-pl-eq.core*</span></code> files, the equivalent plastic strain is printed. One scalar value is printed per element. The equivalent plastic strain, <span class="math notranslate nohighlight">\(E^p\)</span>, is calculated based on the plastic strain tensor, <span class="math notranslate nohighlight">\({\bf E}^p\)</span>, via the tensor inner product:</p>
 <p><span class="math notranslate nohighlight">\(E^p = \sqrt{ {2 \over 3} {\bf E}^p : {\bf E}^p }\)</span></p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-Stress">
-<span id="cmdoption-arg-stress"></span><span class="sig-name descname"><span class="pre">Stress</span></span><span class="sig-prename descclassname"> <span class="pre">Tensor</span></span><a class="headerlink" href="#cmdoption-arg-Stress" title="Permalink to this definition"></a></dt>
+<span id="cmdoption-arg-stress"></span><span class="sig-name descname"><span class="pre">Stress</span></span><span class="sig-prename descclassname"> <span class="pre">Tensor</span></span><a class="headerlink" href="#cmdoption-arg-Stress" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.stress.core*</span></code> files, the symmetric stress tensor is printed. Each tensor, <span class="math notranslate nohighlight">\(\bf \sigma\)</span>, is printed in the sample basis. The independent components are printed, one tensor per line (6 values per line). The components, <span class="math notranslate nohighlight">\(\sigma_{ij}\)</span>, are printed in the order:</p>
 <p><span class="math notranslate nohighlight">\(\sigma_{11}, \sigma_{22}, \sigma_{33}, \sigma_{23}, \sigma_{13}, \sigma_{12}\)</span></p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-7">
-<span class="sig-name descname"><span class="pre">Equivalent</span></span><span class="sig-prename descclassname"> <span class="pre">Stress</span></span><a class="headerlink" href="#cmdoption-arg-7" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Equivalent</span></span><span class="sig-prename descclassname"> <span class="pre">Stress</span></span><a class="headerlink" href="#cmdoption-arg-7" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.stress-eq.core*</span></code> files, the equivalent stress is printed. One scalar value is printed per element. The equivalent stress, <span class="math notranslate nohighlight">\(\sigma\)</span>, is calculated based on the deviatoric portion of the stress tensor, <span class="math notranslate nohighlight">\({\bf \sigma}^{\prime}\)</span>, via the tensor inner product:</p>
 <p><span class="math notranslate nohighlight">\(\sigma = \sqrt{ {3 \over 2} {\bf \sigma}^{\prime} : {\bf \sigma}^{\prime}}\)</span></p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-Velocity">
-<span id="cmdoption-arg-velocity"></span><span class="sig-name descname"><span class="pre">Velocity</span></span><span class="sig-prename descclassname"> <span class="pre">Gradient</span> <span class="pre">Tensor</span></span><a class="headerlink" href="#cmdoption-arg-Velocity" title="Permalink to this definition"></a></dt>
+<span id="cmdoption-arg-velocity"></span><span class="sig-name descname"><span class="pre">Velocity</span></span><span class="sig-prename descclassname"> <span class="pre">Gradient</span> <span class="pre">Tensor</span></span><a class="headerlink" href="#cmdoption-arg-Velocity" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.velgrad.core*</span></code> files, the velocity gradient tensor is printed. Each tensor, <span class="math notranslate nohighlight">\(\bf L\)</span>, is printed in the sample basis. One tensor is printed per line (9 values per line). The components, <span class="math notranslate nohighlight">\(L_{ij}\)</span>,  are printed in the order:</p>
 <p><span class="math notranslate nohighlight">\(L_{11}, L_{12}, L_{13}, L_{21}, L_{22}, L_{23}, L_{31}, L_{32}, L_{33}\)</span></p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-Work">
-<span id="cmdoption-arg-work"></span><span class="sig-name descname"><span class="pre">Work</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-arg-Work" title="Permalink to this definition"></a></dt>
+<span id="cmdoption-arg-work"></span><span class="sig-name descname"><span class="pre">Work</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-arg-Work" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.work.core*</span></code> files, the work is printed. One scalar value is printed per element. The work is calculated as the time integration of the tensor inner product of the deformation rate tensor and the Cauchy stress tensor:</p>
 <p><span class="math notranslate nohighlight">\(W = \int{  (\sigma : {\bf D}) }\Delta t\)</span></p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-8">
-<span class="sig-name descname"><span class="pre">Plastic</span></span><span class="sig-prename descclassname"> <span class="pre">Work</span></span><a class="headerlink" href="#cmdoption-arg-8" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Plastic</span></span><span class="sig-prename descclassname"> <span class="pre">Work</span></span><a class="headerlink" href="#cmdoption-arg-8" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.work-pl.core*</span></code> files, the plastic work is printed. One scalar value is printed per element. The plastic work is calculated as the time integration of the tensor inner product of the plastic deformation rate tensor and the deviatoric portion of the Cauchy stress tensor:</p>
 <p><span class="math notranslate nohighlight">\(W^p = \int{ ( \sigma ^ \prime :  {\bf D }^ p ) \Delta t}\)</span></p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-9">
-<span class="sig-name descname"><span class="pre">Work</span></span><span class="sig-prename descclassname"> <span class="pre">Rate</span></span><a class="headerlink" href="#cmdoption-arg-9" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Work</span></span><span class="sig-prename descclassname"> <span class="pre">Rate</span></span><a class="headerlink" href="#cmdoption-arg-9" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.workrate.core*</span></code> files, the work rate is printed. One scalar value is printed per element. The work rate is calculated as the tensor inner product of the deformation rate tensor and the Cauchy stress tensor:</p>
 <p><span class="math notranslate nohighlight">\(\dot{W} = \sigma : {\bf D}\)</span></p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-arg-10">
-<span class="sig-name descname"><span class="pre">Plastic</span></span><span class="sig-prename descclassname"> <span class="pre">Work</span> <span class="pre">Rate</span></span><a class="headerlink" href="#cmdoption-arg-10" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Plastic</span></span><span class="sig-prename descclassname"> <span class="pre">Work</span> <span class="pre">Rate</span></span><a class="headerlink" href="#cmdoption-arg-10" title="Permalink to this definition">¶</a></dt>
 <dd><p>In the <code class="file docutils literal notranslate"><span class="pre">post.workrate-pl.core*</span></code> files, the plastic work rate is printed. One scalar value is printed per element. The plastic work rate is calculated as the tensor inner product of the plastic deformation rate tensor and the deviatoric portion of the Cauchy stress tensor:</p>
 <p><span class="math notranslate nohighlight">\(\dot{W}^p = \sigma ^ \prime : {\bf D }^ p\)</span></p>
 </dd></dl>
 
-</div>
-<div class="section" id="restart-output">
-<h2>Restart Output<a class="headerlink" href="#restart-output" title="Permalink to this headline"></a></h2>
+</section>
+<section id="restart-output">
+<h2>Restart Output<a class="headerlink" href="#restart-output" title="Permalink to this headline">¶</a></h2>
 <p>If the <code class="xref py py-data docutils literal notranslate"><span class="pre">print</span> <span class="pre">restart</span></code> command is present in the <code class="file docutils literal notranslate"><span class="pre">simulation.config</span></code> file, a set of additional restart files will be generated from the simulation. These files are written at the end of each prescribed step and contain necessary information to restart a given simulation (<a class="reference internal" href="job.html#sim-restart"><span class="std std-ref">Restarting a Simulation</span></a> for information on how to restart a simulation). Two types of restart files are generated, a control file, <code class="file docutils literal notranslate"><span class="pre">rst&lt;N&gt;.control</span></code>, and per-core field files, <code class="file docutils literal notranslate"><span class="pre">rst&lt;N&gt;.field.core*</span></code> (where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;N&gt;</span></code> indicates which simulation the files describe, 0 indexing). Both file types are unformatted (or binary) files and are generally unmodifiable. The structures of the data stored within both files for the various deformation modes follow.</p>
-<div class="section" id="uniaxial-restart-control">
-<h3>Uniaxial Restart Control<a class="headerlink" href="#uniaxial-restart-control" title="Permalink to this headline"></a></h3>
+<section id="uniaxial-restart-control">
+<h3>Uniaxial Restart Control<a class="headerlink" href="#uniaxial-restart-control" title="Permalink to this headline">¶</a></h3>
 <p>The <code class="file docutils literal notranslate"><span class="pre">rst&lt;N&gt;.control</span></code> file for uniaxial loading modes contains the following data in the given order:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">current_step</span> <span class="o">&lt;</span><span class="n">step</span><span class="o">&gt;</span>
 <span class="n">previous_load_array</span> <span class="o">&lt;</span><span class="n">load_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_z</span><span class="o">&gt;</span>
@@ -400,9 +401,9 @@
 <span class="n">initial_surface_areas</span> <span class="o">&lt;</span><span class="n">area_surf_1</span><span class="o">&gt;</span> <span class="o">...</span> <span class="o">&lt;</span><span class="n">area_surf_6</span><span class="o">&gt;</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="multiaxial-csr-restart-control">
-<h3>Multiaxial CSR Restart Control<a class="headerlink" href="#multiaxial-csr-restart-control" title="Permalink to this headline"></a></h3>
+</section>
+<section id="multiaxial-csr-restart-control">
+<h3>Multiaxial CSR Restart Control<a class="headerlink" href="#multiaxial-csr-restart-control" title="Permalink to this headline">¶</a></h3>
 <p>The <code class="file docutils literal notranslate"><span class="pre">rst&lt;N&gt;.control</span></code> file for multiaxial constant strain rate loading modes contains the following data in the given order:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">current_step</span> <span class="o">&lt;</span><span class="n">step</span><span class="o">&gt;</span>
 <span class="n">current_load_array</span> <span class="o">&lt;</span><span class="n">load_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_z</span><span class="o">&gt;</span>
@@ -423,9 +424,9 @@
 <span class="n">t_pert_mag</span> <span class="o">&lt;</span><span class="n">vel</span><span class="o">&gt;</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="multiaxial-clr-restart-control">
-<h3>Multiaxial CLR Restart Control<a class="headerlink" href="#multiaxial-clr-restart-control" title="Permalink to this headline"></a></h3>
+</section>
+<section id="multiaxial-clr-restart-control">
+<h3>Multiaxial CLR Restart Control<a class="headerlink" href="#multiaxial-clr-restart-control" title="Permalink to this headline">¶</a></h3>
 <p>The <code class="file docutils literal notranslate"><span class="pre">rst&lt;N&gt;.control</span></code> file for multiaxial constant load rate loading modes contains the following data in the given order:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">current_step</span> <span class="o">&lt;</span><span class="n">step</span><span class="o">&gt;</span>
 <span class="n">current_load_array</span> <span class="o">&lt;</span><span class="n">load_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_z</span><span class="o">&gt;</span>
@@ -447,9 +448,9 @@
 <span class="n">initial_unload_dwell_velocity</span> <span class="o">&lt;</span><span class="n">vel_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">vel_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">vel_z</span><span class="o">&gt;</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="restart-field-data">
-<h3>Restart Field Data<a class="headerlink" href="#restart-field-data" title="Permalink to this headline"></a></h3>
+</section>
+<section id="restart-field-data">
+<h3>Restart Field Data<a class="headerlink" href="#restart-field-data" title="Permalink to this headline">¶</a></h3>
 <p>All loading modes also write field data on a per-core basis to <code class="file docutils literal notranslate"><span class="pre">rst&lt;N&gt;.field.core*</span></code> files. These files contain the necessary field variable information in order to spatially define the total state of the virtual sample at the time of printing. The following field data arrays are written to the files in the given order:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">coords</span> <span class="o">&lt;</span><span class="n">coords</span><span class="o">&gt;</span>
 <span class="n">velocity</span> <span class="o">&lt;</span><span class="n">velocity</span><span class="o">&gt;</span>
@@ -479,30 +480,30 @@
 <span class="n">el_workp_rate_n</span> <span class="o">&lt;</span><span class="n">work_rate</span><span class="o">&gt;</span>
 </pre></div>
 </div>
-</div>
-</div>
-<div class="section" id="miscellaneous-output">
-<h2>Miscellaneous Output<a class="headerlink" href="#miscellaneous-output" title="Permalink to this headline"></a></h2>
+</section>
+</section>
+<section id="miscellaneous-output">
+<h2>Miscellaneous Output<a class="headerlink" href="#miscellaneous-output" title="Permalink to this headline">¶</a></h2>
 <p>In addition to nodal and elemental variable printing, miscellaneous output is available for printing and include simulation convergence data, surface-integrated forcing data, and a simulation report file. The optional input commands and output file formats are described in this section.</p>
-<div class="section" id="convergence-statistics-output">
-<h3>Convergence Statistics Output<a class="headerlink" href="#convergence-statistics-output" title="Permalink to this headline"></a></h3>
+<section id="convergence-statistics-output">
+<h3>Convergence Statistics Output<a class="headerlink" href="#convergence-statistics-output" title="Permalink to this headline">¶</a></h3>
 <p>If the <code class="xref py py-data docutils literal notranslate"><span class="pre">print</span> <span class="pre">convergence</span></code> command is present in the <code class="file docutils literal notranslate"><span class="pre">simulation.config</span></code> file, various convergence statistics for the performed simulation will be output with convergence values provided at each increment. This <code class="file docutils literal notranslate"><span class="pre">post.conv</span></code> file is tabulated with the given structure:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">incr</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="nb">iter</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">nr</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">r_norm</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">rx_norm</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">f_norm</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">delu_norm</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">delux_norm</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">u_norm</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">cg_iter</span><span class="o">&gt;</span>
 </pre></div>
 </div>
 <p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;incr&gt;</span></code> is the total increment value being printed, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;iter&gt;</span></code> is a sub-increment iteration, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;nr&gt;</span></code> is a boolean that notifies if the given iteration was a Newton-Raphson iteration, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;r_norm&gt;</span></code> is a residual norm, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;rx_norm&gt;</span></code> is the maximum absolute value of <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;r_norm&gt;</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;f_norm&gt;</span></code> is a force norm, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;delu_norm&gt;</span></code> is the change in velocity norm, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;delux_norm&gt;</span></code> is the maximum absolute value of <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;delu_norm&gt;</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;u_norm&gt;</span></code> is the velocity norm, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;cg_iter&gt;</span></code> is the number of iterations the conjugate gradient solver performed. All norms are computed as <span class="math notranslate nohighlight">\(l^{2}\)</span>-norms or the square root of the inner product of a vector by itself.</p>
-</div>
-<div class="section" id="surface-forces-output">
-<h3>Surface Forces Output<a class="headerlink" href="#surface-forces-output" title="Permalink to this headline"></a></h3>
+</section>
+<section id="surface-forces-output">
+<h3>Surface Forces Output<a class="headerlink" href="#surface-forces-output" title="Permalink to this headline">¶</a></h3>
 <p>If the <code class="xref py py-data docutils literal notranslate"><span class="pre">print</span> <span class="pre">forces</span></code> command is present in the <code class="file docutils literal notranslate"><span class="pre">simulation.config</span></code> file, loads for all surfaces in the performed simulation will be output with load values provided at each increment. The <code class="file docutils literal notranslate"><span class="pre">post.force.*</span></code> file names are constructed via the defined <code class="xref py py-data docutils literal notranslate"><span class="pre">faset_label</span></code> strings in the <code class="file docutils literal notranslate"><span class="pre">simulation.msh</span></code> file. The default <code class="xref py py-data docutils literal notranslate"><span class="pre">faset_label</span></code> order is <code class="xref py py-data docutils literal notranslate"><span class="pre">x0,</span> <span class="pre">x1,</span> <span class="pre">y0,</span> <span class="pre">y1,</span> <span class="pre">z0,</span> <span class="pre">z1</span></code> which defines the six orthogonal and planar surfaces that bound a domain. For example, <code class="xref py py-data docutils literal notranslate"><span class="pre">x0</span></code> refers to the face where the nodal coordinate component values in the <code class="xref py py-data docutils literal notranslate"><span class="pre">x</span></code> direction are minimum and the file <code class="file docutils literal notranslate"><span class="pre">post.force.x0</span></code> would contain the surface-integrated forces on this face. These files are generally tabulated with the given structure:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">step</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">incr</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">force_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">force_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">force_z</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">surf_area</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">current_time</span><span class="o">&gt;</span>
 </pre></div>
 </div>
 <p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;step&gt;</span></code> is the prescribed load step, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;incr&gt;</span></code> is the total increment value being printed, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;force_x&gt;</span></code> is the surface-integrated force in the <code class="xref py py-data docutils literal notranslate"><span class="pre">x</span></code> direction, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;force_y&gt;</span></code> is the surface-integrated force in the <code class="xref py py-data docutils literal notranslate"><span class="pre">y</span></code> direction, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;force_z&gt;</span></code> is the surface-integrated force in the <code class="xref py py-data docutils literal notranslate"><span class="pre">z</span></code> direction, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;surf_area&gt;</span></code> is the current surface area of the given face, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;current_time&gt;</span></code> is the total simulated time at the time of printing.</p>
 <p>If multiaxial loading is utilized, an additional <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;length&gt;</span></code> column will be appended to the right of <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;current_time</span></code>. The <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;length&gt;</span></code> column contains the maximal coordinate values of the domain and these values are stored in their associated face files. For example, the maximal mesh coordinate value in the <code class="xref py py-data docutils literal notranslate"><span class="pre">x</span></code> direction is stored in the <code class="file docutils literal notranslate"><span class="pre">post.force.x0</span></code> and <code class="file docutils literal notranslate"><span class="pre">post.force.x1</span></code> files accordingly.</p>
-</div>
-<div class="section" id="simulation-report-file">
-<h3>Simulation Report File<a class="headerlink" href="#simulation-report-file" title="Permalink to this headline"></a></h3>
+</section>
+<section id="simulation-report-file">
+<h3>Simulation Report File<a class="headerlink" href="#simulation-report-file" title="Permalink to this headline">¶</a></h3>
 <p>The <code class="file docutils literal notranslate"><span class="pre">post.report</span></code> file is always printed for a simulation. The report file is for utilization with Neper and contains the following information:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">number_of_nodes</span> <span class="o">&lt;</span><span class="n">num_nodes</span><span class="o">&gt;</span>
 <span class="n">number_of_elements</span> <span class="o">&lt;</span><span class="n">num_elems</span><span class="o">&gt;</span>
@@ -516,9 +517,9 @@
 <span class="n">number_of_steps</span> <span class="o">&lt;</span><span class="n">number_of_completed_steps</span><span class="o">&gt;</span>
 </pre></div>
 </div>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
 
            </div>
