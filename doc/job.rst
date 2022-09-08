@@ -74,7 +74,7 @@ would be run by entering the following into the terminal from within the simulat
 Restarting a Simulation
 -----------------------
 
-A simulation may be restarted only if the restart files were printed as simulation output on the previous run (:ref:`Restart Output <>`). Printing restart files outputs a single :file:`rst<N>.control` file and a :file:`rst<N>.field.core@var<#>` file for each individual core, where :data:`<N>` refers to the restart ID (0 indexing), and :data:`<#>` denotes the ID of the core on which the data is being printed. These restart files must be included in the simulation directory along with the configuration file, the mesh file, and any external files included with the simulation.
+A simulation may be restarted only if the restart files were printed as simulation output on the previous run (:ref:`Restart Output <restart_output>`). Printing restart files outputs a single :file:`rst<N>.control` file and a :file:`rst<N>.field.core@var<#>` file for each individual core, where :data:`<N>` refers to the restart ID (0 indexing), and :data:`<#>` denotes the ID of the core on which the data is being printed. These restart files must be included in the simulation directory along with the configuration file, the mesh file, and any external files included with the simulation.
 
 A simulation may be restarted by adding the following line to the :file:`simulation.config` file::
 

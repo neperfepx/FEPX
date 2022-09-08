@@ -1,4 +1,4 @@
-.. _papers:
+.. _other_resources:
 
 Other Resources
 ===============

@@ -382,7 +382,7 @@
 
 </section>
 <section id="restart-output">
-<h2>Restart Output<a class="headerlink" href="#restart-output" title="Permalink to this headline">¶</a></h2>
+<span id="id2"></span><h2>Restart Output<a class="headerlink" href="#restart-output" title="Permalink to this headline">¶</a></h2>
 <p>If the <code class="xref py py-data docutils literal notranslate"><span class="pre">print</span> <span class="pre">restart</span></code> command is present in the <code class="file docutils literal notranslate"><span class="pre">simulation.config</span></code> file, a set of additional restart files will be generated from the simulation. These files are written at the end of each prescribed step and contain necessary information to restart a given simulation (<a class="reference internal" href="job.html#sim-restart"><span class="std std-ref">Restarting a Simulation</span></a> for information on how to restart a simulation). Two types of restart files are generated, a control file, <code class="file docutils literal notranslate"><span class="pre">rst&lt;N&gt;.control</span></code>, and per-core field files, <code class="file docutils literal notranslate"><span class="pre">rst&lt;N&gt;.field.core*</span></code> (where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;N&gt;</span></code> indicates which simulation the files describe, 0 indexing). Both file types are unformatted (or binary) files and are generally unmodifiable. The structures of the data stored within both files for the various deformation modes follow.</p>
 <section id="uniaxial-restart-control">
 <h3>Uniaxial Restart Control<a class="headerlink" href="#uniaxial-restart-control" title="Permalink to this headline">¶</a></h3>
