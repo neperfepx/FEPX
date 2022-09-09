@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Simulation Input &mdash; FEPX 1.3.0 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -125,11 +124,11 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="simulation-input">
-<span id="id1"></span><h1>Simulation Input<a class="headerlink" href="#simulation-input" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="simulation-input">
+<span id="id1"></span><h1>Simulation Input<a class="headerlink" href="#simulation-input" title="Permalink to this headline"></a></h1>
 <p>By default, a minimum of two files is necessary to completely define a simulation. These files are the configuration file, <code class="file docutils literal notranslate"><span class="pre">simulation.config</span></code>, and the mesh file, <code class="file docutils literal notranslate"><span class="pre">simulation.msh</span></code>. The configuration file defines the material parameters, control of the simulation (i.e., boundary conditions and loading history), printing of output files, and various optional input. The mesh file contains the polycrystal finite element mesh information (grain morphologies, phases and crystal orientations) as well as simulation-related information on the domain faces and the mesh partitions used for parallel simulations.</p>
-<section id="the-configuration-file-simulation-config">
-<h2>The Configuration File (<code class="file docutils literal notranslate"><span class="pre">simulation.config</span></code>)<a class="headerlink" href="#the-configuration-file-simulation-config" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="the-configuration-file-simulation-config">
+<h2>The Configuration File (<code class="file docutils literal notranslate"><span class="pre">simulation.config</span></code>)<a class="headerlink" href="#the-configuration-file-simulation-config" title="Permalink to this headline"></a></h2>
 <p>This file contains the necessary definitions to run a simulation. It is structured in several, successive blocks that define different aspects of the simulation.  Each of these blocks is headed by a line starting by <code class="xref py py-data docutils literal notranslate"><span class="pre">#</span></code>, which provides a short description of the block.  The structure for the <code class="file docutils literal notranslate"><span class="pre">simulation.config</span></code> file is as follows:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Optional Input</span>
     <span class="o">&lt;</span><span class="n">key_phrase</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;</span>
@@ -154,11 +153,11 @@
 </div>
 <p>Configuration options within a block may generally be provided in any order; however, the material parameters and deformation history must follow specific orders. It is recommended that the overall structure of the <code class="file docutils literal notranslate"><span class="pre">simulation.config</span></code> file follow the example structure above. The <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span> <span class="pre">Input</span></code> block should always precede any others.</p>
 <p>Any piece of text that is preceded by a <code class="xref py py-data docutils literal notranslate"><span class="pre">#</span></code> is assumed to be a comment and is ignored (which also makes block headers optional), while <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;key_phrase&gt;</span></code> is the input structure of the file, where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;key_phrase&gt;</span></code> is the input command and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;value&gt;</span></code> are the associated parameters for the input command (as will be defined in the following sections). A single line in the file should only ever pertain to a single <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;key_phrase&gt;</span></code>/<code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;value&gt;</span></code> pairing. All strings are interpreted literally and should be lowercase except where otherwise stated.</p>
-<section id="material-description">
-<h3>Material Description<a class="headerlink" href="#material-description" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="material-description">
+<h3>Material Description<a class="headerlink" href="#material-description" title="Permalink to this headline"></a></h3>
 <p>The model is described in <a class="reference internal" href="#model-description"><span class="std std-ref">Model Description</span></a>, and the corresponding input parameters are made clear and written in fixed font, most often as in: <span class="math notranslate nohighlight">\(\gamma\)</span> (<code class="xref py py-data docutils literal notranslate"><span class="pre">gamma</span></code>).  The specification of the input parameters in the <code class="file docutils literal notranslate"><span class="pre">simulation.config</span></code> file is detailed in <a class="reference internal" href="#input-parameters"><span class="std std-ref">Input Parameters</span></a>.</p>
-<section id="model-description">
-<span id="id2"></span><h4>Model Description<a class="headerlink" href="#model-description" title="Permalink to this headline">¶</a></h4>
+<div class="section" id="model-description">
+<span id="id2"></span><h4>Model Description<a class="headerlink" href="#model-description" title="Permalink to this headline"></a></h4>
 <p>The material is described via an elastic response (Hooke’s law) and a plastic response (rate dependent plastic flow and hardening).</p>
 <p>The stress, <span class="math notranslate nohighlight">\(\sigma\)</span>, is related to the elastic strain, <span class="math notranslate nohighlight">\(\epsilon\)</span>, via Hooke’s law:</p>
 <div class="math notranslate nohighlight">
@@ -290,9 +289,9 @@
 <p>where <span class="math notranslate nohighlight">\(a_{p}\)</span> (<code class="xref py py-data docutils literal notranslate"><span class="pre">a_p</span></code>) is the precipitate hardening scaling coefficient, <span class="math notranslate nohighlight">\(f_{p}\)</span> (<code class="xref py py-data docutils literal notranslate"><span class="pre">f_p</span></code>) is the precipitate volume fraction, <span class="math notranslate nohighlight">\(r_{p}\)</span> (<code class="xref py py-data docutils literal notranslate"><span class="pre">r_p</span></code>) is the average precipitate diameter, and <span class="math notranslate nohighlight">\(b_{p}\)</span> (<code class="xref py py-data docutils literal notranslate"><span class="pre">b_p</span></code>) is the average Burgers’ vector for the precipitate phase. Currently, the increase in strength due to the presence of precipitates is applied globally to all elements.</p>
 <p>For a hexagonal material, the crystal c/a ratio (<code class="xref py py-data docutils literal notranslate"><span class="pre">c_over_a</span></code>) must be defined. The initial slip strengths (<code class="xref py py-data docutils literal notranslate"><span class="pre">g_0</span></code>) must be provided as a set of three values. The order of the values for <code class="xref py py-data docutils literal notranslate"><span class="pre">g_0</span></code> correspond to the basal slip family strength, prismatic slip family strength, and pyramidal slip family strength.</p>
 <p>For a tetragonal material, the crystal c/a ratio (<code class="xref py py-data docutils literal notranslate"><span class="pre">c_over_a</span></code>) must be defined. The initial slip system strengths (<code class="xref py py-data docutils literal notranslate"><span class="pre">g_0</span></code>) must be provided as a set of ten values. The order of the values for <code class="xref py py-data docutils literal notranslate"><span class="pre">g_0</span></code> correspond to the slip families <span class="math notranslate nohighlight">\(\left\{100\right)\left&lt;001\right]\)</span>, <span class="math notranslate nohighlight">\(\left\{110\right)\left&lt;001\right]\)</span>, <span class="math notranslate nohighlight">\(\left\{100\right)\left&lt;010\right]\)</span>, <span class="math notranslate nohighlight">\(\left\{110\right)\left&lt;1 \bar 11\right]\)</span>, <span class="math notranslate nohighlight">\(\left\{110\right)\left&lt;1 \bar10\right]\)</span>, <span class="math notranslate nohighlight">\(\left\{100\right)\left&lt;011\right]\)</span>, <span class="math notranslate nohighlight">\(\left\{001\right)\left&lt;010\right]\)</span>, <span class="math notranslate nohighlight">\(\left\{001\right)\left&lt;110\right]\)</span>, <span class="math notranslate nohighlight">\(\left\{011\right)\left&lt;01 \bar 1\right]\)</span> and <span class="math notranslate nohighlight">\(\left\{211\right)\left&lt;01 \bar 1\right]\)</span>.</p>
-</section>
-<section id="input-parameters">
-<span id="id5"></span><h4>Input Parameters<a class="headerlink" href="#input-parameters" title="Permalink to this headline">¶</a></h4>
+</div>
+<div class="section" id="input-parameters">
+<span id="id5"></span><h4>Input Parameters<a class="headerlink" href="#input-parameters" title="Permalink to this headline"></a></h4>
 <p>The material (as defined in the mesh file) can include one or several phases (to which grains are assigned), and the mechanical behavior of these phases must be defined accordingly. The number of phases must first be provided:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">number_of_phases</span> <span class="o">&lt;</span><span class="n">nphases</span><span class="o">&gt;</span>
 </pre></div>
@@ -389,14 +388,14 @@
 <span class="n">b_p</span> <span class="o">&lt;</span><span class="n">length</span><span class="o">&gt;</span>
 </pre></div>
 </div>
-</section>
-</section>
-<section id="deformation-history">
-<span id="id8"></span><h3>Deformation History<a class="headerlink" href="#deformation-history" title="Permalink to this headline">¶</a></h3>
+</div>
+</div>
+<div class="section" id="deformation-history">
+<span id="id8"></span><h3>Deformation History<a class="headerlink" href="#deformation-history" title="Permalink to this headline"></a></h3>
 <p>A variety of deformation modes are available that are capable of reproducing various mechanical loading configurations. A deformation history is defined by both steps and increments, where steps are made of one or several increments. Steps define the strain or load targets that are to be reached during the simulation, and results can only be printed at the end of steps. One or several increments occur within each step to reach the prescribed step target while ensuring numerical stability. A step target can be expressed in terms of strain or load. The strain refers to the engineering strain as computed from the displacement of the loading surface and the initial sample length along the loading direction, and the load refers to the total force on the loading surface. Of course, the relative order of the steps defined for the deformation history matters and should be written in an ascending manner.</p>
 <p>Deformation histories are divided into uniaxial loading and multiaxial loading. In general, the multiaxial loading definition is technically triaxial in nature; however, biaxial loading may be performed by zeroing one of the load columns accordingly. The available deformation history configuration options follow.</p>
-<section id="uniaxial">
-<h4>Uniaxial<a class="headerlink" href="#uniaxial" title="Permalink to this headline">¶</a></h4>
+<div class="section" id="uniaxial">
+<h4>Uniaxial<a class="headerlink" href="#uniaxial" title="Permalink to this headline"></a></h4>
 <p>Uniaxial loading is always strain controlled (i.e., constant strain rate); however, either specific strain targets or specific load targets may be prescribed. For strain targeting, the number of increments for a given step must be provided as opposed to a time-step value. For load targeting, the bounds on the time-step value are provided in order to control both the accuracy and, indirectly, the number of increments taken per step. These time-step values should be defined relative to the <code class="xref py py-data docutils literal notranslate"><span class="pre">strain_rate</span></code> value (<a class="reference internal" href="#boundary-conditions"><span class="std std-ref">Boundary Conditions</span></a>).</p>
 <p>Strain targeting allows the definition of loading to specific uniaxial strain states. This deformation history is defined as follows:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">def_control_by</span> <span class="n">uniaxial_strain_target</span>
@@ -421,9 +420,9 @@
 </pre></div>
 </div>
 <p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;njumps&gt;</span></code> is the number of strain rate jumps defined in the file after this line, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;target_step&gt;</span></code> defines which <code class="xref py py-data docutils literal notranslate"><span class="pre">target_strain</span></code> step is assigned a new strain rate, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;new_strain_rate&gt;</span></code> is the new strain rate to be assigned and has units of [1/s]. In general, and for numerical stability, the strain rate jumps should be of a similar magnitude to the <code class="xref py py-data docutils literal notranslate"><span class="pre">strain_rate</span></code> defined previously.</p>
-</section>
-<section id="multiaxial">
-<h4>Multiaxial<a class="headerlink" href="#multiaxial" title="Permalink to this headline">¶</a></h4>
+</div>
+<div class="section" id="multiaxial">
+<h4>Multiaxial<a class="headerlink" href="#multiaxial" title="Permalink to this headline"></a></h4>
 <p>Multiaxial loading is always strain controlled (internally) and operates at either a constant engineering strain rate or constant load rate; however, only specific load targets may be prescribed.
 The principal loading directions must be aligned with the coordinate axes of the mesh and the surface face normals should likewise be coincident with the coordinate axis of the mesh. Symmetry boundary conditions (zero normal velocities) are enforced on the three faces of minimal coordinates (<code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;*0&gt;</span></code>), and, in the general case, non-zero normal velocities are applied to the faces of maximal coordinates (<code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;*1&gt;</span></code>). The velocity on the primary control surface is held constant through the simulation (except during a strain rate jump).</p>
 <p>Multiaxial loading with a constant strain rate (CSR) is defined as follows:</p>
@@ -468,23 +467,21 @@ The principal loading directions must be aligned with the coordinate axes of the
 <p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;nepisodes&gt;</span></code> is the number of dwell episodes defined in the file after this line, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;target_step&gt;</span></code> defines which <code class="xref py py-data docutils literal notranslate"><span class="pre">target_clr_load</span></code> step is assigned to dwell, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;dwell_time&gt;</span></code> is the physical amount of time in [s] for a given dwell episode, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;target_time_incr&gt;</span></code> is the physical time increment to be reached for the given dwell episode, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;print_flag&gt;</span></code> allows for the printing (or not) of specific steps. The options available for <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;print_flag&gt;</span></code> are: <code class="xref py py-data docutils literal notranslate"><span class="pre">print_data</span></code> or <code class="xref py py-data docutils literal notranslate"><span class="pre">suppress_data</span></code>.</p>
 </li>
 </ul>
-</section>
-</section>
-<section id="boundary-conditions">
-<span id="id9"></span><h3>Boundary Conditions<a class="headerlink" href="#boundary-conditions" title="Permalink to this headline">¶</a></h3>
+</div>
+</div>
+<div class="section" id="boundary-conditions">
+<span id="id9"></span><h3>Boundary Conditions<a class="headerlink" href="#boundary-conditions" title="Permalink to this headline"></a></h3>
 <p>Standard, simple boundary conditions are available for automatic definition with minimal input and are computed internally for each simulation based on the definitions in the <code class="file docutils literal notranslate"><span class="pre">simulation.config</span></code> file. This ensures that standard boundary conditions are consistently defined for all simulations and increases the portability of the <code class="file docutils literal notranslate"><span class="pre">simulation.config</span></code> file.
 Alternatively, custom boundary conditions can be defined, as described separately, in <a class="reference internal" href="#external-bcs"><span class="std std-ref">Externally Defined Boundary Conditions (Optional)</span></a>.</p>
-<section id="id10">
-<h4>Uniaxial<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h4>
+<div class="section" id="id10">
+<h4>Uniaxial<a class="headerlink" href="#id10" title="Permalink to this headline"></a></h4>
 <p>Uniaxial definitions are available for three different constraint configurations. The available uniaxial constraint configuration options follow.</p>
 <ul>
 <li><p><em>Grip boundary conditions</em> fully constrain two opposite faces in the spatial domain. The first face is fully fixed in all sample directions while the second face has a strain rate applied in the face normal direction while the other two sample directions are fully fixed. All other faces are unconstrained.</p>
-<figure class="align-center" id="id14">
+<div class="figure align-center" id="id14">
 <a class="reference internal image-reference" href="../_images/gripbcs.png"><img alt="../_images/gripbcs.png" src="../_images/gripbcs.png" style="width: 50%;" /></a>
-<figcaption>
-<p><span class="caption-text">Simplified schematic of the applied velocities for grip boundary conditions. The loading face is <code class="xref py py-data docutils literal notranslate"><span class="pre">z1</span></code> and the sample is being loading in the <code class="xref py py-data docutils literal notranslate"><span class="pre">+Z</span></code> direction.</span><a class="headerlink" href="#id14" title="Permalink to this image">¶</a></p>
-</figcaption>
-</figure>
+<p class="caption"><span class="caption-text">Simplified schematic of the applied velocities for grip boundary conditions. The loading face is <code class="xref py py-data docutils literal notranslate"><span class="pre">z1</span></code> and the sample is being loading in the <code class="xref py py-data docutils literal notranslate"><span class="pre">+Z</span></code> direction.</span><a class="headerlink" href="#id14" title="Permalink to this image"></a></p>
+</div>
 <p>Grip boundary conditions are defined as follows:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">boundary_conditions</span> <span class="n">uniaxial_grip</span>
 <span class="n">loading_direction</span> <span class="o">&lt;</span><span class="n">sample_dir</span><span class="o">&gt;</span>
@@ -495,12 +492,10 @@ Alternatively, custom boundary conditions can be defined, as described separatel
 <p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;sample_dir&gt;</span></code> is the direction along the a positive sample axis in which the sample is loaded, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;face_label&gt;</span></code> is the face on which the loading is applied (the opposing face is fully fixed), and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;strain_rate&gt;</span></code> is the strain rate value in units of [1/s].</p>
 </li>
 <li><p><em>Symmetry boundary conditions</em> constrain four faces in the spatial domain. The three <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;*0&gt;</span></code> faces are fixed in the face normal directions and unconstrained in the other two sample directions. The fourth <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;*1&gt;</span></code> face has a strain rate applied in the face normal direction while the other two sample directions are fully fixed. The selection of the <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;*1&gt;</span></code> face is based on the defined <code class="xref py py-data docutils literal notranslate"><span class="pre">loading_direction</span></code>.</p>
-<figure class="align-center" id="id15">
+<div class="figure align-center" id="id15">
 <a class="reference internal image-reference" href="../_images/symmbcs.png"><img alt="../_images/symmbcs.png" src="../_images/symmbcs.png" style="width: 50%;" /></a>
-<figcaption>
-<p><span class="caption-text">Simplified schematic of the applied velocities for symmetry boundary conditions. The sample is being loaded in the <code class="xref py py-data docutils literal notranslate"><span class="pre">+Z</span></code> direction.</span><a class="headerlink" href="#id15" title="Permalink to this image">¶</a></p>
-</figcaption>
-</figure>
+<p class="caption"><span class="caption-text">Simplified schematic of the applied velocities for symmetry boundary conditions. The sample is being loaded in the <code class="xref py py-data docutils literal notranslate"><span class="pre">+Z</span></code> direction.</span><a class="headerlink" href="#id15" title="Permalink to this image"></a></p>
+</div>
 <p>Symmetry boundary conditions are defined as follows:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">boundary_conditions</span> <span class="n">uniaxial_symmetry</span>
 <span class="n">loading_direction</span> <span class="o">&lt;</span><span class="n">sample_dir</span><span class="o">&gt;</span>
@@ -510,12 +505,10 @@ Alternatively, custom boundary conditions can be defined, as described separatel
 <p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;sample_dir&gt;</span></code> is the direction along the a positive sample axis in which the sample is loaded, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;strain_rate&gt;</span></code> is the strain rate value in units of [1/s].</p>
 </li>
 <li><p><em>Minimal boundary conditions</em> are a modification of grip boundary conditions that only constrain two opposite faces in the face normal directions and two corner nodes in the spatial domain. The selection of the constrained faces is based on the defined <code class="xref py py-data docutils literal notranslate"><span class="pre">loading_direction</span></code>. The first node is always fully fixed where the <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;*0&gt;</span></code> faces converge. The second node is defined relative to the defined <code class="xref py py-data docutils literal notranslate"><span class="pre">loading_direction</span></code> and is constrained to prevent rigid body rotation about the <code class="xref py py-data docutils literal notranslate"><span class="pre">loading_direction</span></code> axis.</p>
-<figure class="align-center" id="id16">
+<div class="figure align-center" id="id16">
 <a class="reference internal image-reference" href="../_images/minimalbcs.png"><img alt="../_images/minimalbcs.png" src="../_images/minimalbcs.png" style="width: 50%;" /></a>
-<figcaption>
-<p><span class="caption-text">Simplified schematic of the applied velocities for minimal boundary conditions. The sample is being loaded in the <code class="xref py py-data docutils literal notranslate"><span class="pre">+Z</span></code> direction. The two blue corner nodes are constrained to prevent rigid body translation and motion.</span><a class="headerlink" href="#id16" title="Permalink to this image">¶</a></p>
-</figcaption>
-</figure>
+<p class="caption"><span class="caption-text">Simplified schematic of the applied velocities for minimal boundary conditions. The sample is being loaded in the <code class="xref py py-data docutils literal notranslate"><span class="pre">+Z</span></code> direction. The two blue corner nodes are constrained to prevent rigid body translation and motion.</span><a class="headerlink" href="#id16" title="Permalink to this image"></a></p>
+</div>
 <p>Minimal boundary conditions are defined as follows:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">boundary_conditions</span> <span class="n">uniaxial_minimal</span>
 <span class="n">loading_direction</span> <span class="o">&lt;</span><span class="n">sample_dir</span><span class="o">&gt;</span>
@@ -525,9 +518,9 @@ Alternatively, custom boundary conditions can be defined, as described separatel
 <p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;sample_dir&gt;</span></code> is the direction along the a positive sample axis in which the sample is loaded, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;strain_rate&gt;</span></code> is the strain rate value in units of [1/s].</p>
 </li>
 </ul>
-</section>
-<section id="id11">
-<h4>Multiaxial<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h4>
+</div>
+<div class="section" id="id11">
+<h4>Multiaxial<a class="headerlink" href="#id11" title="Permalink to this headline"></a></h4>
 <p>Multiaxial boundary conditions are generally consistent across modes, however, the input rate type varies depending on the mode. For both modes, the <code class="xref py py-data docutils literal notranslate"><span class="pre">loading_direction</span></code> defines the primary control direction in which the normal velocities are held constant throughout the simulation.</p>
 <p>Multiaxial loading with a constant strain rate (CSR) is defined as follows:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">boundary_conditions</span> <span class="n">triaxial</span>
@@ -543,10 +536,10 @@ Alternatively, custom boundary conditions can be defined, as described separatel
 </pre></div>
 </div>
 <p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;sample_dir&gt;</span></code> is the direction along the a positive sample axis in which the sample is loaded, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;load_rate&gt;</span></code> is the loading rate value in units of [force/s].</p>
-</section>
-</section>
-<section id="externally-defined-boundary-conditions-optional">
-<span id="external-bcs"></span><h3>Externally Defined Boundary Conditions (Optional)<a class="headerlink" href="#externally-defined-boundary-conditions-optional" title="Permalink to this headline">¶</a></h3>
+</div>
+</div>
+<div class="section" id="externally-defined-boundary-conditions-optional">
+<span id="external-bcs"></span><h3>Externally Defined Boundary Conditions (Optional)<a class="headerlink" href="#externally-defined-boundary-conditions-optional" title="Permalink to this headline"></a></h3>
 <p>Boundary conditions different from the ones defined in <a class="reference internal" href="#boundary-conditions"><span class="std std-ref">Boundary Conditions</span></a> can be applied using an external <code class="file docutils literal notranslate"><span class="pre">simulation.bcs</span></code> containing per-node constraints. Of course, this file should be generated for a singular <code class="file docutils literal notranslate"><span class="pre">simulation.msh</span></code> file (if the finite element mesh in the <code class="file docutils literal notranslate"><span class="pre">simulation.msh</span></code> file changes, then the associated <code class="file docutils literal notranslate"><span class="pre">simulation.bcs</span></code> file will need to be generated anew).</p>
 <p>To read in external boundary conditions, the following line must be added to the <code class="file docutils literal notranslate"><span class="pre">simulation.config</span></code> file:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">read_bcs_from_file</span>
@@ -558,9 +551,9 @@ Alternatively, custom boundary conditions can be defined, as described separatel
 </pre></div>
 </div>
 <p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;node_id&gt;</span></code> is a unique 1-indexed identification number, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;coord_index&gt;</span></code> defines the sample axis the constraint is applied to, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;vel&gt;</span></code> is the velocity being applied to the node in the constraint direction. The options for <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;coord_index&gt;</span></code> are: <code class="xref py py-data docutils literal notranslate"><span class="pre">x</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">y</span></code>, or <code class="xref py py-data docutils literal notranslate"><span class="pre">z</span></code>. A singular <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;coord_index&gt;</span></code>/<code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;vel&gt;</span></code> pair should be defined per-line for a given <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;node_id&gt;</span></code>.  The velocities should be prescribed relative to the mesh dimensions and time-step size in order to produce expected strain rates.</p>
-</section>
-<section id="externally-defined-orientations-and-phases-optional">
-<span id="external-ori-phase"></span><h3>Externally Defined Orientations and Phases (Optional)<a class="headerlink" href="#externally-defined-orientations-and-phases-optional" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="externally-defined-orientations-and-phases-optional">
+<span id="external-ori-phase"></span><h3>Externally Defined Orientations and Phases (Optional)<a class="headerlink" href="#externally-defined-orientations-and-phases-optional" title="Permalink to this headline"></a></h3>
 <p>Crystallographic phase and orientations different from the ones defined in the <code class="file docutils literal notranslate"><span class="pre">simulation.msh</span></code> file can be defined in external files by adding appropriate commands to the configuration file.</p>
 <p>To read in external orientations, the following line must be added to the <code class="file docutils literal notranslate"><span class="pre">simulation.config</span></code> file:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">read_ori_from_file</span>
@@ -572,9 +565,9 @@ Alternatively, custom boundary conditions can be defined, as described separatel
 </pre></div>
 </div>
 <p>More detailed information on the structure of this external file can be found in <a class="reference internal" href="#external-phase"><span class="std std-ref">External Crystallographic Phase Assignment (Optional)</span></a>.</p>
-</section>
-<section id="printing-results">
-<span id="id12"></span><h3>Printing Results<a class="headerlink" href="#printing-results" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="printing-results">
+<span id="id12"></span><h3>Printing Results<a class="headerlink" href="#printing-results" title="Permalink to this headline"></a></h3>
 <p>Each field variable file to be output from a simulation must be individually defined. This includes nodal output, elemental output, simulation restart information, and other miscellaneous output (see <a class="reference internal" href="output.html#simulation-output"><span class="std std-ref">Simulation Output</span></a> for a complete description of all output). The printing of a given field variable file is defined as follows:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span> <span class="o">&lt;</span><span class="n">output_file_name</span><span class="o">&gt;</span>
 <span class="o">...</span>
@@ -613,9 +606,9 @@ Alternatively, custom boundary conditions can be defined, as described separatel
 <li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">restart</span></code>: Simulation restart data</p></li>
 </ul>
 <p>A full description of each output variable can be found in <a class="reference internal" href="output.html#simulation-output"><span class="std std-ref">Simulation Output</span></a>.</p>
-</section>
-<section id="optional-input-parameters">
-<span id="id13"></span><h3>Optional Input Parameters<a class="headerlink" href="#optional-input-parameters" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="optional-input-parameters">
+<span id="id13"></span><h3>Optional Input Parameters<a class="headerlink" href="#optional-input-parameters" title="Permalink to this headline"></a></h3>
 <p>These options may pertain to specific deformation modes or control standard simulation behavior. All possible inputs presented in this section have default values already defined.</p>
 <ul class="simple">
 <li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">max_incr</span> <span class="pre">&lt;increments&gt;</span></code> specifies the maximum number of increments (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">50000</span></code>).</p></li>
@@ -634,12 +627,12 @@ Alternatively, custom boundary conditions can be defined, as described separatel
 <li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">max_iter_hard_limit</span> <span class="pre">&lt;iterations&gt;</span></code> specifies the maximum allowable iterations on the Backward Euler approximation used to update hardnesses (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">10</span></code>).</p></li>
 </ul>
 <p>Additional input commands related to restart capabilities and external file read-in are presented separately in <a class="reference internal" href="job.html#sim-restart"><span class="std std-ref">Restarting a Simulation</span></a>, <a class="reference internal" href="#external-oris"><span class="std std-ref">External Orientation Assignment (Optional)</span></a>, and <a class="reference internal" href="#external-phase"><span class="std std-ref">External Crystallographic Phase Assignment (Optional)</span></a>, respectively.</p>
-</section>
-<section id="optional-convergence-parameters">
-<h3>Optional Convergence Parameters<a class="headerlink" href="#optional-convergence-parameters" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="optional-convergence-parameters">
+<h3>Optional Convergence Parameters<a class="headerlink" href="#optional-convergence-parameters" title="Permalink to this headline"></a></h3>
 <p>These options modify the tolerances and general behavior of the solution algorithms and should only be modified by those who know what they are doing. All possible inputs presented in this section have default values already defined.</p>
-<section id="velocity-convergence">
-<h4>Velocity Convergence<a class="headerlink" href="#velocity-convergence" title="Permalink to this headline">¶</a></h4>
+<div class="section" id="velocity-convergence">
+<h4>Velocity Convergence<a class="headerlink" href="#velocity-convergence" title="Permalink to this headline"></a></h4>
 <p>The velocity solver employs a hybrid successive-approximation/Newton-Raphson algorithm. Convergence of the velocity solution is based on a convergence parameter, which unless otherwise noted, is defined as the norm of the change in the velocity field, divided by the norm of the velocity field, <span class="math notranslate nohighlight">\(||\Delta u||/||u||\)</span>. Other parameters are also used to assess the convergence of the velocity solution. The following parameters pertain to the convergence of the velocity solver:</p>
 <ul class="simple">
 <li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">nl_max_iters</span> <span class="pre">&lt;iterations&gt;</span></code>: maximum allowable number of iterations of the nonlinear velocity solver (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">50</span></code>).</p></li>
@@ -649,28 +642,28 @@ Alternatively, custom boundary conditions can be defined, as described separatel
 <li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">nl_tol_switch_ref</span> <span class="pre">&lt;tolerance&gt;</span></code>: value of the convergence parameter at which the solution algorithm switches from successive-approximation to Newton-Raphson. To only use successive-approximations, set the value of <code class="xref py py-data docutils literal notranslate"><span class="pre">nr_tol_switch_ref</span></code> equal to the value of <code class="xref py py-data docutils literal notranslate"><span class="pre">nl_tol_strict</span></code> (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">1e-2</span></code>).</p></li>
 <li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">nl_tol_conv</span> <span class="pre">&lt;tolerance&gt;</span></code>: parameter between 0 and 1 that is used to assess whether the Newton-Raphson algorithm is converging slowly (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">0.2</span></code>).</p></li>
 </ul>
-</section>
-<section id="conjugate-gradient-convergence">
-<h4>Conjugate Gradient Convergence<a class="headerlink" href="#conjugate-gradient-convergence" title="Permalink to this headline">¶</a></h4>
+</div>
+<div class="section" id="conjugate-gradient-convergence">
+<h4>Conjugate Gradient Convergence<a class="headerlink" href="#conjugate-gradient-convergence" title="Permalink to this headline"></a></h4>
 <p>The solution of the linear system of equations <span class="math notranslate nohighlight">\([K]\{\Delta u\} = -\{R\}\)</span> is performed using a conjugate gradient solver. The following parameters pertain to the convergence of the conjugate gradient solver:</p>
 <ul class="simple">
 <li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">cg_max_iters</span> <span class="pre">&lt;iterations&gt;</span></code>: maximum allowable number of iterations of the conjugate gradient solver (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">16000</span></code>).</p></li>
 <li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">cg_tol</span> <span class="pre">&lt;tolerance&gt;</span></code>: desired tolerance on the conjugate gradient solver (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">1e-8</span></code>).</p></li>
 </ul>
-</section>
-<section id="material-state-convergence">
-<h4>Material State Convergence<a class="headerlink" href="#material-state-convergence" title="Permalink to this headline">¶</a></h4>
+</div>
+<div class="section" id="material-state-convergence">
+<h4>Material State Convergence<a class="headerlink" href="#material-state-convergence" title="Permalink to this headline"></a></h4>
 <p>The convergence of the material stress state for both the viscoplastic and elasto-viscoplastic solutions is assessed by the following parameters:</p>
 <ul class="simple">
 <li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">sx_max_iters_state</span> <span class="pre">&lt;iterations&gt;</span></code>: maximum number of iterations on material state (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">100</span></code>).</p></li>
 <li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">sx_max_iters_newton</span> <span class="pre">&lt;iterations&gt;</span></code>: maximum number of iterations of the Newton algorithm used to solve for crystal stress (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">100</span></code>).</p></li>
 <li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">sx_tol</span> <span class="pre">&lt;tolerance&gt;</span></code>: tolerance on the stress solution (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">1e-4</span></code>).</p></li>
 </ul>
-</section>
-</section>
-</section>
-<section id="the-mesh-file-simulation-msh">
-<h2>The Mesh File (<code class="file docutils literal notranslate"><span class="pre">simulation.msh</span></code>)<a class="headerlink" href="#the-mesh-file-simulation-msh" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+</div>
+<div class="section" id="the-mesh-file-simulation-msh">
+<h2>The Mesh File (<code class="file docutils literal notranslate"><span class="pre">simulation.msh</span></code>)<a class="headerlink" href="#the-mesh-file-simulation-msh" title="Permalink to this headline"></a></h2>
 <p>This file contains the finite element mesh information along with phase assignments and crystal orientations. The mesh file is generally generated by Neper and not directly modified.  A brief description is provided below, which a more complete description can be found in the <a class="reference external" href="https://neper.info">Neper reference manual</a>.  The file can be opened by Gmsh for interactive visualization.</p>
 <p>The file is structured in several, successive fields that define different aspects of the mesh. Each of these fields is wrapped by <code class="xref py py-data docutils literal notranslate"><span class="pre">$</span></code> lines, where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;Field&gt;</span></code> is a short description of the information stored within the block. A typical <code class="file docutils literal notranslate"><span class="pre">simulation.msh</span></code> file will contain the following information:</p>
 <ul class="simple">
@@ -684,8 +677,8 @@ Alternatively, custom boundary conditions can be defined, as described separatel
 </ul>
 <p>Additionally, the <code class="file docutils literal notranslate"><span class="pre">simulation.msh</span></code> file may also include fields with partition information for both the nodes and elements if the domain is decomposed for parallel execution and surface node sets (<code class="xref py py-data docutils literal notranslate"><span class="pre">$NSets</span></code>).</p>
 <p>Embedded microstructural information (phases and orientations) with the <code class="file docutils literal notranslate"><span class="pre">simulation.msh</span></code> may be overridden by external files, <code class="file docutils literal notranslate"><span class="pre">simulation.ori</span></code> and <code class="file docutils literal notranslate"><span class="pre">simulation.phase</span></code>, if the appropriate commands are added to the <code class="file docutils literal notranslate"><span class="pre">simulation.config</span></code> file (<a class="reference internal" href="#external-ori-phase"><span class="std std-ref">Externally Defined Orientations or Phase Assignments (Optional)</span></a>).</p>
-<section id="external-orientation-assignment-optional-simulation-ori">
-<span id="external-oris"></span><h3>External Orientation Assignment (Optional, <code class="file docutils literal notranslate"><span class="pre">simulation.ori</span></code>)<a class="headerlink" href="#external-orientation-assignment-optional-simulation-ori" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="external-orientation-assignment-optional-simulation-ori">
+<span id="external-oris"></span><h3>External Orientation Assignment (Optional, <code class="file docutils literal notranslate"><span class="pre">simulation.ori</span></code>)<a class="headerlink" href="#external-orientation-assignment-optional-simulation-ori" title="Permalink to this headline"></a></h3>
 <p>The embedded orientation assignments within the <code class="file docutils literal notranslate"><span class="pre">simulation.msh</span></code> may be overridden via an external <code class="file docutils literal notranslate"><span class="pre">simulation.ori</span></code> file. This file contains formatting identical to the associated fields in the mesh file and is defined as:</p>
 <p>For per-grain (or <code class="xref py py-data docutils literal notranslate"><span class="pre">Elset</span></code>) orientations:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ElsetOrientations
@@ -735,9 +728,9 @@ $EndElementOrientations
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">entity_id</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">q_0</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">q_1</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">q_2</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">q_3</span><span class="o">&gt;</span>
 </pre></div>
 </div>
-</section>
-<section id="external-crystallographic-phase-assignment-optional-simulation-phase">
-<span id="external-phase"></span><h3>External Crystallographic Phase Assignment (Optional, <code class="file docutils literal notranslate"><span class="pre">simulation.phase</span></code>)<a class="headerlink" href="#external-crystallographic-phase-assignment-optional-simulation-phase" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="external-crystallographic-phase-assignment-optional-simulation-phase">
+<span id="external-phase"></span><h3>External Crystallographic Phase Assignment (Optional, <code class="file docutils literal notranslate"><span class="pre">simulation.phase</span></code>)<a class="headerlink" href="#external-crystallographic-phase-assignment-optional-simulation-phase" title="Permalink to this headline"></a></h3>
 <p>The embedded grain/phase assignments within the <code class="file docutils literal notranslate"><span class="pre">simulation.msh</span></code> may be overridden via an external <code class="file docutils literal notranslate"><span class="pre">simulation.phase</span></code> file. This file contains formatting identical to the associated fields in the mesh file and is defined as:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$Groups
 &lt;group_entity&gt;
@@ -748,10 +741,10 @@ $EndGroups
 </pre></div>
 </div>
 <p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;group_entity&gt;</span></code> defines the phase assignment method and must always be defined as <code class="xref py py-data docutils literal notranslate"><span class="pre">elset</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;number_of_group_entities&gt;</span></code> is the number of grain/phase pairs defined in the field, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;entity_id&gt;</span></code> is a unique 1-indexed identification number, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;group&gt;</span></code> is an 1-indexed value that defines the phase for a given grain.</p>
-</section>
-</section>
-<section id="references">
-<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline"></a></h2>
 <dl class="citation">
 <dt class="label" id="carson17"><span class="brackets">CARSON17</span><span class="fn-backref">(<a href="#id4">1</a>,<a href="#id7">2</a>)</span></dt>
 <dd><ol class="upperalpha simple" start="18">
@@ -767,8 +760,8 @@ $EndGroups
 </ol>
 </dd>
 </dl>
-</section>
-</section>
+</div>
+</div>
 
 
            </div>
