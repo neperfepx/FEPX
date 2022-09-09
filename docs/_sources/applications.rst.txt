@@ -23,6 +23,8 @@ Here is a tentative list of the works (journal papers and books) using FEPX. If 
 
 - J Cappola, JC Stinville, MA Charpagne, PG Callahan, MP Echlin, TM Pollock, A Pilchak, M Kasemer, *On the Localization of Plastic Strain in Microtextured Regions of Ti-6Al-4V*, **Acta Materialia**, https://doi.org/10.1016/j.actamat.2020.116492.
 
+- PR Dawson, MP Miller, TM Pollock, J Wendorf, LH Mills, JC Stinville, MA Charpagne, MP Echlin, *Mechanical Metrics of Virtual Polycrystals (MechMet)*, **Integrating Materials and Manufacturing Innovation**, https://doi.org/10.1007/s40192-021-00206-7.
+
 2020
 ----
 
