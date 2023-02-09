@@ -31,4 +31,3 @@ FEPX is currently maintained and developed by the Advanced Computational Materia
     applications.rst
     downloads.rst
     community.rst
-    other.rst
