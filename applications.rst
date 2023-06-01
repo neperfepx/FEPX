@@ -5,6 +5,11 @@ Applications
 
 Here is a tentative list of the works (journal papers and books) using FEPX. If you think your work should be listed here, please `contact us <mkasemer@eng.ua.edu>`_.
 
+2023
+----
+
+- ST Abraham, SS Bhat, *Crystal plasticity finite element modelling on the influence of grain size and shape parameters on the tensile stiffness and yield strength*, **Materials Science and Engineering A**, https://doi.org/10.1016/j.msea.2023.145155.
+
 2022
 ----
 
@@ -19,7 +24,7 @@ Here is a tentative list of the works (journal papers and books) using FEPX. If 
 2021
 ----
 
-- ​MP Echlin, M Kasemer, K Chatterjee, D Boyce, JC Stinville, PG Callahan, E Wielewski, JS Park, JC Williams, RM Suter, TM Pollock, MP Miller, PR Dawson, *Microstructure-Based Estimation of Strength and Ductility Distributions for α+β Titanium Alloys*, **Metallurgical and Materials Transactions A**, https://doi.org/10.1007/s11661-021-06233-5.
+- MP Echlin, M Kasemer, K Chatterjee, D Boyce, JC Stinville, PG Callahan, E Wielewski, JS Park, JC Williams, RM Suter, TM Pollock, MP Miller, PR Dawson, *Microstructure-Based Estimation of Strength and Ductility Distributions for α+β Titanium Alloys*, **Metallurgical and Materials Transactions A**, https://doi.org/10.1007/s11661-021-06233-5.
 
 - J Cappola, JC Stinville, MA Charpagne, PG Callahan, MP Echlin, TM Pollock, A Pilchak, M Kasemer, *On the Localization of Plastic Strain in Microtextured Regions of Ti-6Al-4V*, **Acta Materialia**, https://doi.org/10.1016/j.actamat.2020.116492.
 
