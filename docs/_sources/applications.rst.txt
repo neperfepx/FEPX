@@ -13,7 +13,7 @@ Here is a tentative list of the works (journal papers and books) using FEPX. If 
 2022
 ----
 
-- DC Pagan, CR Pash, AR Benson, MP Kasemer, *Graph neural network modeling of grain-scale anisotropic elastic behavior using simulated and measured microscale data*, **arXiv:2205.06324**.
+- DC Pagan, CR Pash, AR Benson, MP Kasemer, *Graph neural network modeling of grain-scale anisotropic elastic behavior using simulated and measured microscale data*, **npj Computational Materials**, https://doi.org/10.1038/s41524-022-00952-y.
 
 - R Li, R Quey, Y Zhang, M Kobayashi, J Oddershede, D Juul Jensen, *A CPFEM based theoretical analysis of strains resolved by the microstructural feature tracking method*, **42nd Riso International Symposium on Materials Science, IOP Conf. Series: Materials Science and Engineering**, https://doi:10.1088/1757-899X/1249/1/012056.
 
