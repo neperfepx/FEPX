@@ -8,6 +8,7 @@ Here is a tentative list of the works (journal papers and books) using FEPX. If 
 2023
 ----
 
+- L van Wees, A Singh, M Obstalecki, P Shade, T Turner and M Kasemer, *An assessment of polarized light microscopy as a characterization method for crystal plasticity simulations*, **Materialia**, https://doi.org/10.1016/j.mtla.2023.101872.
 - ST Abraham, SS Bhat, *Crystal plasticity finite element modelling on the influence of grain size and shape parameters on the tensile stiffness and yield strength*, **Materials Science and Engineering A**, https://doi.org/10.1016/j.msea.2023.145155.
 
 2022

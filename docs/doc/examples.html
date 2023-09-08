@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Example Simulations &mdash; FEPX 1.3.0 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -83,20 +84,22 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="example-simulations">
-<span id="id1"></span><h1>Example Simulations<a class="headerlink" href="#example-simulations" title="Permalink to this headline"></a></h1>
+  <section id="example-simulations">
+<span id="id1"></span><h1>Example Simulations<a class="headerlink" href="#example-simulations" title="Permalink to this headline">¶</a></h1>
 <p>Several example simulations come pre-packaged to get you started with running simulations. These examples are reference cases to show how a simulation should be built and how FEPX can interface with Neper in order to prepare mesh files as well as post-process a simulation directory. All examples contain the necessary configuration (<code class="file docutils literal notranslate"><span class="pre">simulation.config</span></code>) and mesh (<code class="file docutils literal notranslate"><span class="pre">simulation.msh</span></code>) files, along with a shell script to generate the mesh file directly from Neper. In order to run the provided shell scripts, you must have a configured installation of Neper present on your system. In the following, visualizations of the undeformed and deformed mesh are generated with Neper while graphs are generated with Gnuplot.</p>
 <p>All examples can be run either in serial or parallel (<a class="reference internal" href="job.html#running-a-simulation"><span class="std std-ref">Running a Simulation</span></a>), but the included scripts are pre-set to run in parallel on 4 cores, and parallel execution with OpenMPI via <code class="xref py py-data docutils literal notranslate"><span class="pre">mpirun</span></code> is assumed.</p>
 <p>A polycrystal containing 50 grains is generated via Voronoi tessellation for all examples. Each cell in the tessellation represents a discrete grain in the domain and all grains are volumetrically discretized into finite elements. Visualizations of the tessellated domain (morphology) and the associated finite element mesh are shown below. Length units are assumed to be [mm], thus, all pressure units assumed to be [MPa] for the simulation (including input parameters).</p>
-<div class="figure align-center" id="id3">
+<figure class="align-center" id="id3">
 <a class="reference internal image-reference" href="../_images/0_all.png"><img alt="../_images/0_all.png" src="../_images/0_all.png" style="width: 75%;" /></a>
-<p class="caption"><span class="caption-text">50 grain polycrystal used in all examples, colored by grain id, and (right) its finite element mesh.</span><a class="headerlink" href="#id3" title="Permalink to this image"></a></p>
-</div>
-<div class="section" id="uniaxial-control-examples-1-uniaxial">
-<span id="uniaxial-ex"></span><h2>Uniaxial Control (<code class="file docutils literal notranslate"><span class="pre">examples/1_uniaxial</span></code>)<a class="headerlink" href="#uniaxial-control-examples-1-uniaxial" title="Permalink to this headline"></a></h2>
+<figcaption>
+<p><span class="caption-text">50 grain polycrystal used in all examples, colored by grain id, and (right) its finite element mesh.</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<section id="uniaxial-control-examples-1-uniaxial">
+<span id="uniaxial-ex"></span><h2>Uniaxial Control (<code class="file docutils literal notranslate"><span class="pre">examples/1_uniaxial</span></code>)<a class="headerlink" href="#uniaxial-control-examples-1-uniaxial" title="Permalink to this headline">¶</a></h2>
 <p>This example covers the uniaxial tensile deformation of an FCC polycrystal by strain targeting to 2% axial strain.  Material parameters are of a generic a copper alloy, and are provided in the below tables. Two steps are defined with a variable number of increments for each step. Grip boundary conditions are applied to the sample with the primary loading face set as <code class="xref py py-data docutils literal notranslate"><span class="pre">z1</span></code> loaded in the <code class="xref py py-data docutils literal notranslate"><span class="pre">+z</span></code> direction. Elemental stress and elastic strain tensors are output, along with the nodal coordinates and surface-integrated forces. Illustrations of the stress and elastic strain fields, as well as the macroscopic stress-strain curve are shown below.</p>
 <table class="colwidths-given docutils align-center" id="id4">
-<caption><span class="caption-text">Single crystal elastic constants.</span><a class="headerlink" href="#id4" title="Permalink to this table"></a></caption>
+<caption><span class="caption-text">Single crystal elastic constants.</span><a class="headerlink" href="#id4" title="Permalink to this table">¶</a></caption>
 <colgroup>
 <col style="width: 20%" />
 <col style="width: 20%" />
@@ -122,7 +125,7 @@
 </tbody>
 </table>
 <table class="colwidths-given docutils align-center" id="id5">
-<caption><span class="caption-text">Initial slip system strenghts and other plasticity parameters.</span><a class="headerlink" href="#id5" title="Permalink to this table"></a></caption>
+<caption><span class="caption-text">Initial slip system strenghts and other plasticity parameters.</span><a class="headerlink" href="#id5" title="Permalink to this table">¶</a></caption>
 <colgroup>
 <col style="width: 14%" />
 <col style="width: 14%" />
@@ -153,20 +156,24 @@
 </tr>
 </tbody>
 </table>
-<div class="figure align-center" id="id6">
+<figure class="align-center" id="id6">
 <a class="reference internal image-reference" href="../_images/1_all.png"><img alt="../_images/1_all.png" src="../_images/1_all.png" style="width: 75%;" /></a>
-<p class="caption"><span class="caption-text">Deformed sample at 2% axial strain (deformation field is exaggerated 10x for illustrative purposes), colored by (left) stress (<span class="math notranslate nohighlight">\(\sigma_{33}\)</span>), and (right) elastic strain (<span class="math notranslate nohighlight">\(\epsilon_{33}\)</span>).</span><a class="headerlink" href="#id6" title="Permalink to this image"></a></p>
-</div>
-<div class="figure align-center" id="id7">
+<figcaption>
+<p><span class="caption-text">Deformed sample at 2% axial strain (deformation field is exaggerated 10x for illustrative purposes), colored by (left) stress (<span class="math notranslate nohighlight">\(\sigma_{33}\)</span>), and (right) elastic strain (<span class="math notranslate nohighlight">\(\epsilon_{33}\)</span>).</span><a class="headerlink" href="#id6" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id7">
 <a class="reference internal image-reference" href="../_images/1_stressstrain.png"><img alt="../_images/1_stressstrain.png" src="../_images/1_stressstrain.png" style="width: 50%;" /></a>
-<p class="caption"><span class="caption-text">Macroscopic stress-strain curve recovered from the surface-integrated forces in <code class="file docutils literal notranslate"><span class="pre">post.force.z1</span></code>. Markers denote values output at each increment.</span><a class="headerlink" href="#id7" title="Permalink to this image"></a></p>
-</div>
-</div>
-<div class="section" id="multiaxial-control-with-constant-strain-rate-examples-2-triaxcsr">
-<h2>Multiaxial Control with Constant Strain Rate (<code class="file docutils literal notranslate"><span class="pre">examples/2_triaxCSR</span></code>)<a class="headerlink" href="#multiaxial-control-with-constant-strain-rate-examples-2-triaxcsr" title="Permalink to this headline"></a></h2>
+<figcaption>
+<p><span class="caption-text">Macroscopic stress-strain curve recovered from the surface-integrated forces in <code class="file docutils literal notranslate"><span class="pre">post.force.z1</span></code>. Markers denote values output at each increment.</span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="multiaxial-control-with-constant-strain-rate-examples-2-triaxcsr">
+<h2>Multiaxial Control with Constant Strain Rate (<code class="file docutils literal notranslate"><span class="pre">examples/2_triaxCSR</span></code>)<a class="headerlink" href="#multiaxial-control-with-constant-strain-rate-examples-2-triaxcsr" title="Permalink to this headline">¶</a></h2>
 <p>This example covers the biaxial deformation of an HCP polycrystal at a constant strain rate. Loads are applied normal to the surface, maintaining proportional macroscopic load ratios of <span class="math notranslate nohighlight">\(-1\)</span>:<span class="math notranslate nohighlight">\(0\)</span>:<span class="math notranslate nohighlight">\(1\)</span> for the <span class="math notranslate nohighlight">\(x\)</span>:<span class="math notranslate nohighlight">\(y\)</span>:<span class="math notranslate nohighlight">\(z\)</span> directions, respectively. Load tolerance options are prescribed and latent hardening is enabled, as well as saturation strength evolution. The primary loading direction is set to be in the <span class="math notranslate nohighlight">\(x\)</span> direction, and the strain rate is doubled on the second step. Elemental values for the equivalent plastic strain and plastic work are output, along with the nodal coordinates and surface-integrated forces. Material parameters are those for the <span class="math notranslate nohighlight">\(\alpha\)</span> phase of Ti-6Al-4V and are provided in the below tables. The latent parameters are input values to the hardening interaction matrix <a class="reference internal" href="input.html#carson17" id="id2"><span>[CARSON17]</span></a>. Illustrations of the results are provided in the below figures.</p>
 <table class="colwidths-given docutils align-center" id="id8">
-<caption><span class="caption-text">Single crystal elastic constants.</span><a class="headerlink" href="#id8" title="Permalink to this table"></a></caption>
+<caption><span class="caption-text">Single crystal elastic constants.</span><a class="headerlink" href="#id8" title="Permalink to this table">¶</a></caption>
 <colgroup>
 <col style="width: 17%" />
 <col style="width: 17%" />
@@ -195,7 +202,7 @@
 </tbody>
 </table>
 <table class="colwidths-given docutils align-center" id="id9">
-<caption><span class="caption-text">Plasticity parameters.</span><a class="headerlink" href="#id9" title="Permalink to this table"></a></caption>
+<caption><span class="caption-text">Plasticity parameters.</span><a class="headerlink" href="#id9" title="Permalink to this table">¶</a></caption>
 <colgroup>
 <col style="width: 11%" />
 <col style="width: 11%" />
@@ -233,7 +240,7 @@
 </tbody>
 </table>
 <table class="colwidths-given docutils align-center" id="id10">
-<caption><span class="caption-text">Initial slip system strengths and hardening parameters.</span><a class="headerlink" href="#id10" title="Permalink to this table"></a></caption>
+<caption><span class="caption-text">Initial slip system strengths and hardening parameters.</span><a class="headerlink" href="#id10" title="Permalink to this table">¶</a></caption>
 <colgroup>
 <col style="width: 17%" />
 <col style="width: 17%" />
@@ -261,20 +268,24 @@
 </tr>
 </tbody>
 </table>
-<div class="figure align-center" id="id11">
+<figure class="align-center" id="id11">
 <a class="reference internal image-reference" href="../_images/2_all.png"><img alt="../_images/2_all.png" src="../_images/2_all.png" style="width: 75%;" /></a>
-<p class="caption"><span class="caption-text">Deformed sample at the end of the second load step (deformation field is exaggerated 10x for illustrative purposes), colored by (left) plastic work (<span class="math notranslate nohighlight">\(W^{p}\)</span>) and (right) equivalent plastic strain (<span class="math notranslate nohighlight">\(\bar\epsilon^{P}\)</span>). Note that, unlike the deformed sample in <a class="reference internal" href="#uniaxial-ex"><span class="std std-ref">Uniaxial Control (examples/1_uniaxial)</span></a>, a multiaxial simulation will maintain the orthogonal, planar surfaces throughout the simulation.</span><a class="headerlink" href="#id11" title="Permalink to this image"></a></p>
-</div>
-<div class="figure align-center" id="id12">
+<figcaption>
+<p><span class="caption-text">Deformed sample at the end of the second load step (deformation field is exaggerated 10x for illustrative purposes), colored by (left) plastic work (<span class="math notranslate nohighlight">\(W^{p}\)</span>) and (right) equivalent plastic strain (<span class="math notranslate nohighlight">\(\bar\epsilon^{P}\)</span>). Note that, unlike the deformed sample in <a class="reference internal" href="#uniaxial-ex"><span class="std std-ref">Uniaxial Control (examples/1_uniaxial)</span></a>, a multiaxial simulation will maintain the orthogonal, planar surfaces throughout the simulation.</span><a class="headerlink" href="#id11" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id12">
 <a class="reference internal image-reference" href="../_images/2_normalstraintime.png"><img alt="../_images/2_normalstraintime.png" src="../_images/2_normalstraintime.png" style="width: 70%;" /></a>
-<p class="caption"><span class="caption-text">Evolution of the macroscopic normal strains. Note the strain rate increase corresponding to the strain-rate jump defined for step 2.</span><a class="headerlink" href="#id12" title="Permalink to this image"></a></p>
-</div>
-</div>
-<div class="section" id="multiaxial-control-with-constant-load-rate-examples-3-triaxclr">
-<span id="triaxial-clr-ex"></span><h2>Multiaxial Control with Constant Load Rate (<code class="file docutils literal notranslate"><span class="pre">examples/3_triaxCLR</span></code>)<a class="headerlink" href="#multiaxial-control-with-constant-load-rate-examples-3-triaxclr" title="Permalink to this headline"></a></h2>
+<figcaption>
+<p><span class="caption-text">Evolution of the macroscopic normal strains. Note the strain rate increase corresponding to the strain-rate jump defined for step 2.</span><a class="headerlink" href="#id12" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="multiaxial-control-with-constant-load-rate-examples-3-triaxclr">
+<span id="triaxial-clr-ex"></span><h2>Multiaxial Control with Constant Load Rate (<code class="file docutils literal notranslate"><span class="pre">examples/3_triaxCLR</span></code>)<a class="headerlink" href="#multiaxial-control-with-constant-load-rate-examples-3-triaxclr" title="Permalink to this headline">¶</a></h2>
 <p>This example covers the triaxial deformation of a dual phase FCC/BCC polycrystal (phase map shown below) at a constant load rate followed by a dwell episode and subsequent unloading. Loads are applied normal to the surface, maintaining proportional macroscopic load ratios of <span class="math notranslate nohighlight">\(-0.375\)</span>:<span class="math notranslate nohighlight">\(-0.625\)</span>:<span class="math notranslate nohighlight">\(1\)</span> for the <span class="math notranslate nohighlight">\(x\)</span>:<span class="math notranslate nohighlight">\(y\)</span>:<span class="math notranslate nohighlight">\(z\)</span> directions, respectively. Load tolerance options are prescribed. The primary loading direction is set to be in the <span class="math notranslate nohighlight">\(z\)</span> direction, and a dwell episode is initiated on the second step. Elemental critical resolved shear stresses and equivalent strains are output, along with the nodal coordinates and surface-integrated forces. Material parameters are those for the austenitic (<span class="math notranslate nohighlight">\(\gamma\)</span>) and ferritic (<span class="math notranslate nohighlight">\(\alpha\)</span>) phases of an LDX-2101 steel, and are provided in the tables below. Illustrations of the results are provided in the figures below.</p>
 <table class="colwidths-given docutils align-center" id="id13">
-<caption><span class="caption-text">Single crystal elastic constants.</span><a class="headerlink" href="#id13" title="Permalink to this table"></a></caption>
+<caption><span class="caption-text">Single crystal elastic constants.</span><a class="headerlink" href="#id13" title="Permalink to this table">¶</a></caption>
 <colgroup>
 <col style="width: 20%" />
 <col style="width: 20%" />
@@ -306,7 +317,7 @@
 </tbody>
 </table>
 <table class="colwidths-given docutils align-center" id="id14">
-<caption><span class="caption-text">Initial slip system strengths and other plasticity parameters.</span><a class="headerlink" href="#id14" title="Permalink to this table"></a></caption>
+<caption><span class="caption-text">Initial slip system strengths and other plasticity parameters.</span><a class="headerlink" href="#id14" title="Permalink to this table">¶</a></caption>
 <colgroup>
 <col style="width: 14%" />
 <col style="width: 14%" />
@@ -337,17 +348,21 @@
 </tr>
 </tbody>
 </table>
-<div class="figure align-center" id="id15">
+<figure class="align-center" id="id15">
 <a class="reference internal image-reference" href="../_images/3_all.png"><img alt="../_images/3_all.png" src="../_images/3_all.png" style="width: 75%;" /></a>
-<p class="caption"><span class="caption-text">(left) Grain and phase assignment distribution in the virtual sample. Red-colored grains are <span class="math notranslate nohighlight">\(\gamma\)</span>-phase and green-colored grains are <span class="math notranslate nohighlight">\(\alpha\)</span>-phase. (right) Elastically unloaded sample colored by critical resolved shear stress.</span><a class="headerlink" href="#id15" title="Permalink to this image"></a></p>
-</div>
-<div class="figure align-center" id="id16">
+<figcaption>
+<p><span class="caption-text">(left) Grain and phase assignment distribution in the virtual sample. Red-colored grains are <span class="math notranslate nohighlight">\(\gamma\)</span>-phase and green-colored grains are <span class="math notranslate nohighlight">\(\alpha\)</span>-phase. (right) Elastically unloaded sample colored by critical resolved shear stress.</span><a class="headerlink" href="#id15" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id16">
 <a class="reference internal image-reference" href="../_images/3_all2.png"><img alt="../_images/3_all2.png" src="../_images/3_all2.png" style="width: 100%;" /></a>
-<p class="caption"><span class="caption-text">(left) Evolution of the macroscopic normal strains, and (right) evolution of the macroscopic stress and strain on the <span class="math notranslate nohighlight">\(z\)</span> surface. Note that the load rate in the <span class="math notranslate nohighlight">\(z\)</span> direction is always held constant during the simulation (except during the dwell episode) while the other two are automatically modified to maintain load proportionality throughout the simulation.</span><a class="headerlink" href="#id16" title="Permalink to this image"></a></p>
-</div>
-</div>
-<div class="section" id="restarting-a-simulation-with-appended-load-steps-examples-4-restart">
-<h2>Restarting a Simulation with Appended Load Steps (<code class="file docutils literal notranslate"><span class="pre">examples/4_restart</span></code>)<a class="headerlink" href="#restarting-a-simulation-with-appended-load-steps-examples-4-restart" title="Permalink to this headline"></a></h2>
+<figcaption>
+<p><span class="caption-text">(left) Evolution of the macroscopic normal strains, and (right) evolution of the macroscopic stress and strain on the <span class="math notranslate nohighlight">\(z\)</span> surface. Note that the load rate in the <span class="math notranslate nohighlight">\(z\)</span> direction is always held constant during the simulation (except during the dwell episode) while the other two are automatically modified to maintain load proportionality throughout the simulation.</span><a class="headerlink" href="#id16" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="restarting-a-simulation-with-appended-load-steps-examples-4-restart">
+<h2>Restarting a Simulation with Appended Load Steps (<code class="file docutils literal notranslate"><span class="pre">examples/4_restart</span></code>)<a class="headerlink" href="#restarting-a-simulation-with-appended-load-steps-examples-4-restart" title="Permalink to this headline">¶</a></h2>
 <p>An example use case for the restart capabilities are to append additional loading steps to a completed simulation. This example covers the cyclic triaxial deformation of an FCC polycrystal at a constant strain rate. Each restart simulation adds an addition load-unload cycle. Loads are applied normal to the surface, maintaining proportional macroscopic load ratios of <span class="math notranslate nohighlight">\(0\)</span>:<span class="math notranslate nohighlight">\(0\)</span>:<span class="math notranslate nohighlight">\(1\)</span> for the <span class="math notranslate nohighlight">\(x\)</span>:<span class="math notranslate nohighlight">\(y\)</span>:<span class="math notranslate nohighlight">\(z\)</span> directions, respectively. Load tolerance options are prescribed and cyclic hardening is activated. The primary loading direction is set to be in the <span class="math notranslate nohighlight">\(z\)</span> direction. Elemental equivalent plastic deformation rate, slip system shears, slip system shear rates, nodal coordinates, and restart files are output. Restart files are only printed on the first cycle. Material parameters are those for a AL6XN steel and are provided in the tables below. Illustrations of the results are provided in the figures below.</p>
 <p>The included shell script will run the initial simulation in <code class="file docutils literal notranslate"><span class="pre">examples/4_restart/cycle1</span></code> which runs 2 load steps (a single load-unload cycle) and prints the files necessary to restart the simulation from the final state (using print option <code class="xref py py-data docutils literal notranslate"><span class="pre">print</span> <span class="pre">restart</span></code>). After successful completion of the first cycle, the mesh file and restart files are copied into the secondary directory (<code class="file docutils literal notranslate"><span class="pre">examples/4_restart/cycle2</span></code>) and the simulation is performed again for another 2 load steps (a second load-unload cycle). The configuration file for the second cycle (<code class="file docutils literal notranslate"><span class="pre">simulation_cycle2.config</span></code>) contains the following input to allow for simulating additional load steps to those already completed:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">restart</span> <span class="n">on</span>
@@ -355,7 +370,7 @@
 </div>
 <p>along with the additional load steps (as described in the <a class="reference internal" href="input.html#deformation-history"><span class="std std-ref">Deformation History</span></a> section). The restarted simulation will continue with the load steps as defined in <code class="file docutils literal notranslate"><span class="pre">simulation_cycle2.config</span></code>. Restart control information will print to the console upon the execution of the second cycle to briefly assess the state of the sample when the simulation is restarted. Material parameters are defined as:</p>
 <table class="colwidths-given docutils align-center" id="id17">
-<caption><span class="caption-text">Single crystal elastic constants.</span><a class="headerlink" href="#id17" title="Permalink to this table"></a></caption>
+<caption><span class="caption-text">Single crystal elastic constants.</span><a class="headerlink" href="#id17" title="Permalink to this table">¶</a></caption>
 <colgroup>
 <col style="width: 20%" />
 <col style="width: 20%" />
@@ -381,7 +396,7 @@
 </tbody>
 </table>
 <table class="colwidths-given docutils align-center" id="id18">
-<caption><span class="caption-text">Initial slip system strengths and other plasticity parameters.</span><a class="headerlink" href="#id18" title="Permalink to this table"></a></caption>
+<caption><span class="caption-text">Initial slip system strengths and other plasticity parameters.</span><a class="headerlink" href="#id18" title="Permalink to this table">¶</a></caption>
 <colgroup>
 <col style="width: 14%" />
 <col style="width: 14%" />
@@ -413,7 +428,7 @@
 </tbody>
 </table>
 <table class="colwidths-given docutils align-center" id="id19">
-<caption><span class="caption-text">Cyclic hardening parameters.</span><a class="headerlink" href="#id19" title="Permalink to this table"></a></caption>
+<caption><span class="caption-text">Cyclic hardening parameters.</span><a class="headerlink" href="#id19" title="Permalink to this table">¶</a></caption>
 <colgroup>
 <col style="width: 33%" />
 <col style="width: 33%" />
@@ -432,13 +447,15 @@
 </tr>
 </tbody>
 </table>
-<div class="figure align-center" id="id20">
+<figure class="align-center" id="id20">
 <a class="reference internal image-reference" href="../_images/4_all.png"><img alt="../_images/4_all.png" src="../_images/4_all.png" style="width: 75%;" /></a>
-<p class="caption"><span class="caption-text">Sample after the second cycle is completed, (left) colored by accumulated slip shear on the <span class="math notranslate nohighlight">\((1 \bar 1 1)[0 1 1]\)</span> system and (right) colored by accumulated slip shear on the <span class="math notranslate nohighlight">\((1 \bar 1 1)[1 0 \bar 1]\)</span> system.</span><a class="headerlink" href="#id20" title="Permalink to this image"></a></p>
-</div>
-</div>
-<div class="section" id="running-a-simulation-with-external-definition-files-examples-5-external">
-<h2>Running a Simulation with External Definition Files (<code class="file docutils literal notranslate"><span class="pre">examples/5_external</span></code>)<a class="headerlink" href="#running-a-simulation-with-external-definition-files-examples-5-external" title="Permalink to this headline"></a></h2>
+<figcaption>
+<p><span class="caption-text">Sample after the second cycle is completed, (left) colored by accumulated slip shear on the <span class="math notranslate nohighlight">\((1 \bar 1 1)[0 1 1]\)</span> system and (right) colored by accumulated slip shear on the <span class="math notranslate nohighlight">\((1 \bar 1 1)[1 0 \bar 1]\)</span> system.</span><a class="headerlink" href="#id20" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="running-a-simulation-with-external-definition-files-examples-5-external">
+<h2>Running a Simulation with External Definition Files (<code class="file docutils literal notranslate"><span class="pre">examples/5_external</span></code>)<a class="headerlink" href="#running-a-simulation-with-external-definition-files-examples-5-external" title="Permalink to this headline">¶</a></h2>
 <p>Certain simulation input may be supplied from external files in order to allow for a static configuration and mesh file to be used for multiple simulations while certain microstructure information is varied. This example covers the uniaxial loading and unloading (via load targeting) of a dual phase FCC/BCC polycrystal including in-grain orientation distributions. Two steps are defined with a standard time-step value of 0.1s and a minimum time-step value of 0.01s. Minimal boundary conditions are applied to the sample with the primary loading face set as <code class="xref py py-data docutils literal notranslate"><span class="pre">x1</span></code> loaded in the <code class="xref py py-data docutils literal notranslate"><span class="pre">+x</span></code> direction. Elemental orientations and grain/phase assignments are supplied from the external files <code class="file docutils literal notranslate"><span class="pre">simulation.ori</span></code> and <code class="file docutils literal notranslate"><span class="pre">simulation.phase</span></code>, respectively. Elemental equivalent deformation rate, work, orientations, surface-integrated forces, and nodal coordinates are output. Fiber-averaging processing is performed via Neper. Material parameters are those for the austenitic (<span class="math notranslate nohighlight">\(\gamma\)</span>) and ferritic (<span class="math notranslate nohighlight">\(\alpha\)</span>) phases of a LDX-2101 steel and were previously provided in <a class="reference internal" href="#triaxial-clr-ex"><span class="std std-ref">Multiaxial Control with Constant Load Rate (examples/3_triaxCLR)</span></a>. Illustrations of the results are provided below.</p>
 <p>Phases are assigned to grains in <code class="file docutils literal notranslate"><span class="pre">simulation.phase</span></code> based on grain ID, resulting in a 50%/50% phase distribution, by:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$Groups
@@ -474,24 +491,32 @@ $EndElementOrientations
 </pre></div>
 </div>
 <p>Three unique fibers (hkl triplets) are defined in the file. The associated sample directions (uvw triplets) define unique points on a coarse mesh of a pole figure. The selection of sample directions in this manner allows for the fiber averaged output data to be visualized as a pole figure as seen below.</p>
-<div class="figure align-center" id="id21">
+<figure class="align-center" id="id21">
 <a class="reference internal image-reference" href="../_images/5_eltorientations.png"><img alt="../_images/5_eltorientations.png" src="../_images/5_eltorientations.png" style="width: 40%;" /></a>
-<p class="caption"><span class="caption-text">Undeformed sample colored by orientation. Per-element orientations are assigned to the sample allowing for the prescription of initial misorientation within grains. Per-element orientations are generated from a 3-variate normal distribution with an average misorientation angle (with respect to a grain’s average orientation) of 5 degrees.</span><a class="headerlink" href="#id21" title="Permalink to this image"></a></p>
-</div>
-<div class="figure align-center" id="id22">
+<figcaption>
+<p><span class="caption-text">Undeformed sample colored by orientation. Per-element orientations are assigned to the sample allowing for the prescription of initial misorientation within grains. Per-element orientations are generated from a 3-variate normal distribution with an average misorientation angle (with respect to a grain’s average orientation) of 5 degrees.</span><a class="headerlink" href="#id21" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id22">
 <a class="reference internal image-reference" href="../_images/5_all.png"><img alt="../_images/5_all.png" src="../_images/5_all.png" style="width: 75%;" /></a>
-<p class="caption"><span class="caption-text">Deformed sample after the (left) first step and (right) second step are completed (deformation field is exaggerated 50x for illustrative purposes). The left figure is colored by equivalent deformation rate and the right figure is colored by work.</span><a class="headerlink" href="#id22" title="Permalink to this image"></a></p>
-</div>
-<div class="figure align-center" id="id23">
+<figcaption>
+<p><span class="caption-text">Deformed sample after the (left) first step and (right) second step are completed (deformation field is exaggerated 50x for illustrative purposes). The left figure is colored by equivalent deformation rate and the right figure is colored by work.</span><a class="headerlink" href="#id22" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id23">
 <a class="reference internal image-reference" href="../_images/5_stresstime.png"><img alt="../_images/5_stresstime.png" src="../_images/5_stresstime.png" style="width: 50%;" /></a>
-<p class="caption"><span class="caption-text">Evolution of the macroscopic normal stress. Note the increased point densities near to the load direction change exhibiting the simulation time-step value decreasing to accurately reach the load targets.</span><a class="headerlink" href="#id23" title="Permalink to this image"></a></p>
-</div>
-<div class="figure align-center" id="id24">
+<figcaption>
+<p><span class="caption-text">Evolution of the macroscopic normal stress. Note the increased point densities near to the load direction change exhibiting the simulation time-step value decreasing to accurately reach the load targets.</span><a class="headerlink" href="#id23" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id24">
 <a class="reference internal image-reference" href="../_images/5_LSPF.png"><img alt="../_images/5_LSPF.png" src="../_images/5_LSPF.png" style="width: 50%;" /></a>
-<p class="caption"><span class="caption-text">A lattice strain pole figure depicting the fiber-averaged elastic lattice strain for the <span class="math notranslate nohighlight">\({200}\)</span> planes of the FCC phase (i.e., phase 1) at the end of step 1. Refinement of the pole figure would benefit from an increase in the number of grains in the simulated domain, as well as the inclusion of more unique fibers on the mesh of the pole figure.</span><a class="headerlink" href="#id24" title="Permalink to this image"></a></p>
-</div>
-</div>
-</div>
+<figcaption>
+<p><span class="caption-text">A lattice strain pole figure depicting the fiber-averaged elastic lattice strain for the <span class="math notranslate nohighlight">\({200}\)</span> planes of the FCC phase (i.e., phase 1) at the end of step 1. Refinement of the pole figure would benefit from an increase in the number of grains in the simulated domain, as well as the inclusion of more unique fibers on the mesh of the pole figure.</span><a class="headerlink" href="#id24" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+</section>
 
 
            </div>
