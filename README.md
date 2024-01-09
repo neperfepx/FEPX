@@ -11,4 +11,4 @@ FEPX is a parallel finite element-based elasto-viscoplastic framework for use in
 
 ## Installation
 
-Installation instructions for FEPX are provided in the documentation included in the distribution or available [here]((https://acmelab-ua.github.io/FEPX/docs/index.html).
+Installation instructions for FEPX are provided in the documentation included in the distribution or available [here](https://fepx.info/doc/index.html).

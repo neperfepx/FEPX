@@ -1,0 +1,9 @@
+module fepx_config_mod
+
+  implicit none
+
+  public
+
+  character(len=50) :: version = @FEPX_VERSION@
+
+end module fepx_config_mod

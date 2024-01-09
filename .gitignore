@@ -4,7 +4,6 @@
 *.x
 *~
 *.x.dSYM
-*.cp*
 *.fn*
 *.ky*
 *.pg*
@@ -14,17 +13,22 @@
 *.dvi
 *.info
 *.swp
+fort.75
 
 # Ignore FEPX build files
 /lib/libf95/modules
 /lib/libparallel/modules_serial
 /lib/libparallel/modules_parallel
 /src/build/
+/src/build.sim
 /build/
 /doc/build/
 
 # Ignore FEPX post files
+/tests/*/simulation.sim
 post.*
+rst*.*
+FAILED
 
 # Ignore AppleDouble files and Mac .DS_Store files
 ._*
@@ -69,3 +73,6 @@ docs
 
 # Sphinx files
 __pycache__
+
+doxygen
+

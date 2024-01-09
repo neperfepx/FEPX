@@ -1,3 +1,17 @@
+New in 2.0.0 (09 Jan 2024):
+- Overhaul source code.
+- Overhaul configuration file.
+- Overhaul output, now .sim format (compatible with Neper).
+- Added parallelized multi-point constraints and periodic boundary conditions.
+- Added 2-parameter anisotropic hardening (diagonal + off-diagonal values).
+- Generalize code to take arbitrary domain shapes and boundary conditions.
+- Added ability for 112-type slip in BCC crystals, added ability to specify
+  anisotropic initial slip strengths, improved precipitate strengthening model
+  (Orowan looping).
+- Made various other changes and improvements.
+
+  See documentation for full descriptions.
+
 New in 1.3.0 (02 Feb 2022):
 - Bug fix related to orientation assignment - users should update.
 - Bug fix related to reading mesh version - users should update.
@@ -6,7 +20,7 @@ New in 1.3.0 (02 Feb 2022):
 - Added BCT crystal type with 10 different slip modes. Refer to
   documentation for a full description of new crystal type.
 - Added testing capabilities: See documentation for description.
-- Added model for precipitation based strengthening: See documentation
+- Added model for precipitate based strengthening: See documentation
   for full description of model.
 - Removed fiber averaging routines, migrated to Neper: See Neper
   documentation for description of new usage.

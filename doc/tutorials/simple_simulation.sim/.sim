@@ -1,0 +1,23 @@
+***sim
+ **format
+   1.0
+ **input
+  *msh
+   simulation.msh
+  *cfg
+   simulation.cfg
+ **general
+   0 4008 2453 20 4
+  *orides
+   rodrigues:active
+ **entity node
+  *result
+   1
+   coo
+ **entity elt
+  *result
+   3
+   ori strain stress
+ **step
+   2
+***end

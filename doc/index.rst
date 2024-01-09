@@ -8,10 +8,15 @@ FEPX: Finite Element Polycrystal Plasticity
 
    copying.rst
    introduction.rst
-   input.rst
+   config.rst
+   material.rst
+   loading.rst
    output.rst
-   job.rst
-   examples.rst
+   running.rst
+   crystal.rst
+   fileformat.rst
+   tutorials.rst
+   versions.rst
    develhistory.rst
    gpl.rst
    fdl.rst

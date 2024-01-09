@@ -19,6 +19,8 @@ The precise conditions of the license for FEPX are found in the General Public L
 User Guidelines
 ---------------
 
-If you use FEPX for your own work, please, mention it explicitly in your reports and cite the following publication [DAWSON15]_:
+If you use FEPX for your own work, please, mention it explicitly in your reports (papers, books, talks, etc.) and cite the following papers:
 
-.. [DAWSON15] P.R. Dawson and D.E. Boyce. FEpX – Finite Element Polycrystals: Theory, finite element formulation, numerical implementation and illustrative examples. *arXiv:1504.03296 [cond-mat.mtrl-sci]*, 2015.
+- *R. Quey and M. Kasemer, The Neper/FEPX project: free / open-source polycrystal generation, deformation simulation, and post-processing, IOP Conference Series Materials Science and Engineering, vol. 1249, pp. 012021, 2022*;
+
+- *P.R. Dawson and D.E. Boyce. FEpX – Finite Element Polycrystals: Theory, finite element formulation, numerical implementation and illustrative examples. arXiv:1504.03296 [cond-mat.mtrl-sci], 2015*.
