@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2023, DPLab, ACME Lab.
+! Copyright (C) 1996-2023, DPLab, ACME Lab, CNRS.
 ! See the COPYING file in the top-level directory.
 
 module kinematics_mod

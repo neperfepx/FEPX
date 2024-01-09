@@ -1,5 +1,5 @@
 ! This file is part of the FEPX software package.
-! Copyright (C) 1996-2023, DPLab, ACME Lab.
+! Copyright (C) 1996-2023, DPLab, ACME Lab, CNRS.
 ! See the COPYING file in the top-level directory.
 
 module fepx_mod
@@ -48,7 +48,7 @@ subroutine fepx_header(num_procs, myid)
     write (*, '(a,a)') 'Info   : Version ', version
     write (*, '(a,i0,a)') 'Info   : Running on ', num_procs, ' cores.'
     write (*, '(a)') 'Info   : <https://fepx.info>'
-    write (*, '(a)') 'Info   : Copyright (C) 1996-2023, DPLab, ACME Lab.'
+    write (*, '(a)') 'Info   : Copyright (C) 1996-2023, DPLab, ACME Lab, CNRS.'
     write (*, '(a)') 'Info   : &
         &---------------------------------------------------------------'
     write (*, '(a,i0,a,i0,a,i0,a,i0,a,i2.2)') 'Info   : Start time: ',&

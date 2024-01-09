@@ -1,11 +1,11 @@
 # This file is part of the FEPX software package.
-# Copyright (C) 1996-2023, DPLab, ACME Lab.
+# Copyright (C) 1996-2023, DPLab, ACME Lab, CNRS.
 # See the COPYING file in the top-level directory.
 
 # Top-level CMakeLists.txt for building FEPX
 cmake_minimum_required(VERSION 3.0)
 project(fepx Fortran)
-set(FEPX_VERSION \"2.0.0\")
+set(FEPX_VERSION \"2.0.1-1\")
 
 # Prepare CMake for Fortran and locate MPI package
 enable_language(Fortran)
