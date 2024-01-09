@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Periodic RVE-type Simulation &mdash; FEPX 2.0.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/my_theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/documentation_options.js?v=51b770b3"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Cruciform Specimen Simulation" href="cruciform_specimen_simulation.html" />
+    <link rel="prev" title="Simple RVE-type Simulation" href="simple_rve_simulation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> FEPX
+          </a>
+              <div class="version">
+                2.0.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../features.html">Features</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../copying.html">Conditions of Use</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config.html">Configuration File (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../material.html">Crystal Behavior (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../loading.html">Loading (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../output.html">Simulation Results (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../running.html">Convergence Parameters (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../crystal.html">Crystal Structures</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fileformat.html">File and Directory Formats</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="simple_simulation.html">Simple Simulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="simple_rve_simulation.html">Simple RVE-type Simulation</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Periodic RVE-type Simulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cruciform_specimen_simulation.html">Cruciform Specimen Simulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="overwriting.html">Overwrting Polycrystal Attributes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hpc.html">Submitting FEPX to a Job Scheduling Program</a></li>
+<li class="toctree-l3"><a class="reference internal" href="restart.html">[LEGACY] Restarting a Simulation with Appended Load Steps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="multiaxial_csr.html">[LEGACY] Multiaxial Control with Constant Strain Rate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="multiaxial_clr.html">[LEGACY] Multiaxial Control with Constant Load Rate</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../versions.html">Versions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../develhistory.html">Development History (1990-2020)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../gpl.html">GNU General Public License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fdl.html">GNU Free Documentation License</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../papers.html">Reference Papers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../applications.html">Applications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../downloads.html">Downloads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../community.html">Community</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">FEPX</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Documentation</a> &raquo;</li>
+          <li><a href="../tutorials.html">Tutorials</a> &raquo;</li>
+      <li>Periodic RVE-type Simulation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/doc/tutorials/periodic_rve_simulation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="periodic-rve-type-simulation">
+<span id="periodic-rve-simulation"></span><h1>Periodic RVE-type Simulation<a class="headerlink" href="#periodic-rve-type-simulation" title="Link to this heading"></a></h1>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Read first: <a class="reference internal" href="simple_simulation.html#simple-simulation"><span class="std std-ref">Simple Simulation</span></a></p>
+</div>
+<p>A periodic polycrystal containing 40 grains, generated and meshed by Neper, is used:</p>
+<figure class="align-center">
+<img alt="../../_images/mesh1.png" src="../../_images/mesh1.png" />
+</figure>
+<p>The domain is a unit cube. Length units are assumed to be <strong>mm</strong>, thus, all pressure units assumed to be <strong>MPa</strong> for the simulation (including input parameters).
+An FCC material with <a class="reference internal" href="../material.html#aniso-elasticity"><span class="std std-ref">Anisotropic Elasticity</span></a> and the <a class="reference internal" href="../material.html#base-model"><span class="std std-ref">Base Model</span></a> for plasticity is considered, with the following material parameters:</p>
+<table class="docutils align-center" id="id1">
+<caption><span class="caption-text">Single crystal elastic constants and plasticity parameters.</span><a class="headerlink" href="#id1" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><span class="math notranslate nohighlight">\(C_{11}\)</span> [MPa]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(C_{12}\)</span> [MPa]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(C_{44}\)</span> [MPa]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(m\)</span> [-]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(\dot{\gamma_0}\)</span> [1/s]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(h_0\)</span> [MPa]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(g_0\)</span> [MPa]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(g_s\)</span> [MPa]</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(245.0 \times 10^3\)</span></p></td>
+<td><p><span class="math notranslate nohighlight">\(155.0 \times 10^3\)</span></p></td>
+<td><p><span class="math notranslate nohighlight">\(62.5 \times 10^3\)</span></p></td>
+<td><p>0.05</p></td>
+<td><p>1.0</p></td>
+<td><p>200.0</p></td>
+<td><p>210.0</p></td>
+<td><p>330.0</p></td>
+</tr>
+</tbody>
+</table>
+<p>As the domain is a periodic “(representative) volume element”, the loading is defined in terms of <em>strain rate</em>, <em>target strain</em> and <em>maximal strain increment</em>.  Minimal changes (compared to <a class="reference internal" href="simple_simulation.html#simple-simulation"><span class="std std-ref">Simple Simulation</span></a> and <a class="reference internal" href="#periodic-rve-simulation"><span class="std std-ref">Periodic RVE-type Simulation</span></a>) is made to the <a class="reference internal" href="../config.html#config-file"><span class="std std-ref">Configuration File (simulation.cfg)</span></a> file, as described (and highlighted) below.   However, in the current implementation, all components of the strain rate must be specified, and the shear components must be zero.  Rigid-body motions are fixed automatically.</p>
+<p>The example below shows plane tension-compression of the polycrystal.</p>
+<blockquote>
+<div><ul>
+<li><p><a class="reference download internal" download="" href="../../_downloads/8918ba4282d84992db8ac5b749d2040e/simulation.msh"><code class="xref download docutils literal notranslate"><span class="pre">simulation.msh</span></code></a></p></li>
+<li><p><a class="reference download internal" download="" href="../../_downloads/6f026a8b7dc5e6dad598b125cc978f3d/simulation.cfg"><code class="xref download docutils literal notranslate"><span class="pre">simulation.cfg</span></code></a></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">### FEPX Configuration File</span>
+
+<span class="c1">## Material Parameters</span>
+
+    <span class="n">number_of_phases</span> <span class="mi">1</span>
+
+    <span class="n">phase</span> <span class="mi">1</span>
+    
+      <span class="n">crystal_type</span> <span class="n">BCC</span>
+
+      <span class="n">c11</span> <span class="mf">236.9e3</span>
+      <span class="n">c12</span> <span class="mf">140.6e3</span>
+      <span class="n">c44</span> <span class="mf">116.0e3</span>
+
+      <span class="n">m</span> <span class="mf">0.020</span><span class="n">d0</span>
+      <span class="n">gammadot_0</span> <span class="mf">1.0</span><span class="n">d0</span>
+
+      <span class="n">hard_type</span> <span class="n">isotropic</span>
+      <span class="n">h_0</span> <span class="mf">391.90</span><span class="n">d0</span>
+      <span class="n">g_0</span> <span class="mf">200.0</span><span class="n">d0</span>
+      <span class="n">g_s0</span> <span class="mf">335.0</span><span class="n">d0</span>
+      <span class="n">n</span> <span class="mf">1.0</span><span class="n">d0</span>
+
+<span class="c1">## Boundary Conditions</span>
+
+<span class="hll">    <span class="n">set_bc</span> <span class="n">strainrate</span> <span class="mi">11</span> <span class="mf">1e-2</span> <span class="n">periodic</span>
+</span><span class="hll">    <span class="n">set_bc</span> <span class="n">strainrate</span> <span class="mi">22</span> <span class="mi">0</span> <span class="n">periodic</span>
+</span><span class="hll">    <span class="n">set_bc</span> <span class="n">strainrate</span> <span class="mi">33</span> <span class="o">-</span><span class="mf">1e-2</span> <span class="n">periodic</span>
+</span><span class="hll">    <span class="n">set_bc</span> <span class="n">strainrate</span> <span class="mi">12</span> <span class="mi">0</span> <span class="n">periodic</span>
+</span><span class="hll">    <span class="n">set_bc</span> <span class="n">strainrate</span> <span class="mi">13</span> <span class="mi">0</span> <span class="n">periodic</span>
+</span><span class="hll">    <span class="n">set_bc</span> <span class="n">strainrate</span> <span class="mi">23</span> <span class="mi">0</span> <span class="n">periodic</span>  
+</span>
+<span class="c1">## Deformation History</span>
+
+    <span class="n">number_of_steps</span> <span class="mi">1</span>
+    <span class="n">target_strain11</span> <span class="mf">0.01</span>
+    <span class="n">dstrain</span> <span class="mf">0.001</span>
+    
+<span class="c1">## Printing Results</span>
+
+    <span class="nb">print</span> <span class="n">coo</span>
+    
+    <span class="nb">print</span> <span class="n">disp</span>
+    <span class="nb">print</span> <span class="n">forces</span>
+    
+    <span class="nb">print</span> <span class="n">strain</span>
+    <span class="nb">print</span> <span class="n">strain</span><span class="o">-</span><span class="n">eq</span>
+    <span class="nb">print</span> <span class="n">strain</span><span class="o">-</span><span class="n">el</span>
+    <span class="nb">print</span> <span class="n">strain</span><span class="o">-</span><span class="n">el</span><span class="o">-</span><span class="n">eq</span>
+    <span class="nb">print</span> <span class="n">strain</span><span class="o">-</span><span class="n">pl</span>
+    <span class="nb">print</span> <span class="n">strain</span><span class="o">-</span><span class="n">pl</span><span class="o">-</span><span class="n">eq</span>
+    
+    <span class="nb">print</span> <span class="n">stress</span>
+    <span class="nb">print</span> <span class="n">stress</span><span class="o">-</span><span class="n">eq</span>
+    
+    <span class="nb">print</span> <span class="n">work</span>
+    <span class="nb">print</span> <span class="n">work</span><span class="o">-</span><span class="n">pl</span>
+
+    <span class="nb">print</span> <span class="n">ori</span>
+    
+    <span class="nb">print</span> <span class="n">slip</span>
+    <span class="nb">print</span> <span class="n">sliprate</span>
+    <span class="nb">print</span> <span class="n">crss</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div></blockquote>
+<figure class="align-center" id="id2">
+<img alt="../../_images/pbc_strain11.png" src="../../_images/pbc_strain11.png" />
+<figcaption>
+<p><span class="caption-text">Slove <span class="math notranslate nohighlight">\(y\)</span>-view of the strain field (<span class="math notranslate nohighlight">\(\epsilon_{11}\)</span>) at 1% strain (displacement field is exaggerated 10x for illustrative purposes). The lattice structure represents the underformed state.</span><a class="headerlink" href="#id2" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id3">
+<img alt="../../_images/pbc_strain11_slice.png" src="../../_images/pbc_strain11_slice.png" />
+<figcaption>
+<p><span class="caption-text">View of the strain field (<span class="math notranslate nohighlight">\(\epsilon_{11}\)</span>) in the slice <span class="math notranslate nohighlight">\(y=0.5\)</span> at 1% strain (displacement field is exaggerated 10x for illustrative purposes). The lattice structure represents the underformed state.</span><a class="headerlink" href="#id3" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="simple_rve_simulation.html" class="btn btn-neutral float-left" title="Simple RVE-type Simulation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="cruciform_specimen_simulation.html" class="btn btn-neutral float-right" title="Cruciform Specimen Simulation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright ACME Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

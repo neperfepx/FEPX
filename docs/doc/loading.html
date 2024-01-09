@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loading (simulation.cfg) &mdash; FEPX 2.0.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/my_theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/documentation_options.js?v=51b770b3"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Simulation Results (simulation.cfg)" href="output.html" />
+    <link rel="prev" title="Crystal Behavior (simulation.cfg)" href="material.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> FEPX
+          </a>
+              <div class="version">
+                2.0.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../features.html">Features</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="copying.html">Conditions of Use</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html">Configuration File (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="material.html">Crystal Behavior (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Loading (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#boundary-conditions">Boundary Conditions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#general-boundary-conditions">General Boundary Conditions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#multi-point-constraints-mpcs">Multi-Point Constraints (MPCs)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#rve-type-boundary-conditions">RVE-type Boundary Conditions</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#deformation-history-steps">Deformation History (Steps)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#legacy-multiaxial">[LEGACY] Multiaxial</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="output.html">Simulation Results (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="running.html">Convergence Parameters (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="crystal.html">Crystal Structures</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fileformat.html">File and Directory Formats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="versions.html">Versions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="develhistory.html">Development History (1990-2020)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gpl.html">GNU General Public License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fdl.html">GNU Free Documentation License</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../papers.html">Reference Papers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../applications.html">Applications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../downloads.html">Downloads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community.html">Community</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">FEPX</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Documentation</a> &raquo;</li>
+      <li>Loading (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/doc/loading.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="loading-simulation-cfg">
+<span id="loading"></span><h1>Loading (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)<a class="headerlink" href="#loading-simulation-cfg" title="Link to this heading"></a></h1>
+<section id="boundary-conditions">
+<span id="id1"></span><h2>Boundary Conditions<a class="headerlink" href="#boundary-conditions" title="Link to this heading"></a></h2>
+<p>General boundary conditions can be applied (to general domains) by assiging velocities to nodes or node sets. Multi-point constraints are also available, to couple node velocities.  RVE-type boundary conditions can also by applied, which are based on RVE-type variables, such as a strain rate.</p>
+<section id="general-boundary-conditions">
+<h3>General Boundary Conditions<a class="headerlink" href="#general-boundary-conditions" title="Link to this heading"></a></h3>
+<p>General boundary conditions are velocity conditions applied on specific nodes or node sets defined in the <a class="reference internal" href="fileformat.html#mesh-file"><span class="std std-ref">Mesh File (simulation.msh)</span></a>.
+Any number of conditions can be prescribed as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">set_bc</span> <span class="n">vel</span> <span class="o">&lt;</span><span class="n">nset</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">direction</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">vel</span><span class="o">&gt;</span> <span class="o">...</span>
+<span class="n">set_bc</span> <span class="n">vel</span> <span class="o">&lt;</span><span class="n">nset</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">direction</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">vel</span><span class="o">&gt;</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+<p>where each <code class="xref py py-data docutils literal notranslate"><span class="pre">set_bc</span></code> line defines a velocity boundary condition, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;nset&gt;</span></code> is the label of a node set (alternatively a node id), <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;direction&gt;</span></code> is the direction of the constraint applied to the node set, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;vel&gt;</span></code> is the velocity applied to the node set in the constraint direction.  The options for <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;direction&gt;</span></code> are: <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;x&gt;</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;y&gt;</span></code> or <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;z&gt;</span></code>. Up to three <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;direction&gt;</span></code>/<code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;vel&gt;</span></code> pairs can be defined per-line for a given <code class="xref py py-data docutils literal notranslate"><span class="pre">set_bc</span></code>.</p>
+</section>
+<section id="multi-point-constraints-mpcs">
+<span id="mpcs"></span><h3>Multi-Point Constraints (MPCs)<a class="headerlink" href="#multi-point-constraints-mpcs" title="Link to this heading"></a></h3>
+<p>Multi-point constraints link the degrees of freedom of several nodes by a linear relation between nodal velocities of primary and secondary nodes <a class="footnote-reference brackets" href="#mpc-note" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>:</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[v_{x,y,z}^s=v_{x,y,z}^p+D_{x,y,z}\]</div>
+</div></blockquote>
+<p>where <span class="math notranslate nohighlight">\(v_{x,y,z}^s\)</span> and <span class="math notranslate nohighlight">\(v_{x,y,z}^p\)</span> are the velocity on the primary and secondary nodes, respectively and <span class="math notranslate nohighlight">\(D_{x,y,z}\)</span> the velocity offset.</p>
+<p>The following (and only) type of MPCs, <code class="xref py py-data docutils literal notranslate"><span class="pre">mpc1</span></code>, is such that one or several velocity component(s) of all nodes belonging to a node set are equal:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">set_mpc1</span> <span class="n">vel</span> <span class="o">&lt;</span><span class="n">nset</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">direction</span><span class="o">&gt;</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;nset&gt;</span></code> is the node set and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;d&gt;</span></code> is the direction  (among <code class="xref py py-data docutils literal notranslate"><span class="pre">x</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">y</span></code> and <code class="xref py py-data docutils literal notranslate"><span class="pre">z</span></code>).  Up to three directions can be defined per line for a given <code class="xref py py-data docutils literal notranslate"><span class="pre">set_mpc1</span> <span class="pre">vel</span> <span class="pre">&lt;nset&gt;</span></code>.</p>
+<p>Any number of conditions can be prescribed as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">set_mpc1</span> <span class="n">vel</span> <span class="o">&lt;</span><span class="n">nset</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">direction</span><span class="o">&gt;</span> <span class="o">...</span>
+<span class="n">set_mpc1</span> <span class="n">vel</span> <span class="o">&lt;</span><span class="n">nset</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">direction</span><span class="o">&gt;</span> <span class="o">...</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+<p>MPCs can typically be used to impose that a face should remain planar during a simulation (but not necessarily at the same coordinate).  An example of use is provided in <a class="reference internal" href="tutorials/cruciform_specimen_simulation.html#cruciform-specimen-simulation"><span class="std std-ref">Cruciform Specimen Simulation</span></a>.</p>
+</section>
+<section id="rve-type-boundary-conditions">
+<h3>RVE-type Boundary Conditions<a class="headerlink" href="#rve-type-boundary-conditions" title="Link to this heading"></a></h3>
+<p>RVE-type boundary conditions apply to cubic (or right prisms) domains, for which the loading can typically be defined in terms of (components of the) velocity gradient or strain rate.  They may also be applied to to other domains, such as cylinders, or periodic tessellation.
+For a cubic domain, the faces are named <code class="xref py py-data docutils literal notranslate"><span class="pre">x0</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">y0</span></code> and <code class="xref py py-data docutils literal notranslate"><span class="pre">z0</span></code> at minimum (typically 0) coordinates, and <code class="xref py py-data docutils literal notranslate"><span class="pre">x1</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">y1</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">z1</span></code> at maximum (typically 1) coordinates.  In this section, the minimum-coordinate face is called the <em>reference</em> face, while the maximum-coordinate face is called the <em>loading</em> face.</p>
+<p>To apply strain rates along the sample axes, the input is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">set_bc</span> <span class="n">strainrate</span> <span class="o">&lt;</span><span class="n">component</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">strainrate</span><span class="o">&gt;</span> <span class="p">[</span> <span class="o">&lt;</span><span class="n">method</span><span class="o">&gt;</span> <span class="p">]</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+<p>To apply velocity gradient components (which allows for shear), the input is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">set_bc</span> <span class="n">velgrad</span> <span class="o">&lt;</span><span class="n">component</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">velgrad</span><span class="o">&gt;</span> <span class="p">[</span> <span class="o">&lt;</span><span class="n">method</span><span class="o">&gt;</span> <span class="p">]</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+<p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;component&gt;</span></code> can be <code class="xref py py-data docutils literal notranslate"><span class="pre">11</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">22</span></code> or <code class="xref py py-data docutils literal notranslate"><span class="pre">33</span></code> for <code class="xref py py-data docutils literal notranslate"><span class="pre">strainrate</span></code>, and
+<code class="xref py py-data docutils literal notranslate"><span class="pre">11</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">12</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">13</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">21</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">22</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">23</span></code>,
+<code class="xref py py-data docutils literal notranslate"><span class="pre">31</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">32</span></code> or <code class="xref py py-data docutils literal notranslate"><span class="pre">33</span></code> for <code class="xref py py-data docutils literal notranslate"><span class="pre">velgrad</span></code>.
+The (optional) method argument indicates how to translate the specified velocity gradient or strain rate into actual velocities, on the corresponding faces (other faces are unconstrained).  Options for <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;method&gt;</span></code> are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">minimal</span></code> (the default): zero velocity along the loading direction is applied on the reference face, while prescribed velocity along the loading direction is applied on the loading face.  Other directions are unconstrained.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">grip</span></code>: fully constrained mode, where zero velocity in all directions is applied on the reference face, while prescribed velocity in the loading direction is applied on the loading face, with 0 velocity in other directions.  Note that <code class="xref py py-data docutils literal notranslate"><span class="pre">grip</span></code> boundary conditions make particular sense when the loading face is not expected to change shape (or surface area), like in pure shear; however, applying <code class="xref py py-data docutils literal notranslate"><span class="pre">grip</span></code> boundary conditions in different directions will generally result in conflicting velocity conditions (and an error).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">periodic</span></code>: to apply Periodic Boundary Conditions (PBCs) in the case of a periodic tessellation. To use with <code class="xref py py-data docutils literal notranslate"><span class="pre">set_bc</span> <span class="pre">strainrate</span></code>. Available for triaxial traction-compression loading, i.e. non-zero components can be <code class="xref py py-data docutils literal notranslate"><span class="pre">11</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">22</span></code> or <code class="xref py py-data docutils literal notranslate"><span class="pre">33</span></code>. The shear components <code class="xref py py-data docutils literal notranslate"><span class="pre">12</span></code> (or <code class="xref py py-data docutils literal notranslate"><span class="pre">21</span></code>), <code class="xref py py-data docutils literal notranslate"><span class="pre">23</span></code> (or <code class="xref py py-data docutils literal notranslate"><span class="pre">32</span></code>) and <code class="xref py py-data docutils literal notranslate"><span class="pre">13</span></code> (or <code class="xref py py-data docutils literal notranslate"><span class="pre">31</span></code>) must be specified and equal to <code class="xref py py-data docutils literal notranslate"><span class="pre">0</span></code>. Otherwise explicitly indicated in the simulation, rigid-body motions do not need to be fixed by the user when at least one <code class="xref py py-data docutils literal notranslate"><span class="pre">periodic</span></code> option is specified in <code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>.</p></li>
+</ul>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Several <code class="xref py py-data docutils literal notranslate"><span class="pre">set_bc</span> <span class="pre">vel</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">set_bc</span> <span class="pre">strainrate</span></code> and <code class="xref py py-data docutils literal notranslate"><span class="pre">set_bc</span> <span class="pre">velgrad</span></code> inputs can be combined as long as they do not conflict.  One or several <code class="xref py py-data docutils literal notranslate"><span class="pre">set_bc</span> <span class="pre">vel</span></code> inputs can for example be used to fix the rigid-body motions that may remain as a result of <code class="xref py py-data docutils literal notranslate"><span class="pre">set_bc</span> <span class="pre">velgrad</span></code> or <code class="xref py py-data docutils literal notranslate"><span class="pre">set_bc</span> <span class="pre">strainrate</span></code> boundary conditions.</p>
+</div>
+</section>
+</section>
+<section id="deformation-history-steps">
+<span id="deformation-history"></span><h2>Deformation History (Steps)<a class="headerlink" href="#deformation-history-steps" title="Link to this heading"></a></h2>
+<p>A simulation is divided into a series of <em>steps</em>.  There can be any number of steps, and different types of <em>targets</em> can be specified for the steps; however, the same type must be used for all steps.  (If the number of steps is not defined, it is determined from the number of provided targets.)  The format for specifying steps is as follows:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span> <span class="n">number_of_steps</span> <span class="o">&lt;</span><span class="n">n</span><span class="o">&gt;</span> <span class="p">]</span>
+
+<span class="p">[</span> <span class="n">target_time</span>      <span class="o">&lt;</span><span class="n">time_1</span><span class="o">&gt;</span>   <span class="o">...</span> <span class="o">&lt;</span><span class="n">time_n</span><span class="o">&gt;</span>   <span class="p">]</span>
+<span class="p">[</span> <span class="n">target_strain</span><span class="o">&lt;</span><span class="n">c</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">strain_1</span><span class="o">&gt;</span> <span class="o">...</span> <span class="o">&lt;</span><span class="n">strain_n</span><span class="o">&gt;</span> <span class="p">]</span>
+<span class="p">[</span> <span class="n">target_load</span><span class="o">&lt;</span><span class="n">d</span><span class="o">&gt;</span>   <span class="o">&lt;</span><span class="n">load_1</span><span class="o">&gt;</span>   <span class="o">...</span> <span class="o">&lt;</span><span class="n">load_n</span><span class="o">&gt;</span>   <span class="p">]</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p><code class="xref py py-data docutils literal notranslate"><span class="pre">number_of_steps</span></code> defines the number of steps.
+<code class="xref py py-data docutils literal notranslate"><span class="pre">target_time</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">target_strain</span></code> and <code class="xref py py-data docutils literal notranslate"><span class="pre">target_load</span></code> (mutually exclusive) can be used to define the step targets,
+where <code class="xref py py-data docutils literal notranslate"><span class="pre">time</span></code> is the cumulative time,
+<code class="xref py py-data docutils literal notranslate"><span class="pre">strain</span></code> is the <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;c&gt;</span></code> component of the engineering strain (among <code class="xref py py-data docutils literal notranslate"><span class="pre">11</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">22</span></code> and <code class="xref py py-data docutils literal notranslate"><span class="pre">33</span></code>),
+and
+<code class="xref py py-data docutils literal notranslate"><span class="pre">load</span></code> is the load alond direction <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;d&gt;</span></code> (among <code class="xref py py-data docutils literal notranslate"><span class="pre">1</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">2</span></code> and <code class="xref py py-data docutils literal notranslate"><span class="pre">3</span></code>).
+If the number of steps is undefined as the targets are specified, it is set to the number of target values.</p>
+<p>A step is divided into (time) <em>increments</em>.  There can be any number of increments within a step, and it can be defined from different variables; however, it must be defined using the same variable for all steps. (For conveninence, if the number of provided values for a parameter is smaller than the number of steps, then the last specified value is used for all next steps.)  The format for specifying increments is as follows.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span> <span class="n">number_or_incrs</span> <span class="o">&lt;</span><span class="n">num_incrs_1</span><span class="o">&gt;</span> <span class="o">...</span> <span class="o">&lt;</span><span class="n">num_incrs_n</span><span class="o">&gt;</span> <span class="p">]</span>
+<span class="p">[</span> <span class="n">dtime</span>           <span class="o">&lt;</span><span class="n">dtime_1</span><span class="o">&gt;</span>     <span class="o">...</span> <span class="o">&lt;</span><span class="n">dtime_n</span><span class="o">&gt;</span>     <span class="p">]</span>
+<span class="p">[</span> <span class="n">dtime_min</span>       <span class="o">&lt;</span><span class="n">dtime_min_1</span><span class="o">&gt;</span> <span class="o">...</span> <span class="o">&lt;</span><span class="n">dtime_min_n</span><span class="o">&gt;</span> <span class="p">]</span>
+<span class="p">[</span> <span class="n">dstrain</span>         <span class="o">&lt;</span><span class="n">dstrain_1</span><span class="o">&gt;</span>   <span class="o">...</span> <span class="o">&lt;</span><span class="n">dstrain_n</span><span class="o">&gt;</span>   <span class="p">]</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>All variables are mutually exclusive.
+<code class="xref py py-data docutils literal notranslate"><span class="pre">number_of_incrs</span></code> corresponds to the number of increments,
+<code class="xref py py-data docutils literal notranslate"><span class="pre">dtime</span></code> corresponds to a time increment,
+<code class="xref py py-data docutils literal notranslate"><span class="pre">dtime_min</span></code> corresponds to a minimum time increment (needed by <code class="xref py py-data docutils literal notranslate"><span class="pre">target_load</span></code>),
+and
+<code class="xref py py-data docutils literal notranslate"><span class="pre">dstrain</span></code> corresponds to a strain increment.</p>
+<p>Finally, it is possible to specify whether the results should be printed (or not) at the end of the steps (optional, default <code class="xref py py-data docutils literal notranslate"><span class="pre">1</span></code>):</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span> <span class="n">print_results</span> <span class="o">&lt;</span><span class="n">print_flag_1</span><span class="o">&gt;</span> <span class="o">...</span> <span class="o">&lt;</span><span class="n">print_flag_n</span><span class="o">&gt;</span> <span class="p">]</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="legacy-multiaxial">
+<h2>[LEGACY] Multiaxial<a class="headerlink" href="#legacy-multiaxial" title="Link to this heading"></a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The features described in this section are legacy and will change in a future version.</p>
+</div>
+<p>Multiaxial loading operates on cubic domains, at either a constant engineering strain rate or constant load rate; however, only specific load targets may be prescribed.
+The principal loading directions must be aligned with the coordinate axes of the mesh and the surface face normals should likewise be coincident with the coordinate axis of the mesh. Symmetry boundary conditions (zero normal velocities) are enforced on the three faces of minimal coordinates (<code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;*0&gt;</span></code>), and, in the general case, non-zero normal velocities are applied to the faces of maximal coordinates (<code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;*1&gt;</span></code>). The velocity on the primary control surface is held constant through the simulation (except during a strain rate jump).</p>
+<p>Multiaxial loading with a constant strain rate (CSR) is defined as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">def_control_by</span> <span class="n">triaxial_constant_strain_rate</span>
+<span class="n">number_of_steps</span> <span class="o">&lt;</span><span class="n">num_steps</span><span class="o">&gt;</span>
+<span class="n">target_csr_load</span> <span class="o">&lt;</span><span class="n">load_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_z</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">dt_max</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">dt_min</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">print_flag</span><span class="o">&gt;</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+<p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;num_steps&gt;</span></code> is the number of CSR load steps that are defined in the file after this line, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;load_x&gt;</span></code> is the desired load value to be reached in the <code class="xref py py-data docutils literal notranslate"><span class="pre">x</span></code> direction, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;load_y&gt;</span></code> is the desired load value to be reached in the <code class="xref py py-data docutils literal notranslate"><span class="pre">y</span></code> direction, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;load_z&gt;</span></code> is the desired load value to be reached in the <code class="xref py py-data docutils literal notranslate"><span class="pre">z</span></code> direction, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;dt_max&gt;</span></code> is the maximum time-step value to be used for a given increment, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;dt_min&gt;</span></code> is the minimum time-step value to be used for a given increment, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;print_flag&gt;</span></code> allows for the printing (or not) of specific steps. The options available for <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;print_flag&gt;</span></code> are: <code class="xref py py-data docutils literal notranslate"><span class="pre">print_data</span></code> or <code class="xref py py-data docutils literal notranslate"><span class="pre">suppress_data</span></code>.</p>
+<p>Strain rate jumps are available for this deformation mode and are defined by adding the following input to the block:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">number_of_strain_rate_jumps</span> <span class="o">&lt;</span><span class="n">njumps</span><span class="o">&gt;</span>
+<span class="n">strain_rate_jump</span> <span class="o">&lt;</span><span class="n">target_step</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">new_strain_rate</span><span class="o">&gt;</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+<p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;njumps&gt;</span></code> is the number of strain rate jumps defined in the file after this line, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;target_step&gt;</span></code> defines which <code class="xref py py-data docutils literal notranslate"><span class="pre">target_csr_load</span></code> step is assigned a new strain rate, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;new_strain_rate&gt;</span></code> is the new strain rate to be assigned and has units of [1/s].</p>
+<p>Multiaxial loading with a constant load rate (CLR) is defined as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">def_control_by</span> <span class="n">triaxial_constant_load_rate</span>
+<span class="n">number_of_steps</span> <span class="o">&lt;</span><span class="n">num_steps</span><span class="o">&gt;</span>
+<span class="n">target_clr_load</span> <span class="o">&lt;</span><span class="n">load_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_z</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">target_time_incr</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">print_flag</span><span class="o">&gt;</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+<p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;num_steps&gt;</span></code> is the number of CLR load steps that are defined in the file after this line, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;load_x&gt;</span></code> is the desired load value to be reached in the <code class="xref py py-data docutils literal notranslate"><span class="pre">x</span></code> direction, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;load_y&gt;</span></code> is the desired load value to be reached in the <code class="xref py py-data docutils literal notranslate"><span class="pre">y</span></code> direction, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;load_z&gt;</span></code> is the desired load value to be reached in the <code class="xref py py-data docutils literal notranslate"><span class="pre">z</span></code> direction, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;target_time_incr&gt;</span></code> is the physical time increment to be reached for the given <code class="xref py py-data docutils literal notranslate"><span class="pre">target_clr_load</span></code> steps for a given load rate, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;print_flag&gt;</span></code> allows for the printing (or not) of specific steps. The options available for <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;print_flag&gt;</span></code> are: <code class="xref py py-data docutils literal notranslate"><span class="pre">print_data</span></code> or <code class="xref py py-data docutils literal notranslate"><span class="pre">suppress_data</span></code>.</p>
+<p>Load rate jumps and dwell episodes are available for this deformation mode. A dwell episode maintains the macroscopic loads of the step in which it is defined, but holds the ramp rate at zero for the amount of time defined by <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;dwell_time&gt;</span></code>. These options are defined as follows:</p>
+<ul>
+<li><p>For load rate jumps:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">number_of_load_rate_jumps</span> <span class="o">&lt;</span><span class="n">njumps</span><span class="o">&gt;</span>
+<span class="n">load_rate_jump</span> <span class="o">&lt;</span><span class="n">target_step</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">new_ramp_rate</span><span class="o">&gt;</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+<p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;njumps&gt;</span></code> is the number of load rate jumps defined in the file after this line, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;target_step&gt;</span></code> defines which <code class="xref py py-data docutils literal notranslate"><span class="pre">target_clr_load</span></code> step is assigned a new load rate, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;new_load_rate&gt;</span></code> is the new load rate to be assigned and has units of [force/s].</p>
+</li>
+<li><p>For dwell episodes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">number_of_dwell_episodes</span> <span class="o">&lt;</span><span class="n">nepisodes</span><span class="o">&gt;</span>
+<span class="n">dwell_episode</span> <span class="o">&lt;</span><span class="n">target_step</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">dwell_time</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">target_time_incr</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">print_flag</span><span class="o">&gt;</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+<p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;nepisodes&gt;</span></code> is the number of dwell episodes defined in the file after this line, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;target_step&gt;</span></code> defines which <code class="xref py py-data docutils literal notranslate"><span class="pre">target_clr_load</span></code> step is assigned to dwell, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;dwell_time&gt;</span></code> is the physical amount of time in [s] for a given dwell episode, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;target_time_incr&gt;</span></code> is the physical time increment to be reached for the given dwell episode, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;print_flag&gt;</span></code> allows for the printing (or not) of specific steps. The options available for <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;print_flag&gt;</span></code> are: <code class="xref py py-data docutils literal notranslate"><span class="pre">print_data</span></code> or <code class="xref py py-data docutils literal notranslate"><span class="pre">suppress_data</span></code>.</p>
+</li>
+</ul>
+<p>Multiaxial boundary conditions are generally consistent across modes, however, the input rate type varies depending on the mode. For both modes, the <code class="xref py py-data docutils literal notranslate"><span class="pre">loading_direction</span></code> defines the primary control direction in which the normal velocities are held constant throughout the simulation.</p>
+<p>Multiaxial loading with a constant strain rate (CSR) is defined as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">boundary_conditions</span> <span class="n">triaxial</span>
+<span class="n">loading_direction</span> <span class="o">&lt;</span><span class="n">sample_dir</span><span class="o">&gt;</span>
+<span class="n">strain_rate</span> <span class="o">&lt;</span><span class="n">strain_rate</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;sample_dir&gt;</span></code> is the direction along the positive sample axis in which the sample is loaded, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;strain_rate&gt;</span></code> is the strain rate value in units of [1/s].</p>
+<p>Multiaxial loading with a constant load rate (CLR) is defined as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">boundary_conditions</span> <span class="n">triaxial</span>
+<span class="n">loading_direction</span> <span class="o">&lt;</span><span class="n">sample_dir</span><span class="o">&gt;</span>
+<span class="n">load_rate</span> <span class="o">&lt;</span><span class="n">load_rate</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;sample_dir&gt;</span></code> is the direction along the positive sample axis in which the sample is loaded, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;load_rate&gt;</span></code> is the loading rate value in units of [force/s].</p>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="mpc-note" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">1</a><span class="fn-bracket">]</span></span>
+<p>MPCs are implemented by eliminating degrees of freedom between coupled nodes.</p>
+</aside>
+</aside>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="material.html" class="btn btn-neutral float-left" title="Crystal Behavior (simulation.cfg)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="output.html" class="btn btn-neutral float-right" title="Simulation Results (simulation.cfg)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright ACME Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

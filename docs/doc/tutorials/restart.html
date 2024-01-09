@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>[LEGACY] Restarting a Simulation with Appended Load Steps &mdash; FEPX 2.0.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/my_theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/documentation_options.js?v=51b770b3"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="[LEGACY] Multiaxial Control with Constant Strain Rate" href="multiaxial_csr.html" />
+    <link rel="prev" title="Submitting FEPX to a Job Scheduling Program" href="hpc.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> FEPX
+          </a>
+              <div class="version">
+                2.0.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../features.html">Features</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../copying.html">Conditions of Use</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config.html">Configuration File (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../material.html">Crystal Behavior (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../loading.html">Loading (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../output.html">Simulation Results (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../running.html">Convergence Parameters (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../crystal.html">Crystal Structures</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fileformat.html">File and Directory Formats</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="simple_simulation.html">Simple Simulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="simple_rve_simulation.html">Simple RVE-type Simulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="periodic_rve_simulation.html">Periodic RVE-type Simulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cruciform_specimen_simulation.html">Cruciform Specimen Simulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="overwriting.html">Overwrting Polycrystal Attributes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hpc.html">Submitting FEPX to a Job Scheduling Program</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">[LEGACY] Restarting a Simulation with Appended Load Steps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="multiaxial_csr.html">[LEGACY] Multiaxial Control with Constant Strain Rate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="multiaxial_clr.html">[LEGACY] Multiaxial Control with Constant Load Rate</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../versions.html">Versions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../develhistory.html">Development History (1990-2020)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../gpl.html">GNU General Public License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fdl.html">GNU Free Documentation License</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../papers.html">Reference Papers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../applications.html">Applications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../downloads.html">Downloads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../community.html">Community</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">FEPX</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Documentation</a> &raquo;</li>
+          <li><a href="../tutorials.html">Tutorials</a> &raquo;</li>
+      <li>[LEGACY] Restarting a Simulation with Appended Load Steps</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/doc/tutorials/restart.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="legacy-restarting-a-simulation-with-appended-load-steps">
+<span id="restart-tutorial"></span><h1>[LEGACY] Restarting a Simulation with Appended Load Steps<a class="headerlink" href="#legacy-restarting-a-simulation-with-appended-load-steps" title="Link to this heading"></a></h1>
+<p>An example use case for the restart capabilities are to append additional loading steps to a completed simulation. This example covers the cyclic triaxial deformation of an FCC polycrystal at a constant strain rate. Each restart simulation adds an addition load-unload cycle. Loads are applied normal to the surface, maintaining proportional macroscopic load ratios of <span class="math notranslate nohighlight">\(0\)</span>:<span class="math notranslate nohighlight">\(0\)</span>:<span class="math notranslate nohighlight">\(1\)</span> for the <span class="math notranslate nohighlight">\(x\)</span>:<span class="math notranslate nohighlight">\(y\)</span>:<span class="math notranslate nohighlight">\(z\)</span> directions, respectively. Load tolerance options are prescribed and cyclic hardening is activated. The primary loading direction is set to be in the <span class="math notranslate nohighlight">\(z\)</span> direction. Elemental equivalent plastic deformation rate, slip system shears, slip system shear rates, nodal coordinates, and restart files are output. Restart files are only printed on the first cycle. Material parameters are those for a AL6XN steel and are provided in the tables below. Illustrations of the results are provided in the figures below.</p>
+<p>The included shell script will run the initial simulation in <code class="file docutils literal notranslate"><span class="pre">tutorials/restart/cycle1</span></code> which runs 2 load steps (a single load-unload cycle) and prints the files necessary to restart the simulation from the final state (using print option <code class="xref py py-data docutils literal notranslate"><span class="pre">print</span> <span class="pre">restart</span></code>). After successful completion of the first cycle, the mesh file and restart files are copied into the secondary directory (<code class="file docutils literal notranslate"><span class="pre">tutorials/restart/cycle2</span></code>) and the simulation is performed again for another 2 load steps (a second load-unload cycle). The configuration file for the second cycle (<code class="file docutils literal notranslate"><span class="pre">simulation_cycle2.config</span></code>) contains the following input to allow for simulating additional load steps to those already completed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">restart</span> <span class="n">on</span>
+</pre></div>
+</div>
+<p>along with the additional load steps (as described in the <a class="reference internal" href="../loading.html#deformation-history"><span class="std std-ref">Deformation History</span></a> section). The restarted simulation will continue with the load steps as defined in <code class="file docutils literal notranslate"><span class="pre">simulation_cycle2.config</span></code>. Restart control information will print to the console upon the execution of the second cycle to briefly assess the state of the sample when the simulation is restarted. Material parameters are defined as:</p>
+<table class="docutils align-center" id="id1">
+<caption><span class="caption-text">Single crystal elastic constants.</span><a class="headerlink" href="#id1" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Phase</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(C_{11}\)</span> [MPa]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(C_{12}\)</span> [MPa]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(C_{44}\)</span> [MPa]</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\gamma\)</span></p></td>
+<td><p>FCC</p></td>
+<td><p><span class="math notranslate nohighlight">\(204.6 \times 10^3\)</span></p></td>
+<td><p><span class="math notranslate nohighlight">\(137.7 \times 10^3\)</span></p></td>
+<td><p><span class="math notranslate nohighlight">\(126.2 \times 10^3\)</span></p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-center" id="id2">
+<caption><span class="caption-text">Initial slip system strengths and other plasticity parameters.</span><a class="headerlink" href="#id2" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Phase</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(m\)</span> [-]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(\dot{\gamma_{0}}\)</span> [1/s]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(h_{0}\)</span> [MPa]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(g_{0}\)</span> [MPa]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(g_{s0}\)</span> [MPa]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(n\)</span> [-]</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\alpha\)</span></p></td>
+<td><p>0.02</p></td>
+<td><p>1.0</p></td>
+<td><p>375.0</p></td>
+<td><p>160.0</p></td>
+<td><p>1000.0</p></td>
+<td><p>1.0</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-center" id="id3">
+<caption><span class="caption-text">Cyclic hardening parameters.</span><a class="headerlink" href="#id3" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Phase</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(a\)</span> [-]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(c\)</span> [-]</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\alpha\)</span></p></td>
+<td><p>0.05</p></td>
+<td><p>3.50</p></td>
+</tr>
+</tbody>
+</table>
+<figure class="align-center" id="id4">
+<a class="reference internal image-reference" href="../../_images/4_all.png"><img alt="../../_images/4_all.png" src="../../_images/4_all.png" style="width: 75%;" /></a>
+<figcaption>
+<p><span class="caption-text">Sample after the second cycle is completed, (left) colored by accumulated slip shear on the <span class="math notranslate nohighlight">\((1 \bar 1 1)[0 1 1]\)</span> system and (right) colored by accumulated slip shear on the <span class="math notranslate nohighlight">\((1 \bar 1 1)[1 0 \bar 1]\)</span> system.</span><a class="headerlink" href="#id4" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="hpc.html" class="btn btn-neutral float-left" title="Submitting FEPX to a Job Scheduling Program" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="multiaxial_csr.html" class="btn btn-neutral float-right" title="[LEGACY] Multiaxial Control with Constant Strain Rate" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright ACME Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

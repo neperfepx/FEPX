@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Documentation &mdash; FEPX 1.3.0 documentation</title>
+  <title>Documentation &mdash; FEPX 2.0.0 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/my_theme.css" type="text/css" />
@@ -12,10 +12,9 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/doctools.js"></script>
+        <script src="../_static/documentation_options.js?v=51b770b3"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -31,7 +30,7 @@
             <a href="../index.html" class="icon icon-home"> FEPX
           </a>
               <div class="version">
-                1.3.0
+                2.0.0
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
@@ -46,16 +45,20 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Documentation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="copying.html">Conditions of Use</a></li>
 <li class="toctree-l2"><a class="reference internal" href="introduction.html">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="input.html">Simulation Input</a></li>
-<li class="toctree-l2"><a class="reference internal" href="output.html">Simulation Output</a></li>
-<li class="toctree-l2"><a class="reference internal" href="job.html">Running a Simulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html">Example Simulations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html">Configuration File (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="material.html">Crystal Behavior (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loading.html">Loading (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="output.html">Simulation Results (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="running.html">Convergence Parameters (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="crystal.html">Crystal Structures</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fileformat.html">File and Directory Formats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="versions.html">Versions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="develhistory.html">Development History (1990-2020)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="gpl.html">GNU General Public License</a></li>
 <li class="toctree-l2"><a class="reference internal" href="fdl.html">GNU Free Documentation License</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Example Simulations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../papers.html">Reference Papers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../applications.html">Applications</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../downloads.html">Downloads</a></li>
@@ -87,7 +90,7 @@
            <div itemprop="articleBody">
              
   <section id="documentation">
-<h1>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h1>
+<h1>Documentation<a class="headerlink" href="#documentation" title="Link to this heading"></a></h1>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="copying.html">Conditions of Use</a><ul>
@@ -105,32 +108,63 @@
 <li class="toctree-l2"><a class="reference internal" href="introduction.html#development-history">Development History</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="input.html">Simulation Input</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="input.html#the-configuration-file-simulation-config">The Configuration File (<code class="file docutils literal notranslate"><span class="pre">simulation.config</span></code>)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="input.html#the-mesh-file-simulation-msh">The Mesh File (<code class="file docutils literal notranslate"><span class="pre">simulation.msh</span></code>)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="input.html#references">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration File (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="config.html#general-structure">General Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html#special-commands">Special Commands</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="output.html">Simulation Output</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="output.html#nodal-output">Nodal Output</a></li>
-<li class="toctree-l2"><a class="reference internal" href="output.html#elemental-output">Elemental Output</a></li>
-<li class="toctree-l2"><a class="reference internal" href="output.html#restart-output">Restart Output</a></li>
-<li class="toctree-l2"><a class="reference internal" href="output.html#miscellaneous-output">Miscellaneous Output</a></li>
+<li class="toctree-l1"><a class="reference internal" href="material.html">Crystal Behavior (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="material.html#anisotropic-elasticity">Anisotropic Elasticity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="material.html#crystal-plasticity">Crystal Plasticity</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="job.html">Running a Simulation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="job.html#submitting-fepx-to-a-job-scheduling-program">Submitting FEPX to a Job Scheduling Program</a></li>
-<li class="toctree-l2"><a class="reference internal" href="job.html#restarting-a-simulation">Restarting a Simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="loading.html">Loading (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="loading.html#boundary-conditions">Boundary Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loading.html#deformation-history-steps">Deformation History (Steps)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loading.html#legacy-multiaxial">[LEGACY] Multiaxial</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Example Simulations</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#uniaxial-control-examples-1-uniaxial">Uniaxial Control (<code class="file docutils literal notranslate"><span class="pre">examples/1_uniaxial</span></code>)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#multiaxial-control-with-constant-strain-rate-examples-2-triaxcsr">Multiaxial Control with Constant Strain Rate (<code class="file docutils literal notranslate"><span class="pre">examples/2_triaxCSR</span></code>)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#multiaxial-control-with-constant-load-rate-examples-3-triaxclr">Multiaxial Control with Constant Load Rate (<code class="file docutils literal notranslate"><span class="pre">examples/3_triaxCLR</span></code>)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#restarting-a-simulation-with-appended-load-steps-examples-4-restart">Restarting a Simulation with Appended Load Steps (<code class="file docutils literal notranslate"><span class="pre">examples/4_restart</span></code>)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#running-a-simulation-with-external-definition-files-examples-5-external">Running a Simulation with External Definition Files (<code class="file docutils literal notranslate"><span class="pre">examples/5_external</span></code>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="output.html">Simulation Results (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="output.html#nodal-results">Nodal Results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="output.html#elemental-results">Elemental Results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="output.html#surface-results">Surface Results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="output.html#advanced-results">Advanced Results</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="running.html">Convergence Parameters (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="running.html#velocity-convergence">Velocity Convergence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="running.html#conjugate-gradient-convergence">Conjugate Gradient Convergence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="running.html#material-state-convergence">Material State Convergence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="running.html#general-convergence">General Convergence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="running.html#termination">Termination</a></li>
+<li class="toctree-l2"><a class="reference internal" href="running.html#other-parameters">Other Parameters</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="crystal.html">Crystal Structures</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="crystal.html#slip-systems">Slip Systems</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="fileformat.html">File and Directory Formats</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="fileformat.html#simulation-directory-sim">Simulation Directory (<code class="file docutils literal notranslate"><span class="pre">.sim</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fileformat.html#mesh-file-simulation-msh">Mesh File (<code class="file docutils literal notranslate"><span class="pre">simulation.msh</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fileformat.html#orientation-file-simulation-ori">Orientation File (<code class="file docutils literal notranslate"><span class="pre">simulation.ori</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fileformat.html#phase-file-simulation-phase">Phase File (<code class="file docutils literal notranslate"><span class="pre">simulation.phase</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fileformat.html#restart-files-rst-n">Restart Files (<code class="file docutils literal notranslate"><span class="pre">rst&lt;N&gt;.*</span></code>)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/simple_simulation.html">Simple Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/simple_rve_simulation.html">Simple RVE-type Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/periodic_rve_simulation.html">Periodic RVE-type Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/cruciform_specimen_simulation.html">Cruciform Specimen Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/overwriting.html">Overwrting Polycrystal Attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/hpc.html">Submitting FEPX to a Job Scheduling Program</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/restart.html">[LEGACY] Restarting a Simulation with Appended Load Steps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/multiaxial_csr.html">[LEGACY] Multiaxial Control with Constant Strain Rate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/multiaxial_clr.html">[LEGACY] Multiaxial Control with Constant Load Rate</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="versions.html">Versions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="develhistory.html">Development History (1990-2020)</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="develhistory.html#milestones-in-the-development-of-fepx">Milestones in the Development of FEpX</a></li>
 <li class="toctree-l2"><a class="reference internal" href="develhistory.html#earlier-development-leading-to-the-present-version">Earlier Development Leading to the Present Version</a></li>

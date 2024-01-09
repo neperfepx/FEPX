@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>File and Directory Formats &mdash; FEPX 2.0.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/my_theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/documentation_options.js?v=51b770b3"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Tutorials" href="tutorials.html" />
+    <link rel="prev" title="Crystal Structures" href="crystal.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> FEPX
+          </a>
+              <div class="version">
+                2.0.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../features.html">Features</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="copying.html">Conditions of Use</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html">Configuration File (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="material.html">Crystal Behavior (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loading.html">Loading (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="output.html">Simulation Results (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="running.html">Convergence Parameters (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="crystal.html">Crystal Structures</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">File and Directory Formats</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#simulation-directory-sim">Simulation Directory (<code class="file docutils literal notranslate"><span class="pre">.sim</span></code>)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mesh-file-simulation-msh">Mesh File (<code class="file docutils literal notranslate"><span class="pre">simulation.msh</span></code>)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#orientation-file-simulation-ori">Orientation File (<code class="file docutils literal notranslate"><span class="pre">simulation.ori</span></code>)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#phase-file-simulation-phase">Phase File (<code class="file docutils literal notranslate"><span class="pre">simulation.phase</span></code>)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#restart-files-rst-n">Restart Files (<code class="file docutils literal notranslate"><span class="pre">rst&lt;N&gt;.*</span></code>)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#uniaxial-restart-control">Uniaxial Restart Control</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#multiaxial-csr-restart-control">Multiaxial CSR Restart Control</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#multiaxial-clr-restart-control">Multiaxial CLR Restart Control</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#restart-field-data">Restart Field Data</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="versions.html">Versions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="develhistory.html">Development History (1990-2020)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gpl.html">GNU General Public License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fdl.html">GNU Free Documentation License</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../papers.html">Reference Papers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../applications.html">Applications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../downloads.html">Downloads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community.html">Community</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">FEPX</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Documentation</a> &raquo;</li>
+      <li>File and Directory Formats</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/doc/fileformat.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="file-and-directory-formats">
+<span id="file-and-directory-formats-link"></span><h1>File and Directory Formats<a class="headerlink" href="#file-and-directory-formats" title="Link to this heading"></a></h1>
+<section id="simulation-directory-sim">
+<span id="simulation-directory"></span><h2>Simulation Directory (<code class="file docutils literal notranslate"><span class="pre">.sim</span></code>)<a class="headerlink" href="#simulation-directory-sim" title="Link to this heading"></a></h2>
+<p>Here are details on the <code class="file docutils literal notranslate"><span class="pre">.sim</span></code> simulation directory (the <code class="file docutils literal notranslate"><span class="pre">.sim</span></code> extension is entirely optional).  The directory contains <em>inputs</em> and <em>results</em> on the mesh <em>nodes</em> and <em>elements</em>, over a certain number of <em>simulation steps</em>. It is structured as follows:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">simulation.sim</span>
+<span class="go">|-- inputs</span>
+<span class="go">|   |-- job.sh</span>
+<span class="go">|   |-- simulation.cfg</span>
+<span class="go">|   |-- simulation.msh</span>
+<span class="go">|   `-- simulation.tess</span>
+<span class="go">|-- results</span>
+<span class="go">|   |-- elts</span>
+<span class="go">|   |   |-- ori</span>
+<span class="go">|   |   |   |-- ori.step0</span>
+<span class="go">|   |   |   |-- ori.step1</span>
+<span class="go">|   |   |   `-- ...</span>
+<span class="go">|   |   `-- ...</span>
+<span class="go">|   `-- nodes</span>
+<span class="go">|       |-- coo</span>
+<span class="go">|       |   |-- coo.step0</span>
+<span class="go">|       |   |-- coo.step1</span>
+<span class="go">|       |   `-- ...</span>
+<span class="go">|       `-- ...</span>
+<span class="go">`-- [restart]</span>
+</pre></div>
+</div>
+<p>where</p>
+<ul class="simple">
+<li><p><code class="file docutils literal notranslate"><span class="pre">inputs</span></code> is an input file directory containing the Neper tessellation file (<code class="file docutils literal notranslate"><span class="pre">simulation.tess</span></code>, if found in the input directory), the mesh file (<code class="file docutils literal notranslate"><span class="pre">simulation.msh</span></code>), the FEPX configuration file (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>), and all script files (<code class="file docutils literal notranslate"><span class="pre">*.sh</span></code>, likely including a job submission file).</p></li>
+<li><p><code class="file docutils literal notranslate"><span class="pre">results</span></code> is the result directory.</p></li>
+<li><p><code class="file docutils literal notranslate"><span class="pre">results/nodes</span></code> is the node result directory.</p></li>
+<li><p><code class="file docutils literal notranslate"><span class="pre">results/elts</span></code> is the element result directory.</p></li>
+<li><p><code class="file docutils literal notranslate"><span class="pre">results/*/&lt;res&gt;</span></code> is a directory for result <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;res&gt;</span></code> of an entity (nodes or elements). The directory contains one file per simulation step, named <code class="file docutils literal notranslate"><span class="pre">&lt;res&gt;.step&lt;nb&gt;</span></code>, where <code class="xref py py-data docutils literal notranslate"><span class="pre">nb</span></code> is the step number, ranging from 0 (for the initial state) to the total number of steps.</p></li>
+<li><p><code class="file docutils literal notranslate"><span class="pre">restart</span></code> is the restart directory.  It is present only if <code class="xref py py-data docutils literal notranslate"><span class="pre">restart</span> <span class="pre">on</span></code> was used.</p></li>
+</ul>
+<p>Results can have integer values, real values, vectorial values or tensorial values. In the result files, values for the different entities (nodes or elements) are written on successive lines, with components written on successive columns (space delimited).  The components are written as follows:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>vector, <span class="math notranslate nohighlight">\(v\)</span>: <span class="math notranslate nohighlight">\(v_1\)</span>, <span class="math notranslate nohighlight">\(v_2\)</span>, <span class="math notranslate nohighlight">\(v_3\)</span>;</p></li>
+<li><p>symmetrical tensor, <span class="math notranslate nohighlight">\(t\)</span>: <span class="math notranslate nohighlight">\(t_{11}\)</span>, <span class="math notranslate nohighlight">\(t_{22}\)</span>, <span class="math notranslate nohighlight">\(t_{33}\)</span>, <span class="math notranslate nohighlight">\(t_{23}\)</span>, <span class="math notranslate nohighlight">\(t_{31}\)</span>, <span class="math notranslate nohighlight">\(t_{12}\)</span> (Voigt notation);</p></li>
+<li><p>skew-symmetrical tensor, <span class="math notranslate nohighlight">\(t\)</span>: <span class="math notranslate nohighlight">\(t_{12}\)</span>, <span class="math notranslate nohighlight">\(t_{13}\)</span>, <span class="math notranslate nohighlight">\(t_{23}\)</span>;</p></li>
+<li><p>non-symmetrical tensor, <span class="math notranslate nohighlight">\(t\)</span>:  <span class="math notranslate nohighlight">\(t_{11}\)</span>, <span class="math notranslate nohighlight">\(t_{12}\)</span>, <span class="math notranslate nohighlight">\(t_{13}\)</span>, <span class="math notranslate nohighlight">\(t_{21}\)</span>, <span class="math notranslate nohighlight">\(t_{22}\)</span>, <span class="math notranslate nohighlight">\(t_{23}\)</span>, <span class="math notranslate nohighlight">\(t_{31}\)</span>, <span class="math notranslate nohighlight">\(t_{32}\)</span>, <span class="math notranslate nohighlight">\(t_{33}\)</span>.</p></li>
+</ul>
+</div></blockquote>
+<p>The directory also contains a hidden file, <code class="file docutils literal notranslate"><span class="pre">.sim</span></code>, containing information on the simulation and the content of the simulation directory.  This file is only for internal use and is formatted as follows:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">***sim</span>
+<span class="go"> **format</span>
+<span class="go">   &lt;format&gt;</span>
+<span class="go"> **input</span>
+<span class="go">  *tess</span>
+<span class="go">   &lt;tess_file&gt;</span>
+<span class="go">  *tesr</span>
+<span class="go">   &lt;tesr_file&gt;</span>
+<span class="go">  *msh</span>
+<span class="go">   &lt;msh_file&gt;</span>
+<span class="go">  *ori</span>
+<span class="go">   &lt;ori_file&gt;</span>
+<span class="go">  *bcs</span>
+<span class="go">   &lt;bcs_file&gt;</span>
+<span class="go">  *phase</span>
+<span class="go">   &lt;phase_file&gt;</span>
+<span class="go">  *config</span>
+<span class="go">   &lt;config_file&gt;</span>
+<span class="go"> **general</span>
+<span class="go">   &lt;cell_nb&gt; &lt;node_nb&gt; &lt;elt_nb&gt; &lt;elset_nb&gt; &lt;part_nb&gt;</span>
+<span class="go">  *orides</span>
+<span class="go">   &lt;orientation_descriptor&gt;</span>
+<span class="go"> **entity &lt;entity&gt;                                     \</span>
+<span class="go">  *member                                              |</span>
+<span class="go">   &lt;member_nb&gt;                                         |</span>
+<span class="go">   &lt;member1&gt; &lt;member2&gt; ...                             | section repeated for each entity</span>
+<span class="go">  *result                                              |</span>
+<span class="go">   &lt;result_nb&gt;                                         |</span>
+<span class="go">   &lt;result1&gt; &lt;result2&gt; ...                             /</span>
+<span class="go"> **orispace</span>
+<span class="go">  *rodrigues &lt;space_file&gt;</span>
+<span class="go"> **step</span>
+<span class="go">   &lt;step_nb&gt;</span>
+<span class="go">***end</span>
+</pre></div>
+</div>
+</section>
+<section id="mesh-file-simulation-msh">
+<span id="mesh-file"></span><h2>Mesh File (<code class="file docutils literal notranslate"><span class="pre">simulation.msh</span></code>)<a class="headerlink" href="#mesh-file-simulation-msh" title="Link to this heading"></a></h2>
+<p>Here are details on the native <code class="file docutils literal notranslate"><span class="pre">.msh</span></code> (adapted from Gmsh’s msh format version <code class="xref py py-data docutils literal notranslate"><span class="pre">2.2</span></code>).  Developers should note that read and write functions are available as <cite>neut_msh_fscanf</cite> and <cite>neut_msh_fprintf</cite>, defined in directories <code class="file docutils literal notranslate"><span class="pre">neut/neut_msh/neut_msh_fscanf</span></code> and <code class="file docutils literal notranslate"><span class="pre">neut/neut_msh/neut_msh_fprintf</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span>MeshFormat
+<span class="go">2.2 &lt;file_type&gt; &lt;data_size&gt;</span>
+<span class="gp">$</span>EndMeshFormat
+<span class="gp">$</span>MeshVersion
+<span class="go">&lt;mesh_version&gt;</span>
+<span class="gp">$</span>EndMeshVersion
+<span class="gp">$</span>Domain
+<span class="go">&lt;domain&gt;</span>
+<span class="gp">$</span>EndDomain
+<span class="gp">$</span>Topology
+<span class="go">&lt;reconstruct_topology&gt;</span>
+<span class="gp">$</span>EndTopology
+<span class="gp">$</span>Nodes
+<span class="go">&lt;number_of_nodes&gt;</span>
+<span class="go">&lt;node_id&gt; &lt;node_x&gt; &lt;node_y&gt; &lt;node_z&gt;</span>
+<span class="go">...</span>
+<span class="gp">$</span>EndNodes
+<span class="gp">$</span>Elements
+<span class="go">&lt;number_of_elements&gt;</span>
+<span class="go">&lt;elt_id&gt; &lt;elt_type&gt; &lt;number_of_tags&gt; &lt;tag1&gt; ... &lt;elt_id_node1&gt; ...</span>
+<span class="go">...</span>
+<span class="gp">$</span>EndElements
+<span class="gp">$</span>Periodicity
+<span class="go">&lt;number_of_periodicities&gt;</span>
+<span class="go">&lt;secondary_node_id&gt; &lt;primary_node_id&gt; &lt;per_vect_x&gt; &lt;per_vect_y&gt; &lt;per_vect_z&gt;</span>
+<span class="go">...</span>
+<span class="gp">$</span>EndPeriodicity
+<span class="gp">$</span>NSets
+<span class="go">&lt;number_of_nsets&gt;</span>
+<span class="go">&lt;nset1_label&gt;</span>
+<span class="go">&lt;nset_node_nb&gt;</span>
+<span class="go">&lt;nset_node1&gt;</span>
+<span class="go">&lt;nset_node2&gt;</span>
+<span class="go">...</span>
+<span class="go">&lt;nset2_label&gt;</span>
+<span class="go">...</span>
+<span class="gp">$</span>EndNSets
+<span class="gp">$</span>Fasets
+<span class="go">&lt;number_of_fasets&gt;</span>
+<span class="go">&lt;faset1_label&gt;</span>
+<span class="go">&lt;faset_elt_nb&gt;</span>
+<span class="go">&lt;faset_elt_id&gt; &lt;faset_elt_id_node1&gt; ...</span>
+<span class="go">...</span>
+<span class="go">&lt;faset2_label&gt;</span>
+<span class="go">...</span>
+<span class="gp">$</span>EndFasets
+<span class="gp">$</span>NodePartitions
+<span class="go">&lt;number_of_nodes&gt;</span>
+<span class="go">&lt;node_id&gt; &lt;node_partition&gt;</span>
+<span class="go">...</span>
+<span class="gp">$</span>EndNodePartitions
+<span class="gp">$</span>PhysicalNames
+<span class="go">&lt;number_of_physical_names&gt;</span>
+<span class="go">&lt;physical_dimension&gt; &lt;physical_id&gt; &lt;physical_name&gt;</span>
+<span class="go">...</span>
+<span class="gp">$</span>EndPhysicalNames
+<span class="gp">$</span>ElsetOrientations
+<span class="go">&lt;number_of_elsets&gt; &lt;orientation_descriptor&gt;</span>
+<span class="go">&lt;elset_id&gt; &lt;ori_des1&gt; ...</span>
+<span class="go">...</span>
+<span class="gp">$</span>EndOrientations
+<span class="gp">$</span>ElsetCrySym
+<span class="go">&lt;crysym&gt;</span>
+<span class="gp">$</span>EndElsetCrySym
+<span class="gp">$</span>ElementOrientations
+<span class="go">&lt;number_of_elements&gt; &lt;orientation_descriptor&gt;</span>
+<span class="go">&lt;element_id&gt; ori_des1&gt; ...</span>
+<span class="go">...</span>
+<span class="gp">$</span>EndElementOrientations
+<span class="gp">$</span>Groups
+<span class="go">&lt;group_entity&gt;</span>
+<span class="go">&lt;number_of_group_entities&gt;</span>
+<span class="go">&lt;entity_id group&gt;</span>
+<span class="go">...</span>
+<span class="gp">$</span>EndGroups
+</pre></div>
+</div>
+<p>where</p>
+<ul class="simple">
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$MeshFormat</span></code> denotes the beginning of a mesh format field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;file_type&gt;</span></code> is equal to <code class="xref py py-data docutils literal notranslate"><span class="pre">0</span></code> for an ASCII file and <code class="xref py py-data docutils literal notranslate"><span class="pre">1</span></code> for a binary file.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;data_size&gt;</span></code> is an integer equal to the size of the floating point numbers used in the file (= <code class="xref py py-data docutils literal notranslate"><span class="pre">sizeof</span> <span class="pre">(double)</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$EndMeshFormat</span></code> denotes the end of a mesh format field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$MeshVersion</span></code> denotes the beginning of a mesh version field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;mesh_version&gt;</span></code> is the mesh file version (currently <code class="xref py py-data docutils literal notranslate"><span class="pre">2.2.3</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$EndMeshVersion</span></code> denotes the end of a mesh version field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$Domain</span></code> denotes the beginning of an optional domain field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;domain&gt;</span></code> is the domain.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$EndDomain</span></code> denotes the end of an optional domain field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$Topology</span></code> denotes the beginning of an optional topology field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;reconstruct_topology&gt;</span></code> is a boolean indicating whether the topology is to be reconstructed upon parsing or not (use <code class="xref py py-data docutils literal notranslate"><span class="pre">0</span></code> to solve parsing issues).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$EndTopology</span></code> denotes the end of an optional topology field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$Nodes</span></code> denotes the beginning of a node field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;number_of_nodes&gt;</span></code> is the number of nodes.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;node_id&gt;</span></code> is the identifier of a node and ranges from <code class="xref py py-data docutils literal notranslate"><span class="pre">1</span></code> to <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;number_of_nodes&gt;</span></code>.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;node_x&gt;</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;node_y&gt;</span></code> and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;node_z&gt;</span></code> are the three coordinates of a node (real numbers).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$EndNodes</span></code> denotes the end of a node field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$Elements</span></code> denotes the beginning of an element field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;number_of_elements&gt;</span></code> is the number of elements.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;elt_type&gt;</span></code> is an integer specifying the type of elements: <code class="xref py py-data docutils literal notranslate"><span class="pre">15</span></code> for a 0D element, <code class="xref py py-data docutils literal notranslate"><span class="pre">1</span></code> for a 1st-order 1D element (2 nodes), <code class="xref py py-data docutils literal notranslate"><span class="pre">8</span></code> for a 2nd-order 1D element (3 nodes), <code class="xref py py-data docutils literal notranslate"><span class="pre">2</span></code> for a 1st-order triangular element (3 nodes), <code class="xref py py-data docutils literal notranslate"><span class="pre">3</span></code> for a 1st-order quadrangular element (4 nodes), <code class="xref py py-data docutils literal notranslate"><span class="pre">9</span></code> for a 2nd-order triangular element (6 nodes), <code class="xref py py-data docutils literal notranslate"><span class="pre">16</span></code> for a 2nd-order quadrangular element (8 nodes), <code class="xref py py-data docutils literal notranslate"><span class="pre">10</span></code> for a 2nd-order quadrangular element (9 nodes), <code class="xref py py-data docutils literal notranslate"><span class="pre">4</span></code> for a 1st-order tetrahedral element (4 nodes), <code class="xref py py-data docutils literal notranslate"><span class="pre">5</span></code> for a 1st-order hexahedral element (8 nodes), <code class="xref py py-data docutils literal notranslate"><span class="pre">11</span></code> for a 2nd-order tetrahedral element (10 nodes), <code class="xref py py-data docutils literal notranslate"><span class="pre">17</span></code> for a 2nd-order hexahedral element (20 nodes), <code class="xref py py-data docutils literal notranslate"><span class="pre">6</span></code> for a 1st-order prismatic element (6 nodes), <code class="xref py py-data docutils literal notranslate"><span class="pre">18</span></code> for a 2nd-order prismatic element (15 nodes).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;number_of_tags&gt;</span></code> is the number of tags, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;tag#&gt;</span></code> are the tags.  In the general case, the number of tags is equal to 3, the first and second tags are the elset and the third tag is the element partition.  The mesh partition is non-zero only for the higher-dimension elements of a mesh which was previously partitioned.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;elt_id_node#&gt;</span></code> are the nodes associated to an element.  The number of nodes depends on the element type (<cite>&lt;elt_type&gt;</cite>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$EndElements</span></code> denotes the end of an element field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$Periodicity</span></code> denotes the beginning of a periodicity field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;number_of_periodicities&gt;</span></code> is the number of periodicities.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;primary_node_id&gt;</span></code> is the identifier of the primary node.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;secondary_node_id&gt;</span></code> is the identifier of the secondary node.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;per_vect_x&gt;</span></code> <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;per_vect_y&gt;</span></code> <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;per_vect_z&gt;</span></code> are the scaled components of the vector going from the primary node to the secondary node (-1, 0 or 1).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$EndPeriodicity</span></code> denotes the end of a periodicity field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$NSets</span></code> denotes the beginning of an nset field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;number_of_nsets&gt;</span></code> is the number of nsets.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;nset#_label&gt;</span></code> are the labels of the nsets.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;nset_node_nb&gt;</span></code> is the number of nodes of an nset.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;nset_node_id#&gt;</span></code> are the identifiers of the nodes of an nset.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$EndNSets</span></code> denotes the end of an nset field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$Fasets</span></code> denotes the beginning of a faset field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;number_of_fasets&gt;</span></code> is the number of fasets.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;faset#_label&gt;</span></code> are the labels of the fasets.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;faset_elt_nb&gt;</span></code> is the number of elements of a faset.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;faset_elt_id&gt;</span></code> are the identifiers of the elements of a faset (3D elements adjacent to the boundary).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;faset_elt_id_node#&gt;</span></code> are the nodes of an element of a faset.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$EndFasets</span></code> denotes the end of a faset field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$NodePartitions</span></code> denotes the beginning of a node partition field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;nodeid_partition&gt;</span></code> is the partition of node <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;id&gt;</span></code> (ranging from 1 to the total number of partitions).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$EndNodePartitions</span></code> denotes the end of a node partition field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$PhysicalNames</span></code> denotes the beginning of a physical name field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;number_of_physical_names&gt;</span></code> is the number of physical names.  There are as many names as physical entities, and the physical entities correspond to all tessellation vertices, edges, faces and polyhedra (i.e., mesh 0D, 1D, 2D and 3D elsets).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;physical_dimension&gt;</span></code> is the dimension of a physical entity and can be equal to 0, 1, 2 or 3.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;physical_id&gt;</span></code> is the id of a physical entity.  It ranges from 1 to the number of 0D elsets (tessellation vertices) for the 0D entities, 1 to the number of 1D elsets (tessellation edges) for the 1D entities, 1 to the number of 2D elsets (tessellation faces) for the 2D entities and 1 to the number of 3D elsets (tessellation polyhedra) for the 3D entities.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;physical_name&gt;</span></code> is the name of a physical entity, under the form <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;verid&gt;</span></code> for 0D elsets (tessellation vertices), <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;edgeid&gt;</span></code> for 1D elsets (tessellation edges), <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;faceid&gt;</span></code> for 2D elsets (tessellation faces) and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;polyid&gt;</span></code> for 3D elsets (tessellation polyhedra), where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;id&gt;</span></code> ranges from 1 to the number of elsets.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$EndPhysicalNames</span></code> denotes the end of a physical name field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$ElsetOrientations</span></code> denotes the beginning of an elset orientation field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$EndElsetOrientations</span></code> denotes the end of an elset orientation field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;number_of_elsets&gt;</span></code> is the number of elsets.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;orientation_descriptor&gt;</span></code> is the orientation descriptor.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;elset_id&gt;</span></code> is the elset id.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;ori_des1&gt;</span></code>, … is the orientation, following <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;orientation_descriptor&gt;</span></code>.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$EndElsetOrientations</span></code> denotes the end of an elset orientation field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$ElsetCrySym</span></code> denotes the beginning of an elset crystal symmetry field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;crysym&gt;</span></code> is the crystal symmetry (<code class="xref py py-data docutils literal notranslate"><span class="pre">triclinic</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">cubic</span></code> or <code class="xref py py-data docutils literal notranslate"><span class="pre">hexagonal</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$EndElsetCrySym</span></code> denotes the end of an elset crystal symmetry field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$ElementOrientations</span></code> denotes the beginning of an element orientation field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;number_of_elements&gt;</span></code> is the number of elements.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;element_id&gt;</span></code> is the element id.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$EndElementOrientations</span></code> denotes the end of an element orientation field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$Groups</span></code> denotes the beginning of a group field.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;group_entity&gt;</span></code> is the entity for which groups are defined, which must be <code class="xref py py-data docutils literal notranslate"><span class="pre">elset</span></code>.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;number_of_group_entities&gt;</span></code> is the number of group entities (number of elsets).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;entity_id&gt;</span></code> is the id of an entity.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;group&gt;</span></code> is the group of the entity.</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">$EndGroups</span></code> denotes the end of a group field.</p></li>
+</ul>
+</section>
+<section id="orientation-file-simulation-ori">
+<span id="ori-file"></span><h2>Orientation File (<code class="file docutils literal notranslate"><span class="pre">simulation.ori</span></code>)<a class="headerlink" href="#orientation-file-simulation-ori" title="Link to this heading"></a></h2>
+<p>The embedded orientation assignments within the <code class="file docutils literal notranslate"><span class="pre">simulation.msh</span></code> may be overridden via an external <code class="file docutils literal notranslate"><span class="pre">simulation.ori</span></code> file. This file contains formatting identical to the associated fields in the mesh file and is defined as:</p>
+<p>For per-grain (or <code class="xref py py-data docutils literal notranslate"><span class="pre">Elset</span></code>) orientations:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ElsetOrientations
+&lt;number_of_ori_entities&gt; &lt;orientation_descriptor&gt;:&lt;orientation_convention&gt;
+&lt;entity_id&gt; &lt;ori_des1&gt; ...
+...
+$EndElsetOrientations
+</pre></div>
+</div>
+<p>For per-element orientations:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ElementOrientations
+&lt;number_of_ori_entities&gt; &lt;orientation_descriptor&gt;:&lt;orientation_convention&gt;
+&lt;entity_id&gt; &lt;ori_des1&gt; ...
+...
+$EndElementOrientations
+</pre></div>
+</div>
+<p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;number_of_ori_entities&gt;</span></code> is the number of unique orientations defined in the section, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;orientation_descriptor&gt;</span></code> is the parameterization for the orientations (see options below), <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;orientation_convention&gt;</span></code> describes the basis transformation route for the orientations provided, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;entity_id&gt;</span></code> is a unique 1-indexed identification number, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;ori_des*&gt;</span></code> are the components of the unique orientation. Available options for <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;orientation_convention&gt;</span></code> are: <code class="xref py py-data docutils literal notranslate"><span class="pre">active</span></code> or <code class="xref py py-data docutils literal notranslate"><span class="pre">passive</span></code>. Following the usual terminology, an active orientation assumes that which describes a basis transformation from the sample basis to the crystal basis (sample-to-crystal), while a passive orientation convention assumes that which describes a basis transformation from the crystal basis to the sample basis (“crystal-to-sample”).</p>
+<p>The following <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;orientation_descriptor&gt;</span></code> types are available (associated per-line formats are also described):</p>
+<ul>
+<li><p>For <code class="xref py py-data docutils literal notranslate"><span class="pre">rodrigues</span></code>, each orientation is described by <span class="math notranslate nohighlight">\(r_1, r_2, r_3\)</span>, where <span class="math notranslate nohighlight">\({\bf r} = {\bf t} \tan{ (\omega / 2)}\)</span> (see: <code class="xref py py-data docutils literal notranslate"><span class="pre">axis-angle</span></code> for definitions of <span class="math notranslate nohighlight">\({\bf t}\)</span> and <span class="math notranslate nohighlight">\(\omega\)</span>). The per-line format is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">entity_id</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">r_1</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">r_2</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">r_3</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</li>
+<li><p>For <code class="xref py py-data docutils literal notranslate"><span class="pre">euler-bunge</span></code>, each orientation is described by <span class="math notranslate nohighlight">\(\phi_1, \theta, \phi_2\)</span>, where <span class="math notranslate nohighlight">\(\phi_1\)</span> is the rotation about the <span class="math notranslate nohighlight">\(z\)</span> axis, <span class="math notranslate nohighlight">\(\theta\)</span> is the rotation about the <span class="math notranslate nohighlight">\(z^{\prime}\)</span> axis, and <span class="math notranslate nohighlight">\(\phi_2\)</span> is the rotation about the <span class="math notranslate nohighlight">\(z^{\prime \prime}\)</span> axis, all in degrees). The per-line format is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">entity_id</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">phi_1</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">Phi</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">phi_2</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</li>
+<li><p>For <code class="xref py py-data docutils literal notranslate"><span class="pre">euler-kocks</span></code>, each orientation is described by <span class="math notranslate nohighlight">\(\Psi, \Theta, \phi\)</span>, where <span class="math notranslate nohighlight">\(\Psi\)</span> is the rotation about the <span class="math notranslate nohighlight">\(z\)</span> axis, <span class="math notranslate nohighlight">\(\Theta\)</span> is the rotation about the <span class="math notranslate nohighlight">\(y^{\prime}\)</span> axis, and <span class="math notranslate nohighlight">\(\phi\)</span> is the rotation about the <span class="math notranslate nohighlight">\(z^{\prime \prime}\)</span> axis, all in degrees). The per-line format is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">entity_id</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">Psi</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">Theta</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">phi</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</li>
+<li><p>For <code class="xref py py-data docutils literal notranslate"><span class="pre">axis-angle</span></code>, each orientation is described by <span class="math notranslate nohighlight">\(t_1, t_2, t_3, \omega\)</span>, where <span class="math notranslate nohighlight">\(\bf{t}\)</span> is the normalized axis of rotation and <span class="math notranslate nohighlight">\(\omega\)</span> is the angle of rotation about said axis, in degrees. The per-line format is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">entity_id</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">t_1</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">t_2</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">t_3</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">omega</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</li>
+<li><p>For <code class="xref py py-data docutils literal notranslate"><span class="pre">quaternion</span></code>, each orientation is described by <span class="math notranslate nohighlight">\(q_0, q_1, q_2, q_3\)</span>, where <span class="math notranslate nohighlight">\(q_0 = \cos{(\omega / 2)}\)</span> and <span class="math notranslate nohighlight">\(q_i = t_i \sin{(\omega / 2)}\)</span> for <span class="math notranslate nohighlight">\(i = 1, 2, 3\)</span> (see: <code class="xref py py-data docutils literal notranslate"><span class="pre">axis-angle</span></code> for definitions of <span class="math notranslate nohighlight">\({\bf t}\)</span> and <span class="math notranslate nohighlight">\(\omega\)</span>). The per-line format is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">entity_id</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">q_0</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">q_1</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">q_2</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">q_3</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</section>
+<section id="phase-file-simulation-phase">
+<span id="phase-file"></span><h2>Phase File (<code class="file docutils literal notranslate"><span class="pre">simulation.phase</span></code>)<a class="headerlink" href="#phase-file-simulation-phase" title="Link to this heading"></a></h2>
+<p>The embedded grain/phase assignments within the <code class="file docutils literal notranslate"><span class="pre">simulation.msh</span></code> may be overridden via an external <code class="file docutils literal notranslate"><span class="pre">simulation.phase</span></code> file. This file contains formatting identical to the associated fields in the mesh file and is defined as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$Groups
+&lt;group_entity&gt;
+&lt;number_of_group_entities&gt;
+&lt;entity_id&gt; &lt;group&gt;
+...
+$EndGroups
+</pre></div>
+</div>
+<p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;group_entity&gt;</span></code> defines the phase assignment method and must always be defined as <code class="xref py py-data docutils literal notranslate"><span class="pre">elset</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;number_of_group_entities&gt;</span></code> is the number of grain/phase pairs defined in the field, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;entity_id&gt;</span></code> is a unique 1-indexed identification number, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;group&gt;</span></code> is an 1-indexed value that defines the phase for a given grain.</p>
+</section>
+<section id="restart-files-rst-n">
+<span id="restart-output"></span><h2>Restart Files (<code class="file docutils literal notranslate"><span class="pre">rst&lt;N&gt;.*</span></code>)<a class="headerlink" href="#restart-files-rst-n" title="Link to this heading"></a></h2>
+<p>If the <code class="xref py py-data docutils literal notranslate"><span class="pre">print</span> <span class="pre">restart</span></code> command is present in the <code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code> file, a set of additional restart files will be generated from the simulation. These files are written at the end of each prescribed step and contain necessary information to restart a given simulation (<a class="reference internal" href="tutorials/restart.html#restart-tutorial"><span class="std std-ref">[LEGACY] Restarting a Simulation with Appended Load Steps</span></a> for information on how to restart a simulation). Two types of restart files are generated, a control file, <code class="file docutils literal notranslate"><span class="pre">rst&lt;N&gt;.control</span></code>, and per-core field files, <code class="file docutils literal notranslate"><span class="pre">rst&lt;N&gt;.field.core*</span></code> (where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;N&gt;</span></code> indicates which simulation the files describe, 0 indexing). Both file types are unformatted (or binary) files and are generally unmodifiable. The structures of the data stored within both files for the various deformation modes follow.</p>
+<section id="uniaxial-restart-control">
+<h3>Uniaxial Restart Control<a class="headerlink" href="#uniaxial-restart-control" title="Link to this heading"></a></h3>
+<p>The <code class="file docutils literal notranslate"><span class="pre">rst&lt;N&gt;.control</span></code> file for uniaxial loading modes contains the following data in the given order:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">current_step</span> <span class="o">&lt;</span><span class="n">step</span><span class="o">&gt;</span>
+<span class="n">previous_load_array</span> <span class="o">&lt;</span><span class="n">load_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_z</span><span class="o">&gt;</span>
+<span class="n">step_complete_flag</span> <span class="o">&lt;</span><span class="n">logical</span><span class="o">&gt;</span>
+<span class="n">previous_timestep_value</span> <span class="o">&lt;</span><span class="n">time</span><span class="o">&gt;</span>
+<span class="n">current_incr</span> <span class="o">&lt;</span><span class="n">increment</span><span class="o">&gt;</span>
+<span class="n">current_time</span> <span class="o">&lt;</span><span class="n">time</span><span class="o">&gt;</span>
+<span class="n">surface_1_loads</span> <span class="o">&lt;</span><span class="n">load_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_z</span><span class="o">&gt;</span>
+<span class="o">...</span>
+<span class="n">surface_6_loads</span> <span class="o">&lt;</span><span class="n">load_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_z</span><span class="o">&gt;</span>
+<span class="n">previous_prescribed_load</span> <span class="o">&lt;</span><span class="n">load</span><span class="o">&gt;</span>
+<span class="n">current_surface_areas</span> <span class="o">&lt;</span><span class="n">area_surf_1</span><span class="o">&gt;</span> <span class="o">...</span> <span class="o">&lt;</span><span class="n">area_surf_6</span><span class="o">&gt;</span>
+<span class="n">initial_surface_areas</span> <span class="o">&lt;</span><span class="n">area_surf_1</span><span class="o">&gt;</span> <span class="o">...</span> <span class="o">&lt;</span><span class="n">area_surf_6</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="multiaxial-csr-restart-control">
+<h3>Multiaxial CSR Restart Control<a class="headerlink" href="#multiaxial-csr-restart-control" title="Link to this heading"></a></h3>
+<p>The <code class="file docutils literal notranslate"><span class="pre">rst&lt;N&gt;.control</span></code> file for multiaxial constant strain rate loading modes contains the following data in the given order:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">current_step</span> <span class="o">&lt;</span><span class="n">step</span><span class="o">&gt;</span>
+<span class="n">current_load_array</span> <span class="o">&lt;</span><span class="n">load_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_z</span><span class="o">&gt;</span>
+<span class="n">previous_load_array</span> <span class="o">&lt;</span><span class="n">load_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_z</span><span class="o">&gt;</span>
+<span class="n">step_complete_flag</span> <span class="o">&lt;</span><span class="n">logical</span><span class="o">&gt;</span>
+<span class="n">previous_timestep_value</span> <span class="o">&lt;</span><span class="n">time</span><span class="o">&gt;</span>
+<span class="n">current_incr</span> <span class="o">&lt;</span><span class="n">increment</span><span class="o">&gt;</span>
+<span class="n">current_time</span> <span class="o">&lt;</span><span class="n">time</span><span class="o">&gt;</span>
+<span class="n">surface_1_loads</span> <span class="o">&lt;</span><span class="n">load_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_z</span><span class="o">&gt;</span>
+<span class="o">...</span>
+<span class="n">surface_6_loads</span> <span class="o">&lt;</span><span class="n">load_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_z</span><span class="o">&gt;</span>
+<span class="n">current_surface_areas</span> <span class="o">&lt;</span><span class="n">area_surf_1</span><span class="o">&gt;</span> <span class="o">...</span> <span class="o">&lt;</span><span class="n">area_surf_6</span><span class="o">&gt;</span>
+<span class="n">initial_surface_areas</span> <span class="o">&lt;</span><span class="n">area_surf_1</span><span class="o">&gt;</span> <span class="o">...</span> <span class="o">&lt;</span><span class="n">area_surf_6</span><span class="o">&gt;</span>
+<span class="n">current_mesh_lengths</span> <span class="o">&lt;</span><span class="n">length_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">length_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">length_z</span><span class="o">&gt;</span>
+<span class="n">initial_mesh_lengths</span> <span class="o">&lt;</span><span class="n">length_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">length_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">length_z</span><span class="o">&gt;</span>
+<span class="n">current_control_velocity</span> <span class="o">&lt;</span><span class="n">vel_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">vel_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">vel_z</span><span class="o">&gt;</span>
+<span class="n">s_pert_mag</span> <span class="o">&lt;</span><span class="n">vel</span><span class="o">&gt;</span>
+<span class="n">t_pert_mag</span> <span class="o">&lt;</span><span class="n">vel</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="multiaxial-clr-restart-control">
+<h3>Multiaxial CLR Restart Control<a class="headerlink" href="#multiaxial-clr-restart-control" title="Link to this heading"></a></h3>
+<p>The <code class="file docutils literal notranslate"><span class="pre">rst&lt;N&gt;.control</span></code> file for multiaxial constant load rate loading modes contains the following data in the given order:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">current_step</span> <span class="o">&lt;</span><span class="n">step</span><span class="o">&gt;</span>
+<span class="n">current_load_array</span> <span class="o">&lt;</span><span class="n">load_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_z</span><span class="o">&gt;</span>
+<span class="n">previous_load_array</span> <span class="o">&lt;</span><span class="n">load_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_z</span><span class="o">&gt;</span>
+<span class="n">first_incr_in_step</span> <span class="o">&lt;</span><span class="n">logical</span><span class="o">&gt;</span>
+<span class="n">current_incr</span> <span class="o">&lt;</span><span class="n">increment</span><span class="o">&gt;</span>
+<span class="n">current_time</span> <span class="o">&lt;</span><span class="n">time</span><span class="o">&gt;</span>
+<span class="n">surface_1_loads</span> <span class="o">&lt;</span><span class="n">load_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_z</span><span class="o">&gt;</span>
+<span class="o">...</span>
+<span class="n">surface_6_loads</span> <span class="o">&lt;</span><span class="n">load_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">load_z</span><span class="o">&gt;</span>
+<span class="n">current_surface_areas</span> <span class="o">&lt;</span><span class="n">area_surf_1</span><span class="o">&gt;</span> <span class="o">...</span> <span class="o">&lt;</span><span class="n">area_surf_6</span><span class="o">&gt;</span>
+<span class="n">initial_surface_areas</span> <span class="o">&lt;</span><span class="n">area_surf_1</span><span class="o">&gt;</span> <span class="o">...</span> <span class="o">&lt;</span><span class="n">area_surf_6</span><span class="o">&gt;</span>
+<span class="n">current_mesh_lengths</span> <span class="o">&lt;</span><span class="n">length_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">length_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">length_z</span><span class="o">&gt;</span>
+<span class="n">initial_mesh_lengths</span> <span class="o">&lt;</span><span class="n">length_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">length_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">length_z</span><span class="o">&gt;</span>
+<span class="n">current_control_velocity</span> <span class="o">&lt;</span><span class="n">vel_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">vel_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">vel_z</span><span class="o">&gt;</span>
+<span class="n">previous_control_action</span> <span class="o">&lt;</span><span class="n">integer</span><span class="o">&gt;</span>
+<span class="n">current_control_action</span> <span class="o">&lt;</span><span class="n">integer</span><span class="o">&gt;</span>
+<span class="n">initial_load_dwell_velocity</span> <span class="o">&lt;</span><span class="n">vel_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">vel_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">vel_z</span><span class="o">&gt;</span>
+<span class="n">initial_unload_dwell_velocity</span> <span class="o">&lt;</span><span class="n">vel_x</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">vel_y</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">vel_z</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="restart-field-data">
+<h3>Restart Field Data<a class="headerlink" href="#restart-field-data" title="Link to this heading"></a></h3>
+<p>All loading modes also write field data on a per-core basis to <code class="file docutils literal notranslate"><span class="pre">rst&lt;N&gt;.field.core*</span></code> files. These files contain the necessary field variable information in order to spatially define the total state of the virtual sample at the time of printing. The following field data arrays are written to the files in the given order:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">coords</span> <span class="o">&lt;</span><span class="n">coords</span><span class="o">&gt;</span>
+<span class="n">velocity</span> <span class="o">&lt;</span><span class="n">velocity</span><span class="o">&gt;</span>
+
+<span class="n">c0_angs</span> <span class="o">&lt;</span><span class="n">orientation</span><span class="o">&gt;</span>
+<span class="n">c_angs</span> <span class="o">&lt;</span><span class="n">orientation</span><span class="o">&gt;</span>
+<span class="n">rstar</span> <span class="o">&lt;</span><span class="n">rotation</span><span class="o">&gt;</span>
+<span class="n">rstar_n</span> <span class="o">&lt;</span><span class="n">rotation</span><span class="o">&gt;</span>
+<span class="n">wts</span> <span class="o">&lt;</span><span class="n">weight</span><span class="o">&gt;</span>
+<span class="n">crss</span> <span class="o">&lt;</span><span class="n">crss</span><span class="o">&gt;</span>
+<span class="n">crss_n</span> <span class="o">&lt;</span><span class="n">crss</span><span class="o">&gt;</span>
+
+<span class="n">gela_kk_bar</span> <span class="o">&lt;</span><span class="n">strain</span><span class="o">&gt;</span>
+<span class="n">gsig_vec_n</span> <span class="o">&lt;</span><span class="n">stress</span><span class="o">&gt;</span>
+<span class="n">pela_kk_bar</span> <span class="o">&lt;</span><span class="n">strain</span><span class="o">&gt;</span>
+<span class="n">psig_vec_n</span> <span class="o">&lt;</span><span class="n">stress</span><span class="o">&gt;</span>
+<span class="n">e_elas_kk_bar</span> <span class="o">&lt;</span><span class="n">strain</span><span class="o">&gt;</span>
+<span class="n">sig_vec_n</span> <span class="o">&lt;</span><span class="n">stress</span><span class="o">&gt;</span>
+
+<span class="n">eqstrain</span> <span class="o">&lt;</span><span class="n">strain</span><span class="o">&gt;</span>
+<span class="n">eqplstrain</span> <span class="o">&lt;</span><span class="n">strain</span><span class="o">&gt;</span>
+<span class="n">gamma</span> <span class="o">&lt;</span><span class="n">shear</span><span class="o">&gt;</span>
+
+<span class="n">el_work_n</span> <span class="o">&lt;</span><span class="n">work</span><span class="o">&gt;</span>
+<span class="n">el_workp_n</span> <span class="o">&lt;</span><span class="n">work</span><span class="o">&gt;</span>
+<span class="n">el_work_rate_n</span> <span class="o">&lt;</span><span class="n">work_rate</span><span class="o">&gt;</span>
+<span class="n">el_workp_rate_n</span> <span class="o">&lt;</span><span class="n">work_rate</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="crystal.html" class="btn btn-neutral float-left" title="Crystal Structures" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="tutorials.html" class="btn btn-neutral float-right" title="Tutorials" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright ACME Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

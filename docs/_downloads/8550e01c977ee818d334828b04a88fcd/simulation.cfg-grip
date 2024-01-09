@@ -1,0 +1,39 @@
+### FEPX Configuration File
+
+## Material Parameters
+
+    number_of_phases 1
+
+    phase 1
+
+      crystal_type FCC
+
+      c11 245.0e3
+      c12 155.0e3
+      c44  62.5e3
+
+      m 0.05d0
+      gammadot_0 1.0d0
+
+      hard_type isotropic
+      h_0 200.0
+      g_0 210.0
+      g_s 330.0
+
+## Boundary Conditions
+
+    set_bc strainrate 33 0.001 grip
+
+## Steps
+
+    number_of_steps 1
+    target_strain33 0.01
+    dstrain 0.001
+
+## Printing Results
+
+    print coo
+    print ori
+    print stress
+    print strain
+    print forces

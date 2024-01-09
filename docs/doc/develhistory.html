@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Development History (1990-2020) &mdash; FEPX 1.3.0 documentation</title>
+  <title>Development History (1990-2020) &mdash; FEPX 2.0.0 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/my_theme.css" type="text/css" />
@@ -12,15 +12,14 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/doctools.js"></script>
+        <script src="../_static/documentation_options.js?v=51b770b3"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="GNU General Public License" href="gpl.html" />
-    <link rel="prev" title="Example Simulations" href="examples.html" /> 
+    <link rel="prev" title="Versions" href="versions.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -31,7 +30,7 @@
             <a href="../index.html" class="icon icon-home"> FEPX
           </a>
               <div class="version">
-                1.3.0
+                2.0.0
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
@@ -46,10 +45,15 @@
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Documentation</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="copying.html">Conditions of Use</a></li>
 <li class="toctree-l2"><a class="reference internal" href="introduction.html">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="input.html">Simulation Input</a></li>
-<li class="toctree-l2"><a class="reference internal" href="output.html">Simulation Output</a></li>
-<li class="toctree-l2"><a class="reference internal" href="job.html">Running a Simulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html">Example Simulations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html">Configuration File (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="material.html">Crystal Behavior (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loading.html">Loading (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="output.html">Simulation Results (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="running.html">Convergence Parameters (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="crystal.html">Crystal Structures</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fileformat.html">File and Directory Formats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="versions.html">Versions</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Development History (1990-2020)</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#milestones-in-the-development-of-fepx">Milestones in the Development of FEpX</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#earlier-development-leading-to-the-present-version">Earlier Development Leading to the Present Version</a></li>
@@ -63,7 +67,6 @@
 <li class="toctree-l2"><a class="reference internal" href="fdl.html">GNU Free Documentation License</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Example Simulations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../papers.html">Reference Papers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../applications.html">Applications</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../downloads.html">Downloads</a></li>
@@ -96,10 +99,10 @@
            <div itemprop="articleBody">
              
   <section id="development-history-1990-2020">
-<span id="development-history"></span><h1>Development History (1990-2020)<a class="headerlink" href="#development-history-1990-2020" title="Permalink to this headline">¶</a></h1>
+<span id="development-history"></span><h1>Development History (1990-2020)<a class="headerlink" href="#development-history-1990-2020" title="Link to this heading"></a></h1>
 <p>by Paul R. Dawson, June 2020.</p>
 <section id="milestones-in-the-development-of-fepx">
-<h2>Milestones in the Development of FEpX<a class="headerlink" href="#milestones-in-the-development-of-fepx" title="Permalink to this headline">¶</a></h2>
+<h2>Milestones in the Development of FEpX<a class="headerlink" href="#milestones-in-the-development-of-fepx" title="Link to this heading"></a></h2>
 <p>Development of present code began in the late 1990’s. The impetus was to incorporate elasticity in the existing viscoplastic constitutive framework. A number of attributes of the mechanical response can be addressed only if elasticity is part of the total constitutive description, and several of these were important to the research goals at that time. The inclusion of elasticity, however, fundamentally alters the computational approach because elasticity is based on changes in configuration of differential volumes, whereas plasticity requires knowledge only of current configurations. Further, the stiff mathematical character of the resulting system of equations necessitates greater care be exercised in integrating the equations over time and motivates the use of implicit schemes. While introducing added complexity in this regard, the inclusion of elasticity removes the constraint of incompressibility, which is particularly difficult to enforce within a robust framework and limits options available for the computational methodologies. Given these factors, the intent of the effort was to develop a code to support research investigations with the following defining specifications:</p>
 <ul class="simple">
 <li><p>incorporates anisotropic elasto-viscoplastic behaviors, especially in materials with low rate sensitivity of yielding  such as metals at low homologous temperature;</p></li>
@@ -112,23 +115,23 @@
 <p>Incorporation of a code with elasticity and nonlinear kinematics (which are tightly coupled) was  carried out principally by E. Marin <a class="reference internal" href="#marin98a" id="id1"><span>[MARIN98a]</span></a>, <a class="reference internal" href="#marin98b" id="id2"><span>[MARIN98b]</span></a>. The starting point for this effort was a code that utilized a viscoplastic model implemented in parallel with a hybrid finite element formulation developed by A. Beaudoin <a class="reference internal" href="#beaudoin95" id="id3"><span>[BEAUDOIN95]</span></a> (the hybrid formulation was an effective approach for dealing with the incompressibility constraint in the presence of plastic anisotropy). This code had been migrated to a version using Fortran and MPI and had 10-node tetrahedral elements available for robust simulations of large plastic strains <a class="reference internal" href="#mika99" id="id4"><span>[MIKA99]</span></a>. The approach taken by Marin followed a methodology developed for isotropic elasto-viscoplastic behavior developed about a decade earlier by Eggert <a class="reference internal" href="#eggert88" id="id5"><span>[EGGERT88]</span></a>. Refinements were added later by N. Barton <a class="reference internal" href="#barton99" id="id6"><span>[BARTON99]</span></a> for anisotropic elasticity.</p>
 </section>
 <section id="earlier-development-leading-to-the-present-version">
-<h2>Earlier Development Leading to the Present Version<a class="headerlink" href="#earlier-development-leading-to-the-present-version" title="Permalink to this headline">¶</a></h2>
+<h2>Earlier Development Leading to the Present Version<a class="headerlink" href="#earlier-development-leading-to-the-present-version" title="Link to this heading"></a></h2>
 <p>The use of finite elements with crystal plasticity models can be organized into two broad categories that are defined by the relative sizes of grains and elements <a class="reference internal" href="#dawson98" id="id7"><span>[DAWSON98]</span></a>.  One category is labeled, ‘large scale’, and is defined by the grains being much smaller than elements; the other is labeled, ‘small scale’, and is defined by the elements some part of a grain.  In large scale applications, an ensemble of grains underlies spatial points at the continuum scale and defines the properties of the continuum at that point. In small scale applications, the volume within a finite element is entirely of one grain and the material exhibits properties of a single crystal. The code development leading eventually to FEpX began with a large scale implementation in which crystal plasticity was embedded in an Eulerian, viscoplastic formulation was devised by K. Mathur <a class="reference internal" href="#mathur89" id="id8"><span>[MATHUR89]</span></a> to model steady-state metal forming applications. The potential capabilities of a code that incorporated crystal plasticity was pursued because it permitted computing the  evolving anisotropy associated with plastic yielding directly derived from crystallographic texture. Subsequent application of the approach for metal forming and geologic flow demonstrated that polycrystal models were viable for flow fields that could be idealized as steady and two-dimensional <a class="reference internal" href="#mathur90" id="id9"><span>[MATHUR90]</span></a> <a class="reference internal" href="#kumar95" id="id10"><span>[KUMAR95]</span></a> <a class="reference internal" href="#dawson00" id="id11"><span>[DAWSON00]</span></a>.</p>
 <p>The desire to model transient processes, such as sheet forming, motivated the major effort to develop a data parallel code. The code developed in this effort employed a proprietary version of Fortran <a class="reference internal" href="#mathur95" id="id12"><span>[MATHUR95]</span></a> that managed interprocessor communications, and enabled the simulation of fully three-dimensional forming processes <a class="reference internal" href="#beaudoin93" id="id13"><span>[BEAUDOIN93]</span></a> <a class="reference internal" href="#beaudoin94" id="id14"><span>[BEAUDOIN94]</span></a>. An interest in applying the approach to small scale as well as large scale problems subsequently led to development of the hybrid finite element formulation for polycrystals <a class="reference internal" href="#beaudoin95" id="id15"><span>[BEAUDOIN95]</span></a>. This milestone solidified the role of the finite element approach for investigating the role of grain interactions in polycrystal deformations and opened the door to investigating the strengths and limitations of various mean field assumptions (e.g. Taylor, Sachs, Relaxed Constraints, and Constrained Hybrid). Concurrently, the parallel computing landscape was rapidly evolving, and to take advantage of the introduction of new platforms, the code architecture was re-structured to employ Message Passing Interface (MPI) routines to conduct interprocessor communications. This Fortran/MPI version remained limited to purely viscoplastic behaviors, but was exploited to study texture evolution in polycrystals as well as development of intragrain misorientation distributions. This code was the starting point for development of FEpX and a re-focusing of the simulation priorities on small scale applications.</p>
 </section>
 <section id="application-driven-expansion-of-capabilities">
-<h2>Application-Driven Expansion of Capabilities<a class="headerlink" href="#application-driven-expansion-of-capabilities" title="Permalink to this headline">¶</a></h2>
+<h2>Application-Driven Expansion of Capabilities<a class="headerlink" href="#application-driven-expansion-of-capabilities" title="Link to this heading"></a></h2>
 <p>FEpX development in the decade following the launch of the first version of the present code was centered on support of investigations related to mechanical behaviors of polycrystals. Improvements were made in numerical procedures to improve robustness (namely, the nonlinear solver, quadrature rules,  and integration of state variables). Modifications were implemented to provide options in the loading histories that enabled better replication of experimental loading protocols. In particular, options to invoke more complex sequences of loading, unloading and reloading used in <em>in situ</em> loading, x-ray and neutron diffraction experiments were implemented. Capabilities for cyclic and multiaxial loading were added.</p>
 <p>The extraction of data  related to the orientation of the crystallographic lattice from the simulation was of paramount importance. Routines were implemented to identify elements of the mesh whose lattice orientations lie near crystallographic fibers, a process referred to as ‘light-up’ in analogy to diffraction measurements. The output of FEpX was coordinated with a number of ancillary capabilities for manipulation of orientation-dependent variables (ODFPF), representation of anisotropic yield surfaces,  and execution of a virtual diffractometer.</p>
 <p>Definition of the virtual polycrystals simulated with FEpX was initially limited to regular tessellations comprised of dodecahedral grains. Every grain was discretized with tetrahedral elements, typically numbering from 48 for a coarse representation to 1536 for more finely resolved grains. The use of other regular tessellations (cubic and truncated octahedral, in particular) were also explored <a class="reference internal" href="#ritz09" id="id16"><span>[RITZ09]</span></a>. The coupling of FEpX with Neper greatly improved the representation of virtual polycrystals by allowing for irregular  Voronoi or Laguerre tesselations and facilitating re-meshing in simulations taken to large plastic strains <a class="reference internal" href="#quey11" id="id17"><span>[QUEY11]</span></a>.</p>
 <p>Individuals contributing to these improvements include: D. Boyce, R. Carson, T. Han, M. Kasemer, T. Marin, A. Poshadel, R. Quey, and S.-L. Wong.</p>
 </section>
 <section id="source-sharing-and-documentation">
-<h2>Source Sharing and Documentation<a class="headerlink" href="#source-sharing-and-documentation" title="Permalink to this headline">¶</a></h2>
+<h2>Source Sharing and Documentation<a class="headerlink" href="#source-sharing-and-documentation" title="Link to this heading"></a></h2>
 <p>By 2010 the use of FEpX over a decade in a variety of research projects motivated a push for standardization, version control, and sharing best done within a collaborative platform. A repository was established in 2012 together with documentation (users manual compiled by A. Mitch) for the needed input and possible outputs for FEpX. In concert with the establishing the code repository, numerous improvements were made in the organization of input and output data. A full description of the underlying theory and finite element implementation was posted on arXiv in 2015 <a class="reference internal" href="#dawson15" id="id18"><span>[DAWSON15]</span></a>. Individuals contributing to this effort include A. Poshadel and M. Kasemer.</p>
 </section>
 <section id="extensions-of-fepx">
-<h2>Extensions of FEpX<a class="headerlink" href="#extensions-of-fepx" title="Permalink to this headline">¶</a></h2>
+<h2>Extensions of FEpX<a class="headerlink" href="#extensions-of-fepx" title="Link to this heading"></a></h2>
 <p>One of the specifications of FEpX was to provide an expansible code framework to facilitate testing of alternative plasticity models and numerical methodologies. Such efforts typically require substantial alterations to the code and are not intended to result in permanent changes to the baseline code. Examples of investigations of this nature include: a kinematic model with slip gradients <a class="reference internal" href="#gerken08" id="id19"><span>[GERKEN08]</span></a>;  a continuous intragrain lattice representation <a class="reference internal" href="#carson19" id="id20"><span>[CARSON19]</span></a>, and a kinematic framework for twinning <a class="reference internal" href="#kasemer20" id="id21"><span>[KASEMER20]</span></a>.</p>
 <div class="line-block">
 <div class="line">Dr. Paul R. Dawson</div>
@@ -138,160 +141,181 @@
 </div>
 </section>
 <section id="references">
-<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
-<dl class="citation">
-<dt class="label" id="barton99"><span class="brackets"><a class="fn-backref" href="#id6">BARTON99</a></span></dt>
-<dd><ol class="upperalpha simple" start="14">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<div role="list" class="citation-list">
+<div class="citation" id="barton99" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id6">BARTON99</a><span class="fn-bracket">]</span></span>
+<ol class="upperalpha simple" start="14">
 <li><ol class="upperalpha simple" start="18">
 <li><p>Barton, P. R. Dawson, and M. P. Miller. Yield strength asymmetry predictions from polycrystal plasticity. <em>Journal of Engineering Materials and Technology</em>, 121:230-239, 1999.</p></li>
 </ol>
 </li>
 </ol>
-</dd>
-<dt class="label" id="beaudoin93"><span class="brackets"><a class="fn-backref" href="#id13">BEAUDOIN93</a></span></dt>
-<dd><ol class="upperalpha simple">
+</div>
+<div class="citation" id="beaudoin93" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id13">BEAUDOIN93</a><span class="fn-bracket">]</span></span>
+<ol class="upperalpha simple">
 <li><ol class="upperalpha simple" start="10">
 <li><p>Beaudoin, K. K. Mathur, P. R. Dawson, and G.C. Johnson. Three-dimensional deformation process simulation with explicit use of polycrystalline plasticity models. <em>International Journal of Plasticity</em>, 9:833-860, 1993.</p></li>
 </ol>
 </li>
 </ol>
-</dd>
-<dt class="label" id="beaudoin94"><span class="brackets"><a class="fn-backref" href="#id14">BEAUDOIN94</a></span></dt>
-<dd><ol class="upperalpha simple">
+</div>
+<div class="citation" id="beaudoin94" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id14">BEAUDOIN94</a><span class="fn-bracket">]</span></span>
+<ol class="upperalpha simple">
 <li><ol class="upperalpha simple" start="10">
 <li><p>Beaudoin, P. R. Dawson, K. K. Mathur, U. F. Kocks, and D. A. Korzekwa. Application of polycrystal plasticity to sheet forming. <em>Computer Methods in Applied Mechanics and Engineering</em>, 117:49-70, 1994.</p></li>
 </ol>
 </li>
 </ol>
-</dd>
-<dt class="label" id="beaudoin95"><span class="brackets">BEAUDOIN95</span><span class="fn-backref">(<a href="#id3">1</a>,<a href="#id15">2</a>)</span></dt>
-<dd><ol class="upperalpha simple">
+</div>
+<div class="citation" id="beaudoin95" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>BEAUDOIN95<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id3">1</a>,<a role="doc-backlink" href="#id15">2</a>)</span>
+<ol class="upperalpha simple">
 <li><ol class="upperalpha simple" start="10">
 <li><p>Beaudoin, P. R. Dawson, K. K. Mathur, and U. F. Kocks. A hybrid finite element formulation for polycrystal plasticity with consideration of macrostructural and microstructural linking. <em>International Journal of Plasticity</em>, 11:501-521, 1995.</p></li>
 </ol>
 </li>
 </ol>
-</dd>
-<dt class="label" id="carson19"><span class="brackets"><a class="fn-backref" href="#id20">CARSON19</a></span></dt>
-<dd><ol class="upperalpha simple" start="18">
+</div>
+<div class="citation" id="carson19" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id20">CARSON19</a><span class="fn-bracket">]</span></span>
+<ol class="upperalpha simple" start="18">
 <li><ol class="upperalpha simple">
 <li><p>Carson and P. R. Dawson. Formulation and Characterization of a Continuous Crystal Lattice Orientation Finite Element Method (LOFEM) and its Application to Dislocation Fields. <em>Journal of the Physics and Mechanics of Solids</em>, 126:1-26, 2019.</p></li>
 </ol>
 </li>
 </ol>
-</dd>
-<dt class="label" id="dawson98"><span class="brackets"><a class="fn-backref" href="#id7">DAWSON98</a></span></dt>
-<dd><ol class="upperalpha simple" start="16">
+</div>
+<div class="citation" id="dawson98" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id7">DAWSON98</a><span class="fn-bracket">]</span></span>
+<ol class="upperalpha simple" start="16">
 <li><ol class="upperalpha simple" start="18">
 <li><p>Dawson and E. B. Marin. Computational mechanics for metal deformation processes using polycrystal plasticity. In Erik van der Giessen and Theodore Y. Wu, editors, <em>Advances in Applied Mechanics</em>, 34:78-169. Academic Press, 1998.</p></li>
 </ol>
 </li>
 </ol>
-</dd>
-<dt class="label" id="dawson00"><span class="brackets"><a class="fn-backref" href="#id11">DAWSON00</a></span></dt>
-<dd><ol class="upperalpha simple" start="16">
+</div>
+<div class="citation" id="dawson00" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id11">DAWSON00</a><span class="fn-bracket">]</span></span>
+<ol class="upperalpha simple" start="16">
 <li><ol class="upperalpha simple" start="18">
 <li><p>Dawson and H.-R. Wenk. Texturing the upper mantle during convection. <em>Philosophical Magazine A</em>, 80(3):573-598, 2000.</p></li>
 </ol>
 </li>
 </ol>
-</dd>
-<dt class="label" id="dawson15"><span class="brackets"><a class="fn-backref" href="#id18">DAWSON15</a></span></dt>
-<dd><ol class="upperalpha simple" start="16">
+</div>
+<div class="citation" id="dawson15" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id18">DAWSON15</a><span class="fn-bracket">]</span></span>
+<ol class="upperalpha simple" start="16">
 <li><ol class="upperalpha simple" start="18">
 <li><p>Dawson and D. E. Boyce. FEpX – Finite Element Polycrystals: Theory, finite element formulation, numerical implementation and illustrative examples. <em>arXiv:1504.03296 [cond-mat.mtrl-sci]</em>, 2015.</p></li>
 </ol>
 </li>
 </ol>
-</dd>
-<dt class="label" id="eggert88"><span class="brackets"><a class="fn-backref" href="#id5">EGGERT88</a></span></dt>
-<dd><ol class="upperalpha simple" start="7">
+</div>
+<div class="citation" id="eggert88" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id5">EGGERT88</a><span class="fn-bracket">]</span></span>
+<ol class="upperalpha simple" start="7">
 <li><ol class="upperalpha simple" start="13">
 <li><p>Eggert and P. R. Dawson. A viscoplastic formulation with elasticity for transient metal forming. <em>Computer Methods in Applied Mechanics and Engineering</em>, 70:165-190, 1988.</p></li>
 </ol>
 </li>
 </ol>
-</dd>
-<dt class="label" id="gerken08"><span class="brackets"><a class="fn-backref" href="#id19">GERKEN08</a></span></dt>
-<dd><ol class="upperalpha simple" start="10">
+</div>
+<div class="citation" id="gerken08" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id19">GERKEN08</a><span class="fn-bracket">]</span></span>
+<ol class="upperalpha simple" start="10">
 <li><ol class="upperalpha simple" start="13">
 <li><p>Gerken and P. R. Dawson. A finite element formulation to solve a non-local constitutive model with stresses and strains due to slip gradients. <em>Computer Methods in Applied Mechanics and Engineering</em>, 197:1343-1361, 2008.</p></li>
 </ol>
 </li>
 </ol>
-</dd>
-<dt class="label" id="kasemer20"><span class="brackets"><a class="fn-backref" href="#id21">KASEMER20</a></span></dt>
-<dd><ol class="upperalpha simple" start="13">
+</div>
+<div class="citation" id="kasemer20" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id21">KASEMER20</a><span class="fn-bracket">]</span></span>
+<ol class="upperalpha simple" start="13">
 <li><ol class="upperalpha simple" start="16">
 <li><p>Kasemer and P. R. Dawson. A finite element methodology to incorporate kinematic activation of discrete deformation twins in a crystal plasticity framework. <em>Computer Methods in Applied Mechanics and Engineering</em>, 358:112653, 2020.</p></li>
 </ol>
 </li>
 </ol>
-</dd>
-<dt class="label" id="kumar95"><span class="brackets"><a class="fn-backref" href="#id10">KUMAR95</a></span></dt>
-<dd><ol class="upperalpha simple">
+</div>
+<div class="citation" id="kumar95" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id10">KUMAR95</a><span class="fn-bracket">]</span></span>
+<ol class="upperalpha simple">
 <li><p>Kumar and P. R. Dawson. Polycrystal plasticity modeling of bulk forming with finite elements over orientation space. <em>Computational Mechanics</em>, 17:10-25, 1995.</p></li>
 </ol>
-</dd>
-<dt class="label" id="marin98a"><span class="brackets"><a class="fn-backref" href="#id1">MARIN98a</a></span></dt>
-<dd><ol class="upperalpha simple" start="5">
+</div>
+<div class="citation" id="marin98a" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">MARIN98a</a><span class="fn-bracket">]</span></span>
+<ol class="upperalpha simple" start="5">
 <li><ol class="upperalpha simple" start="2">
 <li><p>Marin and P. R. Dawson. On modeling the elasto-viscoplastic response of metals using polycrystal plasticity. <em>Computer Methods in Applied Mechanics and Engineering</em>, 165:1-21, 1998.</p></li>
 </ol>
 </li>
 </ol>
-</dd>
-<dt class="label" id="marin98b"><span class="brackets"><a class="fn-backref" href="#id2">MARIN98b</a></span></dt>
-<dd><ol class="upperalpha simple" start="5">
+</div>
+<div class="citation" id="marin98b" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">MARIN98b</a><span class="fn-bracket">]</span></span>
+<ol class="upperalpha simple" start="5">
 <li><ol class="upperalpha simple" start="2">
 <li><p>Marin and P. R. Dawson. Elastoplastic finite element analysis of metal deformations using polycrystal constitutive models. <em>Computer Methods in Applied Mechanics and Engineering</em>, 165:23-41, 1998.</p></li>
 </ol>
 </li>
 </ol>
-</dd>
-<dt class="label" id="mathur89"><span class="brackets"><a class="fn-backref" href="#id8">MATHUR89</a></span></dt>
-<dd><ol class="upperalpha simple" start="11">
+</div>
+<div class="citation" id="mathur89" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id8">MATHUR89</a><span class="fn-bracket">]</span></span>
+<ol class="upperalpha simple" start="11">
 <li><ol class="upperalpha simple" start="11">
 <li><p>Mathur and P. R. Dawson. On modeling the development of crystallographic texture in bulk forming processes. <em>International Journal of Plasticity</em>, 5:67-94, 1989.</p></li>
 </ol>
 </li>
 </ol>
-</dd>
-<dt class="label" id="mathur90"><span class="brackets"><a class="fn-backref" href="#id9">MATHUR90</a></span></dt>
-<dd><ol class="upperalpha simple" start="11">
+</div>
+<div class="citation" id="mathur90" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id9">MATHUR90</a><span class="fn-bracket">]</span></span>
+<ol class="upperalpha simple" start="11">
 <li><ol class="upperalpha simple" start="11">
 <li><p>Mathur and P. R. Dawson. Texture development during wire drawing. <em>Journal of Engineering Materials and Technology</em>, 112(3):292-297, 1990.</p></li>
 </ol>
 </li>
 </ol>
-</dd>
-<dt class="label" id="mathur95"><span class="brackets"><a class="fn-backref" href="#id12">MATHUR95</a></span></dt>
-<dd><ol class="upperalpha simple" start="11">
+</div>
+<div class="citation" id="mathur95" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id12">MATHUR95</a><span class="fn-bracket">]</span></span>
+<ol class="upperalpha simple" start="11">
 <li><ol class="upperalpha simple" start="11">
 <li><p>Mathur. Parallel algorithms for large scale simulations in materials processing. In S. F. Shen and P. R. Dawson, editors, <em>Simulation of Materials Processing: Theory, Methods and Applications – NUMIFORM 95</em>, 109-114. A. A. Balkema, 1995.</p></li>
 </ol>
 </li>
 </ol>
-</dd>
-<dt class="label" id="mika99"><span class="brackets"><a class="fn-backref" href="#id4">MIKA99</a></span></dt>
-<dd><ol class="upperalpha simple" start="4">
+</div>
+<div class="citation" id="mika99" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id4">MIKA99</a><span class="fn-bracket">]</span></span>
+<ol class="upperalpha simple" start="4">
 <li><ol class="upperalpha simple" start="16">
 <li><p>Mika and P. R. Dawson. Polycrystal Plasticity Modeling of Intracrystalline Boundary Textures. <em>Acta Materialia</em>, 47(4):1355-1369, 1999.</p></li>
 </ol>
 </li>
 </ol>
-</dd>
-<dt class="label" id="quey11"><span class="brackets"><a class="fn-backref" href="#id17">QUEY11</a></span></dt>
-<dd><ol class="upperalpha simple" start="18">
+</div>
+<div class="citation" id="quey11" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id17">QUEY11</a><span class="fn-bracket">]</span></span>
+<ol class="upperalpha simple" start="18">
 <li><p>Quey, P. R. Dawson, and F. Barbe. Large-scale 3-D random polycrystals for the finite element method: generation meshing and remeshing. <em>Computer Methods in Applied Mechanics and Engineering</em>, 200:1729-1745, 2011.</p></li>
 </ol>
-</dd>
-<dt class="label" id="ritz09"><span class="brackets"><a class="fn-backref" href="#id16">RITZ09</a></span></dt>
-<dd><ol class="upperalpha simple" start="8">
+</div>
+<div class="citation" id="ritz09" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id16">RITZ09</a><span class="fn-bracket">]</span></span>
+<ol class="upperalpha simple" start="8">
 <li><p>Ritz and P. R. Dawson. Sensitivity to grain discretization of the simulated crystal stress distributions in fcc polycrystals. <em>Modeling and Simulation in Materials Science and Engineering</em>, 17:1-21, 2009.</p></li>
 </ol>
-</dd>
-</dl>
+</div>
+</div>
 </section>
 </section>
 
@@ -299,7 +323,7 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="examples.html" class="btn btn-neutral float-left" title="Example Simulations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="versions.html" class="btn btn-neutral float-left" title="Versions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="gpl.html" class="btn btn-neutral float-right" title="GNU General Public License" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

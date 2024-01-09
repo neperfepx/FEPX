@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simple Simulation &mdash; FEPX 2.0.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/my_theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/documentation_options.js?v=51b770b3"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Simple RVE-type Simulation" href="simple_rve_simulation.html" />
+    <link rel="prev" title="Tutorials" href="../tutorials.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> FEPX
+          </a>
+              <div class="version">
+                2.0.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../features.html">Features</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../copying.html">Conditions of Use</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config.html">Configuration File (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../material.html">Crystal Behavior (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../loading.html">Loading (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../output.html">Simulation Results (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../running.html">Convergence Parameters (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../crystal.html">Crystal Structures</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fileformat.html">File and Directory Formats</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Simple Simulation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#input-files">Input Files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#execution">Execution</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#simulation-results">Simulation Results</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#printing-intermediary-results">Printing Intermediary Results</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="simple_rve_simulation.html">Simple RVE-type Simulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="periodic_rve_simulation.html">Periodic RVE-type Simulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cruciform_specimen_simulation.html">Cruciform Specimen Simulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="overwriting.html">Overwrting Polycrystal Attributes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hpc.html">Submitting FEPX to a Job Scheduling Program</a></li>
+<li class="toctree-l3"><a class="reference internal" href="restart.html">[LEGACY] Restarting a Simulation with Appended Load Steps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="multiaxial_csr.html">[LEGACY] Multiaxial Control with Constant Strain Rate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="multiaxial_clr.html">[LEGACY] Multiaxial Control with Constant Load Rate</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../versions.html">Versions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../develhistory.html">Development History (1990-2020)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../gpl.html">GNU General Public License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fdl.html">GNU Free Documentation License</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../papers.html">Reference Papers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../applications.html">Applications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../downloads.html">Downloads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../community.html">Community</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">FEPX</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Documentation</a> &raquo;</li>
+          <li><a href="../tutorials.html">Tutorials</a> &raquo;</li>
+      <li>Simple Simulation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/doc/tutorials/simple_simulation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="simple-simulation">
+<span id="id1"></span><h1>Simple Simulation<a class="headerlink" href="#simple-simulation" title="Link to this heading"></a></h1>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Read also: <a class="reference internal" href="simple_rve_simulation.html#simple-rve-simulation"><span class="std std-ref">Simple RVE-type Simulation</span></a></p>
+</div>
+<p>A polycrystal containing 20 grains, generated and meshed by Neper, is used:</p>
+<figure class="align-center">
+<img alt="../../_images/mesh2.png" src="../../_images/mesh2.png" />
+</figure>
+<p>The domain is a unit cube. Length units are assumed to be <strong>mm</strong>, thus, all pressure units assumed to be <strong>MPa</strong> for the simulation (including input parameters).
+An FCC material with <a class="reference internal" href="../material.html#aniso-elasticity"><span class="std std-ref">Anisotropic Elasticity</span></a> and the <a class="reference internal" href="../material.html#base-model"><span class="std std-ref">Base Model</span></a> for plasticity is considered, with the following material parameters:</p>
+<table class="docutils align-center" id="id2">
+<caption><span class="caption-text">Single crystal elastic constants and plasticity parameters.</span><a class="headerlink" href="#id2" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><span class="math notranslate nohighlight">\(C_{11}\)</span> [MPa]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(C_{12}\)</span> [MPa]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(C_{44}\)</span> [MPa]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(m\)</span> [-]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(\dot{\gamma_0}\)</span> [1/s]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(h_0\)</span> [MPa]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(g_0\)</span> [MPa]</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(g_s\)</span> [MPa]</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(245.0 \times 10^3\)</span></p></td>
+<td><p><span class="math notranslate nohighlight">\(155.0 \times 10^3\)</span></p></td>
+<td><p><span class="math notranslate nohighlight">\(62.5 \times 10^3\)</span></p></td>
+<td><p>0.05</p></td>
+<td><p>1.0</p></td>
+<td><p>200.0</p></td>
+<td><p>210.0</p></td>
+<td><p>330.0</p></td>
+</tr>
+</tbody>
+</table>
+<p>The polycrystal is deformed in tension along the <span class="math notranslate nohighlight">\(z\)</span> direction up to 1% strain, at a rate of 0.001 <span class="math notranslate nohighlight">\(\text{s}^{-1}\)</span>, using simple velocity conditions (<span class="math notranslate nohighlight">\(v_z=0\)</span> on <code class="xref py py-data docutils literal notranslate"><span class="pre">z0</span></code> and <span class="math notranslate nohighlight">\(v_z=0.001\)</span> on <code class="xref py py-data docutils literal notranslate"><span class="pre">z1</span></code>, with additional constraints to avoid rigid-body motions).  The stress-strain information, and the the nodal coordinates, the elemental orientations, stresses and strains, and the surface forces at final time (<span class="math notranslate nohighlight">\(t = 10\text{ s}\)</span>) are written to file.</p>
+<section id="input-files">
+<h2>Input Files<a class="headerlink" href="#input-files" title="Link to this heading"></a></h2>
+<blockquote>
+<div><ul>
+<li><p><a class="reference download internal" download="" href="../../_downloads/d4ae1ffe31deda550e954879f18ad0fb/simulation.msh"><code class="xref download docutils literal notranslate"><span class="pre">simulation.msh</span></code></a></p></li>
+<li><p><a class="reference download internal" download="" href="../../_downloads/ae01a4b9bab078540dbfdb0a16ee37fb/simulation.cfg"><code class="xref download docutils literal notranslate"><span class="pre">simulation.cfg</span></code></a></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">### FEPX Configuration File</span>
+
+<span class="c1">## Material Parameters</span>
+
+    <span class="n">number_of_phases</span> <span class="mi">1</span>
+
+    <span class="n">phase</span> <span class="mi">1</span>
+
+      <span class="n">crystal_type</span> <span class="n">FCC</span>
+
+      <span class="n">c11</span> <span class="mf">245.0e3</span>
+      <span class="n">c12</span> <span class="mf">155.0e3</span>
+      <span class="n">c44</span>  <span class="mf">62.5e3</span>
+
+      <span class="n">m</span> <span class="mf">0.05</span><span class="n">d0</span>
+      <span class="n">gammadot_0</span> <span class="mf">1.0</span><span class="n">d0</span>
+
+      <span class="n">hard_type</span> <span class="n">isotropic</span>
+      <span class="n">h_0</span> <span class="mf">200.0</span>
+      <span class="n">g_0</span> <span class="mf">210.0</span>
+      <span class="n">g_s</span> <span class="mf">330.0</span>
+
+<span class="c1">## Boundary Conditions</span>
+
+    <span class="n">set_bc</span> <span class="n">vel</span> <span class="n">z0</span> <span class="n">z</span> <span class="mi">0</span>
+    <span class="n">set_bc</span> <span class="n">vel</span> <span class="n">z1</span> <span class="n">z</span> <span class="mf">0.001</span>
+    <span class="n">set_bc</span> <span class="n">vel</span> <span class="n">x0y0z0</span> <span class="n">x</span> <span class="mi">0</span> <span class="n">y</span> <span class="mi">0</span>
+    <span class="n">set_bc</span> <span class="n">vel</span> <span class="n">x1y0z0</span> <span class="n">y</span> <span class="mi">0</span>
+
+<span class="c1">## Steps</span>
+
+    <span class="n">number_of_steps</span> <span class="mi">2</span>
+    <span class="n">target_time</span> <span class="mf">5.</span> <span class="mf">10.</span>
+    <span class="n">dtime</span> <span class="mf">1.</span>
+
+<span class="c1">## Printing Results</span>
+
+    <span class="nb">print</span> <span class="n">coo</span>
+    <span class="nb">print</span> <span class="n">ori</span>
+    <span class="nb">print</span> <span class="n">stress</span>
+    <span class="nb">print</span> <span class="n">strain</span>
+    <span class="nb">print</span> <span class="n">forces</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div></blockquote>
+</section>
+<section id="execution">
+<h2>Execution<a class="headerlink" href="#execution" title="Link to this heading"></a></h2>
+<p>In the simulation directory (<code class="file docutils literal notranslate"><span class="pre">simple_simulation</span></code>):</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>mpirun<span class="w"> </span>-np<span class="w"> </span><span class="m">4</span><span class="w"> </span>fepx
+
+<span class="go"> ==========================     F   E   P   X   ==========================</span>
+<span class="go"> Info   : A finite element software package for  polycrystal plasticity.</span>
+<span class="go"> Info   : Version 2.0.0</span>
+<span class="go"> Info   : Running on 4 cores.</span>
+<span class="go"> Info   : &lt;https://fepx.info&gt;</span>
+<span class="go"> Info   : Copyright (C) 1996-2023, DPLab, ACME Lab, CNRS.</span>
+<span class="go"> Info   : ---------------------------------------------------------------</span>
+<span class="go"> Info   : Start time: 2023-12-1 at 14:03</span>
+<span class="go"> Info   : Loading simulation...</span>
+<span class="go"> Info   :   [i] Parsing file `simulation.cfg&#39;...</span>
+<span class="go"> Info   :   - Material parameters:</span>
+<span class="go"> Info   :     &gt; Number of phases: 1</span>
+<span class="go"> Info   :     &gt; phase 1 - crystal type:   fcc</span>
+<span class="go"> Info   :     &gt; m:               0.500000E-01</span>
+<span class="go"> Info   :     &gt; gammadot_0:      0.100000E+01</span>
+<span class="go"> Info   :     &gt; h_0:             0.200000E+03</span>
+<span class="go"> Info   :     &gt; g_0:             0.210000E+03</span>
+<span class="go"> Info   :     &gt; g_s0:            0.330000E+03</span>
+<span class="go"> Info   :     &gt; n:              -0.100000E+01</span>
+<span class="go"> Info   :     &gt; c11:             0.245000E+06</span>
+<span class="go"> Info   :     &gt; c12:             0.155000E+06</span>
+<span class="go"> Info   :     &gt; c44:             0.625000E+05</span>
+<span class="go"> Info   :   [i] Parsed file `simulation.cfg&#39;.</span>
+<span class="go"> Info   :   [i] Parsing file `simulation.msh&#39;...</span>
+<span class="go"> Info   :   - Mesh parameters:</span>
+<span class="go"> Info   :     &gt; Node number: 4008</span>
+<span class="go"> Info   :     &gt; Elt  number: 2453</span>
+<span class="go"> Info   :   [i] Parsed file `simulation.msh&#39;.</span>
+<span class="go"> Info   : Initializing simulation...</span>
+<span class="go"> Info   :   - Initializing fields from isotropic viscoplastic solution</span>
+<span class="go"> Info   :     &gt; solveit_vp: Iteration 1</span>
+<span class="go"> Info   :       . Solving NL iteration... R = 0.4267E-01 (490 iters)</span>
+<span class="go"> Info   :     &gt; solveit_vp: Iteration 2</span>
+<span class="go"> Info   :       . Solving NL iteration... R = 0.1751E-01 (489 iters)</span>
+<span class="go"> Info   :     &gt; solveit_vp: Iteration 3</span>
+<span class="go"> Info   :       . Solving NL iteration... R = 0.1167E-01 (489 iters)</span>
+<span class="go"> Info   :     &gt; Converged in 3 iterations</span>
+<span class="go"> Info   : Running step 1...</span>
+<span class="go"> Info   :   - Increment 1: t = 1.0000 secs, dt = 1.0000 secs</span>
+<span class="go"> Info   :     &gt; solveit_evp: Iteration 1</span>
+<span class="go"> Info   :       . Solving SA iteration... R = 0.4928E+00 (622 iters)</span>
+<span class="go"> Info   :     &gt; solveit_evp: Iteration 2</span>
+<span class="go"> Info   :       . Solving SA iteration... R = 0.2405E-03 (625 iters)</span>
+<span class="go"> Info   :     &gt; Converged in 2 iterations</span>
+
+<span class="go"> [...]</span>
+
+<span class="go"> Info   : Elapsed time:    25.044 secs.</span>
+<span class="go"> Info   : Final step terminated. Simulation completed successfully.</span>
+<span class="go"> ========================================================================</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>In the upper-level directory:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>fepx-pp<span class="w"> </span>simple_simulation
+
+<span class="go"> ==========================     F   E   P   X   ==========================</span>
+<span class="go"> Info   : A finite element software package for  polycrystal plasticity.</span>
+<span class="go"> Info   : Version 2.0.0</span>
+<span class="go"> Info   : Running on 20 threads.</span>
+<span class="go"> Info   : &lt;https://fepx.info&gt;</span>
+<span class="go"> Info   : Copyright (C) 1996-2023, DPLab, ACME Lab, CNRS.</span>
+<span class="go"> Info   : ---------------------------------------------------------------</span>
+<span class="go"> Info   : MODULE  -S loaded with arguments:</span>
+<span class="go"> Info   : [ini file] (none)</span>
+<span class="go"> Info   : [com line] simple_simulation</span>
+<span class="go"> Info   : ---------------------------------------------------------------</span>
+<span class="go"> Info   : Reading input data...</span>
+<span class="go"> Info   :   - Reading arguments...</span>
+<span class="go"> Info   : Converting result directory into .sim directory...</span>
+<span class="go"> Info   :   - Parsing results...</span>
+<span class="go"> Info   :     &gt; Input files: msh config</span>
+<span class="go"> Info   :     &gt; Node number      : 4008</span>
+<span class="go"> Info   :     &gt; Element number   : 2453</span>
+<span class="go"> Info   :     &gt; Elset number     : 20</span>
+<span class="go"> Info   :     &gt; Partition number : 4</span>
+<span class="go"> Info   :     &gt; Step number      : 1</span>
+<span class="go"> Info   :     &gt; Node results     : coo</span>
+<span class="go"> Info   :     &gt; Elt results      : ori strain stress</span>
+<span class="go"> Info   :     [o] Writing directory `simple_simulation.sim&#39;...</span>
+<span class="go"> Info   :   - Writing inputs...</span>
+<span class="go"> Info   :     [o] Writing directory `simple_simulation.sim/inputs&#39;...</span>
+<span class="go"> Info   :       . simulation.msh...</span>
+<span class="go"> Info   :       . simulation.cfg...</span>
+<span class="go"> Info   :       . *.sh...</span>
+<span class="go"> cp: cannot stat &#39;simple_simulation/*.sh&#39;: No such file or directory</span>
+<span class="go"> Info   :     [o] Wrote directory `simple_simulation.sim/inputs&#39;.</span>
+<span class="go"> Info   :   - Writing results...</span>
+<span class="go"> Info   :     [o] Writing directory `simple_simulation.sim/results&#39;...</span>
+<span class="go"> Info   :     [o] Writing directory `simple_simulation.sim/results/nodes&#39;...</span>
+<span class="go"> Info   :       . coo .............................................. 100%</span>
+<span class="go"> Info   :     [o] Wrote directory `simple_simulation.sim/results/nodes&#39;.</span>
+<span class="go"> Info   :     [o] Writing directory `simple_simulation.sim/results/elts&#39;...</span>
+<span class="go"> Info   :       . ori .............................................. 100%</span>
+<span class="go"> Info   :       . strain ........................................... 100%</span>
+<span class="go"> Info   :       . stress ........................................... 100%</span>
+<span class="go"> Info   :     [o] Wrote directory `simple_simulation.sim/results/elts&#39;.</span>
+<span class="go"> Info   :     [o] Wrote directory `simple_simulation.sim&#39;.</span>
+<span class="go"> Info   : Elapsed time: 0.075 secs.</span>
+<span class="go"> ========================================================================</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is also possible to run <strong class="command">fepx-pp .</strong> from within the directory containing the input (and output) files, but the <a class="reference internal" href="../fileformat.html#simulation-directory"><span class="std std-ref">Simulation Directory (.sim)</span></a> will still be generated in the upper-level directory.</p>
+</div>
+</div></blockquote>
+<p>The content of the resulting <a class="reference internal" href="../fileformat.html#simulation-directory"><span class="std std-ref">Simulation Directory (.sim)</span></a>, <code class="file docutils literal notranslate"><span class="pre">simple_simulation.sim</span></code>, is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>simple_simulation.sim
+├── inputs
+│   ├── simulation.cfg
+│   └── simulation.msh
+└── results
+  ├── elts
+  │   ├── ori
+  │   │   ├── ori.step0
+  │   │   └── ori.step1
+  │   ├── strain
+  │   │   ├── strain.step0
+  │   │   └── strain.step1
+  │   ├── stress
+  │   │   ├── stress.step0
+  │   │   └── stress.step1
+  └── nodes
+      └── coo
+          ├── coo.step0
+          └── coo.step1
+</pre></div>
+</div>
+</section>
+<section id="simulation-results">
+<h2>Simulation Results<a class="headerlink" href="#simulation-results" title="Link to this heading"></a></h2>
+<p>The stress-strain curve can be plotted from the <code class="file docutils literal notranslate"><span class="pre">post.force.z1</span></code> file:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>gnuplot<span class="w"> </span>plot_stress_strain.gp
+</pre></div>
+</div>
+</div></blockquote>
+<figure class="align-center" id="id3">
+<img alt="../../_images/stress_strain.png" src="../../_images/stress_strain.png" />
+<figcaption>
+<p><span class="caption-text">Macroscopic stress-strain curve recovered from the surface-integrated forces in post.force.z1. Markers denote values output at each increment.</span><a class="headerlink" href="#id3" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>The results can be plotted using Neper:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>neper<span class="w"> </span>-V<span class="w"> </span>simple_simulation.sim<span class="w"> </span>-step<span class="w"> </span><span class="m">1</span><span class="w"> </span>-showtess<span class="w"> </span><span class="m">1</span><span class="w"> </span>-showcell<span class="w"> </span><span class="m">0</span><span class="w"> </span>-showedge<span class="w"> </span><span class="s2">&quot;domtype==1&quot;</span><span class="w"> </span>-dataedgerad<span class="w"> </span><span class="m">0</span>.005<span class="w"> </span>-dataedgetrs<span class="w"> </span><span class="m">0</span>.5<span class="w"> </span>-datanodecoofact<span class="w"> </span><span class="m">10</span><span class="w"> </span>-showelt1d<span class="w"> </span>all<span class="w"> </span>-dataelt1drad<span class="w"> </span><span class="m">0</span>.005<span class="w"> </span>-dataelt3dedgerad<span class="w"> </span><span class="m">0</span>.0025<span class="w"> </span>-dataelt3dedgecol<span class="w"> </span><span class="m">32</span>:32:32<span class="w"> </span>-imagesize<span class="w"> </span><span class="m">800</span>:400<span class="w"> </span>-datanodecoo<span class="w"> </span>coo<span class="w"> </span>-dataeltcol<span class="w"> </span>strain33<span class="w"> </span>-dataeltscale<span class="w"> </span><span class="m">0</span>.005:0.015<span class="w"> </span>-dataeltscaletitle<span class="w"> </span><span class="s2">&quot;Strain [-]&quot;</span><span class="w"> </span>-print<span class="w"> </span>strain<span class="w"> </span>-dataeltcol<span class="w"> </span>stress33<span class="w"> </span>-dataeltscale<span class="w"> </span><span class="m">200</span>:400<span class="w"> </span>-dataeltscaletitle<span class="w"> </span><span class="s2">&quot;Stress [MPa]&quot;</span><span class="w"> </span>-print<span class="w"> </span>stress
+<span class="gp">$ </span>convert<span class="w"> </span>strain.png<span class="w"> </span>strain-scale3d.png<span class="w"> </span>-gravity<span class="w"> </span>East<span class="w"> </span>-composite<span class="w"> </span>deformed_mesh_strain.png
+<span class="gp">$ </span>convert<span class="w"> </span>stress.png<span class="w"> </span>stress-scale3d.png<span class="w"> </span>-gravity<span class="w"> </span>East<span class="w"> </span>-composite<span class="w"> </span>deformed_mesh_stress.png
+</pre></div>
+</div>
+</div></blockquote>
+<figure class="align-center" id="id4">
+<img alt="../../_images/strain_field.png" src="../../_images/strain_field.png" />
+<figcaption>
+<p><span class="caption-text">Strain field (<span class="math notranslate nohighlight">\(\epsilon_{33}\)</span>) at 1% axial strain (displacement field is exaggerated 10x for illustrative purposes).</span><a class="headerlink" href="#id4" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id5">
+<img alt="../../_images/stress_field.png" src="../../_images/stress_field.png" />
+<figcaption>
+<p><span class="caption-text">Stress field (<span class="math notranslate nohighlight">\(\sigma_{33}\)</span>) at 1% axial strain (displacement field is exaggerated 10x for illustrative purposes).</span><a class="headerlink" href="#id5" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="printing-intermediary-results">
+<h2>Printing Intermediary Results<a class="headerlink" href="#printing-intermediary-results" title="Link to this heading"></a></h2>
+<p>While the <code class="xref py py-data docutils literal notranslate"><span class="pre">forces</span></code> output is written at all <em>increments</em>, nodal and elemental results are only written at the end of <em>steps</em>.  To get intermediary results, it is therefore necessary to declare several <em>steps</em>.  This can be done with the changes highlighted below.</p>
+<blockquote>
+<div><ul>
+<li><p><a class="reference download internal" download="" href="../../_downloads/d4ae1ffe31deda550e954879f18ad0fb/simulation.msh"><code class="xref download docutils literal notranslate"><span class="pre">simulation.msh</span></code></a></p></li>
+<li><p><a class="reference download internal" download="" href="../../_downloads/c5f0a5ac20f1151d15a3e7b626be5d81/simulation.cfg-steps"><code class="xref download docutils literal notranslate"><span class="pre">simulation.cfg</span></code></a></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">### FEPX Configuration File</span>
+
+<span class="c1">## Material Parameters</span>
+
+    <span class="n">number_of_phases</span> <span class="mi">1</span>
+
+    <span class="n">phase</span> <span class="mi">1</span>
+
+      <span class="n">crystal_type</span> <span class="n">FCC</span>
+
+      <span class="n">c11</span> <span class="mf">245.0e3</span>
+      <span class="n">c12</span> <span class="mf">155.0e3</span>
+      <span class="n">c44</span>  <span class="mf">62.5e3</span>
+
+      <span class="n">m</span> <span class="mf">0.05</span><span class="n">d0</span>
+      <span class="n">gammadot_0</span> <span class="mf">1.0</span><span class="n">d0</span>
+
+      <span class="n">hard_type</span> <span class="n">isotropic</span>
+      <span class="n">h_0</span> <span class="mf">200.0</span>
+      <span class="n">g_0</span> <span class="mf">210.0</span>
+      <span class="n">g_s</span> <span class="mf">330.0</span>
+
+<span class="c1">## Boundary Conditions</span>
+
+    <span class="n">set_bc</span> <span class="n">vel</span> <span class="n">z0</span> <span class="n">z</span> <span class="mi">0</span>
+    <span class="n">set_bc</span> <span class="n">vel</span> <span class="n">z1</span> <span class="n">z</span> <span class="mf">0.001</span>
+    <span class="n">set_bc</span> <span class="n">vel</span> <span class="n">x0y0z0</span> <span class="n">x</span> <span class="mi">0</span> <span class="n">y</span> <span class="mi">0</span>
+    <span class="n">set_bc</span> <span class="n">vel</span> <span class="n">x1y0z0</span> <span class="n">y</span> <span class="mi">0</span>
+
+<span class="c1">## Steps</span>
+
+<span class="hll">    <span class="n">number_of_steps</span> <span class="mi">2</span>
+</span><span class="hll">    <span class="n">target_time</span> <span class="mf">5.</span> <span class="mf">10.</span>
+</span>    <span class="n">dtime</span> <span class="mf">1.</span>
+
+<span class="c1">## Printing Results</span>
+
+    <span class="nb">print</span> <span class="n">coo</span>
+    <span class="nb">print</span> <span class="n">ori</span>
+    <span class="nb">print</span> <span class="n">stress</span>
+    <span class="nb">print</span> <span class="n">strain</span>
+    <span class="nb">print</span> <span class="n">forces</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div></blockquote>
+<p>The content of the resulting <a class="reference internal" href="../fileformat.html#simulation-directory"><span class="std std-ref">Simulation Directory (.sim)</span></a>, <code class="file docutils literal notranslate"><span class="pre">simple_simulation.sim</span></code>, is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>simple_simulation.sim
+├── inputs
+│   ├── simulation.cfg
+│   └── simulation.msh
+└── results
+  ├── elts
+  │   ├── ori
+  │   │   ├── ori.step0
+  │   │   ├── ori.step1
+  │   │   └── ori.step2
+  │   ├── strain
+  │   │   ├── strain.step0
+  │   │   ├── strain.step1
+  │   │   └── strain.step2
+  │   └── stress
+  │       ├── stress.step0
+  │       ├── stress.step1
+  │       └── stress.step2
+  └── nodes
+      └── coo
+          ├── coo.step0
+          ├── coo.step1
+          └── coo.step2
+</pre></div>
+</div>
+<p>The deformed mesh can be plotted using Neper:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>neper<span class="w"> </span>-V<span class="w"> </span>simple_simulation.sim<span class="w"> </span>-step<span class="w"> </span><span class="m">1</span><span class="w"> </span>-showtess<span class="w"> </span><span class="m">1</span><span class="w"> </span>-showcell<span class="w"> </span><span class="m">0</span><span class="w"> </span>-showedge<span class="w"> </span><span class="s2">&quot;domtype==1&quot;</span><span class="w"> </span>-dataedgerad<span class="w"> </span><span class="m">0</span>.005<span class="w"> </span>-dataedgetrs<span class="w"> </span><span class="m">0</span>.5<span class="w"> </span>-datanodecoofact<span class="w"> </span><span class="m">10</span><span class="w"> </span>-showelt1d<span class="w"> </span>all<span class="w"> </span>-dataelt1drad<span class="w"> </span><span class="m">0</span>.005<span class="w"> </span>-dataelt3dedgerad<span class="w"> </span><span class="m">0</span>.0025<span class="w"> </span>-dataelt3dedgecol<span class="w"> </span><span class="m">32</span>:32:32<span class="w"> </span>-imagesize<span class="w"> </span><span class="m">800</span>:400<span class="w"> </span>-loop<span class="w"> </span>STEP<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">2</span><span class="w"> </span>-step<span class="w"> </span>STEP<span class="w"> </span>-datanodecoo<span class="w"> </span>coo<span class="w"> </span>-dataeltcol<span class="w"> </span>strain33<span class="w"> </span>-dataeltscale<span class="w"> </span><span class="m">0</span>.005:0.015<span class="w"> </span>-dataeltscaletitle<span class="w"> </span><span class="s2">&quot;Strain [-]&quot;</span><span class="w"> </span>-print<span class="w"> </span>strainSTEP<span class="w"> </span>-dataeltcol<span class="w"> </span>stress33<span class="w"> </span>-dataeltscale<span class="w"> </span><span class="m">200</span>:400<span class="w"> </span>-dataeltscaletitle<span class="w"> </span><span class="s2">&quot;Stress [MPa]&quot;</span><span class="w"> </span>-print<span class="w"> </span>stressSTEP<span class="w"> </span>-endloop
+<span class="gp">$ </span>convert<span class="w"> </span>strain1.png<span class="w"> </span>strain1-scale3d.png<span class="w"> </span>-gravity<span class="w"> </span>East<span class="w"> </span>-composite<span class="w"> </span>deformed_mesh_strain1.png
+<span class="gp">$ </span>convert<span class="w"> </span>strain2.png<span class="w"> </span>strain2-scale3d.png<span class="w"> </span>-gravity<span class="w"> </span>East<span class="w"> </span>-composite<span class="w"> </span>deformed_mesh_strain2.png
+<span class="gp">$ </span>convert<span class="w"> </span>stress1.png<span class="w"> </span>stress1-scale3d.png<span class="w"> </span>-gravity<span class="w"> </span>East<span class="w"> </span>-composite<span class="w"> </span>deformed_mesh_stress1.png
+<span class="gp">$ </span>convert<span class="w"> </span>stress2.png<span class="w"> </span>stress2-scale3d.png<span class="w"> </span>-gravity<span class="w"> </span>East<span class="w"> </span>-composite<span class="w"> </span>deformed_mesh_stress2.png
+</pre></div>
+</div>
+</div></blockquote>
+<figure class="align-center" id="id6">
+<img alt="../../_images/strain_field11.png" src="../../_images/strain_field11.png" />
+<figcaption>
+<p><span class="caption-text">Strain field (<span class="math notranslate nohighlight">\(\epsilon_{33}\)</span>) at 0.5% axial strain (displacement field is exaggerated 10x for illustrative purposes).</span><a class="headerlink" href="#id6" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id7">
+<img alt="../../_images/strain_field2.png" src="../../_images/strain_field2.png" />
+<figcaption>
+<p><span class="caption-text">Strain field (<span class="math notranslate nohighlight">\(\epsilon_{33}\)</span>) at 1% axial strain (displacement field is exaggerated 10x for illustrative purposes).</span><a class="headerlink" href="#id7" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id8">
+<img alt="../../_images/stress_field11.png" src="../../_images/stress_field11.png" />
+<figcaption>
+<p><span class="caption-text">Stress field (<span class="math notranslate nohighlight">\(\sigma_{33}\)</span>) at 0.5% axial strain (displacement field is exaggerated 10x for illustrative purposes).</span><a class="headerlink" href="#id8" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id9">
+<img alt="../../_images/stress_field2.png" src="../../_images/stress_field2.png" />
+<figcaption>
+<p><span class="caption-text">Stress field (<span class="math notranslate nohighlight">\(\sigma_{33}\)</span>) at 1% axial strain (displacement field is exaggerated 10x for illustrative purposes).</span><a class="headerlink" href="#id9" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../tutorials.html" class="btn btn-neutral float-left" title="Tutorials" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="simple_rve_simulation.html" class="btn btn-neutral float-right" title="Simple RVE-type Simulation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright ACME Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

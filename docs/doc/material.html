@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crystal Behavior (simulation.cfg) &mdash; FEPX 2.0.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/my_theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/documentation_options.js?v=51b770b3"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Loading (simulation.cfg)" href="loading.html" />
+    <link rel="prev" title="Configuration File (simulation.cfg)" href="config.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> FEPX
+          </a>
+              <div class="version">
+                2.0.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../features.html">Features</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="copying.html">Conditions of Use</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html">Configuration File (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Crystal Behavior (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#anisotropic-elasticity">Anisotropic Elasticity</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#cubic-symmetry">Cubic symmetry</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#hexagonal-symmetry">Hexagonal symmetry</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#tetragonal-symmetry">Tetragonal symmetry</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#crystal-plasticity">Crystal Plasticity</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#slip-kinetics">Slip kinetics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#hardening">Hardening</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#base-model">Base Model</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#saturation-strength-evolution">Saturation Strength Evolution</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#cyclic-hardening">Cyclic Hardening</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#precipitation-hardening">Precipitation Hardening</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#anisotropic-hardening">Anisotropic Hardening</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#coupling-model-evolutions">Coupling Model Evolutions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="loading.html">Loading (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="output.html">Simulation Results (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="running.html">Convergence Parameters (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="crystal.html">Crystal Structures</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fileformat.html">File and Directory Formats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="versions.html">Versions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="develhistory.html">Development History (1990-2020)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gpl.html">GNU General Public License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fdl.html">GNU Free Documentation License</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../papers.html">Reference Papers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../applications.html">Applications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../downloads.html">Downloads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community.html">Community</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">FEPX</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Documentation</a> &raquo;</li>
+      <li>Crystal Behavior (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/doc/material.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="crystal-behavior-simulation-cfg">
+<span id="material-behavior"></span><h1>Crystal Behavior (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)<a class="headerlink" href="#crystal-behavior-simulation-cfg" title="Link to this heading"></a></h1>
+<p>The mechanical behavior of the crystal implies the definition of the crystal structure and the definition of the mechanical behavior <em>per se</em>.  If the polycrystal (as defined in the mesh file) contains several phases, then the properties of each of the phases must be defined, successively.
+The format is as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Material Description</span>
+
+  <span class="n">number_of_phases</span> <span class="o">&lt;</span><span class="n">nphases</span><span class="o">&gt;</span>
+
+  <span class="n">phase</span> <span class="mi">1</span>
+
+      <span class="n">crystal_type</span> <span class="o">&lt;</span><span class="n">ctype</span><span class="o">&gt;</span>
+      <span class="p">[</span> <span class="n">c_over_a</span> <span class="o">&lt;</span><span class="n">ratio</span><span class="o">&gt;</span> <span class="p">]</span>
+
+      <span class="p">{</span> <span class="n">parameter</span> <span class="n">definition</span> <span class="p">}</span>
+
+  <span class="o">...</span>
+
+  <span class="n">phase</span> <span class="o">&lt;</span><span class="n">nphases</span><span class="o">&gt;</span>
+
+      <span class="n">crystal_type</span> <span class="o">&lt;</span><span class="n">ctype</span><span class="o">&gt;</span>
+      <span class="p">[</span> <span class="n">c_over_a</span> <span class="o">&lt;</span><span class="n">ratio</span><span class="o">&gt;</span> <span class="p">]</span>
+
+      <span class="p">{</span> <span class="n">parameter</span> <span class="n">definition</span> <span class="p">}</span>
+</pre></div>
+</div>
+<p>where the crystal type (<code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;ctype&gt;</span></code>) can be <code class="xref py py-data docutils literal notranslate"><span class="pre">fcc</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">bcc</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">hcp</span></code> and <code class="xref py py-data docutils literal notranslate"><span class="pre">bct</span></code>, for face-centered cubic, body-centered cubic, hexagonal close-packed and body-centered tetragonal, respectively. For <code class="xref py py-data docutils literal notranslate"><span class="pre">hcp</span></code> and <code class="xref py py-data docutils literal notranslate"><span class="pre">bct</span></code>, the <span class="math notranslate nohighlight">\(c/a\)</span> ratio (<code class="xref py py-data docutils literal notranslate"><span class="pre">c_over_a</span></code>) also needs to be provided.
+<code class="xref py py-data docutils literal notranslate"><span class="pre">{</span> <span class="pre">parameter</span> <span class="pre">definition</span> <span class="pre">}</span></code> represents a block of text that defines a mechanical behavior.  The mechanical behavior of a crystal includes <a class="reference internal" href="#aniso-elasticity"><span class="std std-ref">Anisotropic Elasticity</span></a> and <a class="reference internal" href="#crystal-plasticity"><span class="std std-ref">Crystal Plasticity</span></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All variables presented are detailed by their dimensions (if applicable) instead of any specific unit. No unit system is inherently assumed by FEPX, and the chosen unit system and value magnitudes should be consistent with the chosen length scale for the domain. For example, if it is assumed that the length scale is <em>mm</em> and SI units are to be used, then [force/area] will be understood to be <em>MPa</em>. The unit for time, however, is always assumed to be seconds (<em>s</em>).</p>
+</div>
+<section id="anisotropic-elasticity">
+<span id="aniso-elasticity"></span><h2>Anisotropic Elasticity<a class="headerlink" href="#anisotropic-elasticity" title="Link to this heading"></a></h2>
+<p>The stress, <span class="math notranslate nohighlight">\(\sigma\)</span>, is related to the elastic strain, <span class="math notranslate nohighlight">\(\epsilon\)</span>, via Hooke’s law:</p>
+<div class="math notranslate nohighlight">
+\[\sigma = \cal C \, \epsilon,\]</div>
+<p>where <span class="math notranslate nohighlight">\(\cal C\)</span> is the stiffness tensor. Using Voigt notation and the strength of materials convention, <span class="math notranslate nohighlight">\(\sigma\)</span> and <span class="math notranslate nohighlight">\(\epsilon\)</span> are written as vectors of components <span class="math notranslate nohighlight">\(\sigma_{11}\)</span>, <span class="math notranslate nohighlight">\(\sigma_{22}\)</span>, <span class="math notranslate nohighlight">\(\sigma_{33}\)</span>, <span class="math notranslate nohighlight">\(\sigma_{23}\)</span>, <span class="math notranslate nohighlight">\(\sigma_{13}\)</span>, <span class="math notranslate nohighlight">\(\sigma_{12}\)</span>, and  <span class="math notranslate nohighlight">\(\epsilon_{11}\)</span>, <span class="math notranslate nohighlight">\(\epsilon_{22}\)</span>, <span class="math notranslate nohighlight">\(\epsilon_{33}\)</span>, <span class="math notranslate nohighlight">\(2\,\epsilon_{23}\)</span>, <span class="math notranslate nohighlight">\(2\,\epsilon_{13}\)</span>, <span class="math notranslate nohighlight">\(2\,\epsilon_{12}\)</span>.  <span class="math notranslate nohighlight">\(\cal C\)</span> is symmetrical and has 21 independent components; however, its structure is greatly simplified by the crystal symmetry,  and the number of independent components (hence necessary parameters) is greatly reduced.  The moduli are expressed in [force/area].</p>
+<section id="cubic-symmetry">
+<h3>Cubic symmetry<a class="headerlink" href="#cubic-symmetry" title="Link to this heading"></a></h3>
+<p>For <em>cubic</em> symmetry (<code class="xref py py-data docutils literal notranslate"><span class="pre">bcc</span></code> and <code class="xref py py-data docutils literal notranslate"><span class="pre">fcc</span></code> crystals), Hooke’s law expands as:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{Bmatrix}
+    \sigma_{11} \\
+    \sigma_{22} \\
+    \sigma_{33} \\
+    \sigma_{23} \\
+    \sigma_{13} \\
+    \sigma_{12}
+\end{Bmatrix} =
+\begin{bmatrix}
+    C_{11} &amp; C_{12} &amp; C_{12} &amp; &amp; &amp; \\
+    C_{12} &amp; C_{11} &amp; C_{12} &amp; &amp; &amp; \\
+    C_{12} &amp; C_{12} &amp; C_{11} &amp; &amp; &amp; \\
+    &amp; &amp; &amp; C_{44} &amp; &amp; \\
+    &amp; &amp; &amp; &amp; C_{44} &amp; \\
+    &amp; &amp; &amp; &amp; &amp; C_{44}
+\end{bmatrix}
+\begin{Bmatrix}
+    \epsilon_{11} \\
+    \epsilon_{22} \\
+    \epsilon_{33} \\
+    2\epsilon_{23} \\
+    2\epsilon_{13} \\
+    2\epsilon_{12}
+\end{Bmatrix}.\end{split}\]</div>
+<p>The corresponding input is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">c11</span> <span class="o">&lt;</span><span class="n">modulus</span><span class="o">&gt;</span>
+<span class="n">c12</span> <span class="o">&lt;</span><span class="n">modulus</span><span class="o">&gt;</span>
+<span class="n">c44</span> <span class="o">&lt;</span><span class="n">modulus</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="hexagonal-symmetry">
+<h3>Hexagonal symmetry<a class="headerlink" href="#hexagonal-symmetry" title="Link to this heading"></a></h3>
+<p>For <em>hexagonal</em> symmetry (<code class="xref py py-data docutils literal notranslate"><span class="pre">hcp</span></code> crystals), Hooke’s law expands as:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{Bmatrix}
+    \sigma_{11} \\
+    \sigma_{22} \\
+    \sigma_{33} \\
+    \sigma_{23} \\
+    \sigma_{13} \\
+    \sigma_{12}
+\end{Bmatrix} =
+\begin{bmatrix}
+    C_{11} &amp; C_{12} &amp; C_{13} &amp; &amp; &amp; \\
+    C_{12} &amp; C_{11} &amp; C_{13} &amp; &amp; &amp; \\
+    C_{13} &amp; C_{13} &amp; C_{33} &amp; &amp; &amp; \\
+    &amp; &amp; &amp; C_{44} &amp; &amp; \\
+    &amp; &amp; &amp; &amp; C_{44} &amp; \\
+    &amp; &amp; &amp; &amp; &amp; \left( C_{11}-C_{12}\right)/2
+\end{bmatrix}
+\begin{Bmatrix}
+    \epsilon_{11} \\
+    \epsilon_{22} \\
+    \epsilon_{33} \\
+    2\epsilon_{23} \\
+    2\epsilon_{13} \\
+    2\epsilon_{12}
+\end{Bmatrix},\end{split}\]</div>
+<p>and the following must additionally be satisfied: <span class="math notranslate nohighlight">\(C_{33} = C_{11} + C_{12} - C_{13}\)</span> (which is why no input is expected for <span class="math notranslate nohighlight">\(C_{33}\)</span>) <a class="footnote-reference brackets" href="#decoupling" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>.</p>
+<p>The corresponding input is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">c11</span> <span class="o">&lt;</span><span class="n">modulus</span><span class="o">&gt;</span>
+<span class="n">c12</span> <span class="o">&lt;</span><span class="n">modulus</span><span class="o">&gt;</span>
+<span class="n">c13</span> <span class="o">&lt;</span><span class="n">modulus</span><span class="o">&gt;</span>
+<span class="n">c44</span> <span class="o">&lt;</span><span class="n">modulus</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="tetragonal-symmetry">
+<h3>Tetragonal symmetry<a class="headerlink" href="#tetragonal-symmetry" title="Link to this heading"></a></h3>
+<p>For <em>tetragonal</em> symmetry (<code class="xref py py-data docutils literal notranslate"><span class="pre">bct</span></code> crystals), Hooke’s law expands as:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{Bmatrix}
+    \sigma_{11} \\
+    \sigma_{22} \\
+    \sigma_{33} \\
+    \sigma_{23} \\
+    \sigma_{13} \\
+    \sigma_{12}
+\end{Bmatrix} =
+\begin{bmatrix}
+    C_{11} &amp; C_{12} &amp; C_{13} &amp; &amp; &amp; \\
+    C_{12} &amp; C_{11} &amp; C_{13} &amp; &amp; &amp; \\
+    C_{13} &amp; C_{13} &amp; C_{33} &amp; &amp; &amp; \\
+    &amp; &amp; &amp; C_{44} &amp; &amp; \\
+    &amp; &amp; &amp; &amp; C_{44} &amp; \\
+    &amp; &amp; &amp; &amp; &amp; C_{66}
+\end{bmatrix}
+\begin{Bmatrix}
+    \epsilon_{11} \\
+    \epsilon_{22} \\
+    \epsilon_{33} \\
+    2\epsilon_{23} \\
+    2\epsilon_{13} \\
+    2\epsilon_{12}
+\end{Bmatrix},\end{split}\]</div>
+<p>and the following must additionally be satisfied: <span class="math notranslate nohighlight">\(C_{33} = C_{11} + C_{12} - C_{13}\)</span> (which is why no input is expected for <span class="math notranslate nohighlight">\(C_{33}\)</span>) <a class="footnote-reference brackets" href="#decoupling" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>.</p>
+<p>The corresponding input is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">c11</span> <span class="o">&lt;</span><span class="n">modulus</span><span class="o">&gt;</span>
+<span class="n">c12</span> <span class="o">&lt;</span><span class="n">modulus</span><span class="o">&gt;</span>
+<span class="n">c13</span> <span class="o">&lt;</span><span class="n">modulus</span><span class="o">&gt;</span>
+<span class="n">c44</span> <span class="o">&lt;</span><span class="n">modulus</span><span class="o">&gt;</span>
+<span class="n">c66</span> <span class="o">&lt;</span><span class="n">modulus</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Special attention must be paid to ensure that the correct stiffness values are chosen, to align with the input convention used here.  For this convention, the Zener anisotropy ratio for cubic materials (which quantifies the level of elastic anisotropy, with 1 being perfectly isotropic) would be written as:</p>
+<div class="math notranslate nohighlight">
+\[A = {2 C_{44} \over C_{11} - C_{12}}.\]</div>
+<p>For example, Tungsten (W) is a nearly perfectly elastically isotropic cubic-symmetry material, with <span class="math notranslate nohighlight">\(C_{11} = 522.4\)</span> GPa, <span class="math notranslate nohighlight">\(C_{12} = 204.4\)</span> GPa, and <span class="math notranslate nohighlight">\(C_{44} = 160.8\)</span> GPa, which corresponds to a Zener ratio of <span class="math notranslate nohighlight">\(\simeq 1.01\)</span>.</p>
+</div>
+</section>
+</section>
+<section id="crystal-plasticity">
+<span id="id3"></span><h2>Crystal Plasticity<a class="headerlink" href="#crystal-plasticity" title="Link to this heading"></a></h2>
+<section id="slip-kinetics">
+<h3>Slip kinetics<a class="headerlink" href="#slip-kinetics" title="Link to this heading"></a></h3>
+<p>The kinematics of slip are described by a power law:</p>
+<div class="math notranslate nohighlight">
+\[\dot{\gamma}^{\alpha} = \dot{\gamma}_{0} \left( \left| {\tau}^{\alpha} \right| \over g^{\alpha} \right)^{1/m} \rm sgn({\tau}^{\alpha}),\]</div>
+<p>where <span class="math notranslate nohighlight">\(\dot{\gamma}_0\)</span> (<code class="xref py py-data docutils literal notranslate"><span class="pre">gammadot_0</span></code>) is the fixed-rate strain rate scaling coefficient (typically 1 by convention, and expressed in [1/s]), and <span class="math notranslate nohighlight">\(m\)</span> (<code class="xref py py-data docutils literal notranslate"><span class="pre">m</span></code>) is the rate sensitivity exponent.</p>
+<p>The corresponding input is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">&lt;</span><span class="n">rate_sensitivity</span><span class="p">(</span><span class="n">ies</span><span class="p">)</span><span class="o">&gt;</span>
+<span class="n">gammadot_0</span> <span class="o">&lt;</span><span class="n">slip</span> <span class="n">rate</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>One <code class="xref py py-data docutils literal notranslate"><span class="pre">m</span></code> value may be provided for all slip systems (or families), or several <code class="xref py py-data docutils literal notranslate"><span class="pre">m</span></code> values may be provided, each applying to a specific family of slip systems (see <a class="reference internal" href="crystal.html#slip-systems"><span class="std std-ref">Slip Systems</span></a>).</p>
+</section>
+<section id="hardening">
+<h3>Hardening<a class="headerlink" href="#hardening" title="Link to this heading"></a></h3>
+<p>Hardening models of increasing complexity are available, but are all evolutions of a <em>base model</em>, which corresponds to a Voce-type hardening law with isotropic hardening (same behavior on all systems).  Each evolution of this model enrich one aspect of the behavior and are introduced compared to this model, but the evolutions can be combined with each other (leading to more general hardening laws). An example will be provided.</p>
+<section id="base-model">
+<span id="id4"></span><h4>Base Model<a class="headerlink" href="#base-model" title="Link to this heading"></a></h4>
+<p>The slip system strength evolution is modeled by:</p>
+<div class="math notranslate nohighlight">
+\[\dot{g^{\alpha}} = h_{0} \left (g_s - g^{\alpha} \over g_s - g_0 \right)^{n} \dot{\gamma},
+\quad \hbox{with} \quad
+\dot{\gamma} = \sum_{\alpha} \left|\dot{\gamma}^{\alpha}\right|,\]</div>
+<p>where
+<span class="math notranslate nohighlight">\(g_0\)</span> (<code class="xref py py-data docutils literal notranslate"><span class="pre">g_0</span></code>) is the slip system initial strength (expressed in [force/area]),
+<span class="math notranslate nohighlight">\(g_s\)</span> (<code class="xref py py-data docutils literal notranslate"><span class="pre">g_s</span></code>) is the slip system saturation strength (expressed in [force/area]),
+<span class="math notranslate nohighlight">\(h_0\)</span> (<code class="xref py py-data docutils literal notranslate"><span class="pre">h_0</span></code>) is the fixed-state hardening rate scaling coefficient, and
+<span class="math notranslate nohighlight">\(n\)</span> (<code class="xref py py-data docutils literal notranslate"><span class="pre">n</span></code>) is the non-linear Voce hardening exponent.
+<span class="math notranslate nohighlight">\(g_0\)</span> may be defined by one value for all systems, one value per slip family, or one value per slip system (see <a class="reference internal" href="crystal.html#slip-systems"><span class="std std-ref">Slip Systems</span></a>).  Note that this law implied <em>isotropic</em> hardening, while <a class="reference internal" href="#anisotropic-hardening"><span class="std std-ref">Anisotropic Hardening</span></a> is described in the following.</p>
+<p>The corresponding input is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span> <span class="n">hardening</span> <span class="n">saturation</span><span class="p">[,</span><span class="n">isotropic</span><span class="p">]</span> <span class="p">]</span>
+
+<span class="n">g_0</span> <span class="o">&lt;</span><span class="n">strength</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">&gt;</span>
+<span class="n">g_s</span> <span class="o">&lt;</span><span class="n">strength</span><span class="o">&gt;</span>
+<span class="n">h_0</span> <span class="o">&lt;</span><span class="n">strength</span><span class="o">&gt;</span>
+<span class="n">n</span>   <span class="o">&lt;</span><span class="n">hardening</span> <span class="n">exponent</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="saturation-strength-evolution">
+<span id="saturation-strength"></span><h4>Saturation Strength Evolution<a class="headerlink" href="#saturation-strength-evolution" title="Link to this heading"></a></h4>
+<p>Compared to the base model, the slip system saturation strength evolves as a function of the slip activity (constant <span class="math notranslate nohighlight">\(g_s\)</span> becomes <span class="math notranslate nohighlight">\(g_s(\dot\gamma)\)</span>):</p>
+<div class="math notranslate nohighlight">
+\[\dot{g^{\alpha}} = h_{0} \left (g_{s}(\dot{\gamma}) - g^{\alpha} \over g_{s}(\dot{\gamma}) - g_{0} \right)^{n} \dot{\gamma},
+\quad \hbox{with} \quad
+\dot{\gamma} = \sum_{\alpha} \left|\dot{\gamma}^{\alpha}\right|,\]</div>
+<p>where <span class="math notranslate nohighlight">\(g_{s}(\dot{\gamma})\)</span> evolves via:</p>
+<div class="math notranslate nohighlight">
+\[g_{s}(\dot{\gamma}) = g_{s0} \left (\dot{\gamma} \over \dot{\gamma}_{s0} \right)^{m'},\]</div>
+<p>which introduces three new variables:
+<span class="math notranslate nohighlight">\(g_s\)</span> (<code class="xref py py-data docutils literal notranslate"><span class="pre">g_s</span></code>) is the initial slip system saturation strength (expressed in [force/area]),
+<span class="math notranslate nohighlight">\(m'\)</span> (<code class="xref py py-data docutils literal notranslate"><span class="pre">m_prime</span></code>) is the saturation strength rate scaling exponent, and
+<span class="math notranslate nohighlight">\(\dot{\gamma}_{s0}\)</span> (<code class="xref py py-data docutils literal notranslate"><span class="pre">gammadot_s0</span></code>) is the initial saturation slip system shear rate (typically 1 by convention, and expressed in [1/s]).</p>
+<p>Compared to the base model, replace <code class="xref py py-data docutils literal notranslate"><span class="pre">g_s</span></code> by the following input:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hardening</span> <span class="n">saturation_evolution</span>
+
+<span class="n">g_s0</span>        <span class="o">&lt;</span><span class="n">strength</span><span class="o">&gt;</span>
+<span class="n">gammadot_s0</span> <span class="o">&lt;</span><span class="n">slip</span> <span class="n">rate</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">&gt;</span>
+<span class="n">m_prime</span>     <span class="o">&lt;</span><span class="n">strength</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="cyclic-hardening">
+<span id="id5"></span><h4>Cyclic Hardening<a class="headerlink" href="#cyclic-hardening" title="Link to this heading"></a></h4>
+<p>Compared to the base model, <span class="math notranslate nohighlight">\(\dot\gamma\)</span> becomes <span class="math notranslate nohighlight">\(f\)</span>, defined as follows <a class="reference internal" href="#turkmen04" id="id6"><span>[TURKMEN04]</span></a>:</p>
+<div class="math notranslate nohighlight">
+\[\dot{g^{\alpha}} = h_{0} \left (g_s - g^{\alpha} \over g_s - g_{0} \right)^{n} f,
+\quad \hbox{with} \quad
+f = \sum_{\beta = 0}^{n_{a}} \left|\dot{\gamma}^{\beta}\right|.\]</div>
+<p>So, a slip system that contributes to hardening (<span class="math notranslate nohighlight">\(n_{a}\)</span> systems in total) is that which has a change in shear greater than a critical value:</p>
+<div class="math notranslate nohighlight">
+\[\Delta\gamma_{crit} = a \, \left( \frac{g}{g_s} \right)^c.\]</div>
+<p><span class="math notranslate nohighlight">\(a\)</span> (<code class="xref py py-data docutils literal notranslate"><span class="pre">cyclic_a</span></code>) and <span class="math notranslate nohighlight">\(c\)</span> (<code class="xref py py-data docutils literal notranslate"><span class="pre">cyclic_c</span></code>) are model parameters for a critical value of accumulated shear strain used to modify the form of the Voce hardening law.</p>
+<p>Compared to the base model, modify the hardening type and provide the <span class="math notranslate nohighlight">\(a\)</span> and <span class="math notranslate nohighlight">\(c\)</span> values:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hardening</span> <span class="n">cyclic</span>
+
+<span class="n">cyclic_a</span>    <span class="o">&lt;</span><span class="n">strength</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">&gt;</span>
+<span class="n">cyclic_c</span>    <span class="o">&lt;</span><span class="n">strength</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="precipitation-hardening">
+<span id="id7"></span><h4>Precipitation Hardening<a class="headerlink" href="#precipitation-hardening" title="Link to this heading"></a></h4>
+<p>The base slip system strength is modified to consider the effects of the presence of precipitates. This is performed by replacing <span class="math notranslate nohighlight">\(g_{0}\)</span> by <span class="math notranslate nohighlight">\(g_{0} + g_{p}\)</span>, where <span class="math notranslate nohighlight">\(g_p\)</span> is the additional strength contribution due to a precipitate phase:</p>
+<div class="math notranslate nohighlight">
+\[\dot{g^{\alpha}} = h_{0} \left (g_s - g^{\alpha} \over g_s - (g_0 + g_p) \right)^{n} \dot{\gamma},
+\quad \hbox{with} \quad
+\dot{\gamma} = \sum_{\alpha} \left|\dot{\gamma}^{\alpha}\right|,\]</div>
+<p>There are two options for precipitate strengthening <a class="reference internal" href="#courtney90" id="id8"><span>[COURTNEY90]</span></a>. Below a critical average precipitate radius (the “cutting” regime), the contribution to strength is calculated via:</p>
+<div class="math notranslate nohighlight">
+\[g_p = a_p \left(\frac{f_p \, r_p}{b_p}\right)^{\frac{1}{2}},\]</div>
+<p>where <span class="math notranslate nohighlight">\(f_{p}\)</span> (<code class="xref py py-data docutils literal notranslate"><span class="pre">f_p</span></code>) is the precipitate volume fraction, <span class="math notranslate nohighlight">\(r_p\)</span> (<code class="xref py py-data docutils literal notranslate"><span class="pre">r_p</span></code>) is the average precipitate radius, <span class="math notranslate nohighlight">\(b_p\)</span> <code class="xref py py-data docutils literal notranslate"><span class="pre">b_p</span></code> is the precipitate’s Burgers’ vector, and <span class="math notranslate nohighlight">\(a_p\)</span> (<code class="xref py py-data docutils literal notranslate"><span class="pre">a_p</span></code>) is the cutting scaling coefficient.</p>
+<p>Above a critical average precipitate radius (the “bowing” regime), the contribution to strength is calculated via:</p>
+<div class="math notranslate nohighlight">
+\[g_p = \frac{c_p \, G_m \, b_m}{L - 2 \, r_p},\]</div>
+<p>where <span class="math notranslate nohighlight">\(G_m\)</span> is the shear modulus of the matrix, <span class="math notranslate nohighlight">\(c_p\)</span> (<code class="xref py py-data docutils literal notranslate"><span class="pre">c_p</span></code>) the bowing scaling coefficient, and  <span class="math notranslate nohighlight">\(L\)</span> is the average center to center spacing of the precipitates, calculated as:</p>
+<div class="math notranslate nohighlight">
+\[L = \frac{r_p}{\sqrt{f_p}}.\]</div>
+<p>The increase in strength due to the presence of precipitates is applied globally equally to all elements.</p>
+<p id="input-parameters">Compared to the base model, provide the following additional input:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hardening</span> <span class="n">precipitation</span>
+
+<span class="n">a_p</span> <span class="o">&lt;</span><span class="n">strength</span><span class="o">&gt;</span>
+<span class="n">f_p</span> <span class="o">&lt;</span><span class="n">volume_fraction</span><span class="o">&gt;</span>
+<span class="n">r_p</span> <span class="o">&lt;</span><span class="n">length</span><span class="o">&gt;</span>
+<span class="n">b_p</span> <span class="o">&lt;</span><span class="n">length</span><span class="o">&gt;</span>
+<span class="n">c_p</span> <span class="o">&lt;</span><span class="n">coefficient</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>To disable precipitate cutting, omit <code class="xref py py-data docutils literal notranslate"><span class="pre">a_p</span></code>. To disable precipitate bowing, omit <code class="xref py py-data docutils literal notranslate"><span class="pre">c_p</span></code>.</p>
+</section>
+<section id="anisotropic-hardening">
+<span id="id9"></span><h4>Anisotropic Hardening<a class="headerlink" href="#anisotropic-hardening" title="Link to this heading"></a></h4>
+<p>Contrary to the case of isotropic hardening, for while that slip on given system generates the same hardening on all systems, and so the single crystal yield surface retains the same shape and grows isotropically <a class="footnote-reference brackets" href="#isotropic-hardening" id="id10" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a>, anisotropic hardening is such that slip on a given system generates different hardenings on the systems.</p>
+<p>Compared to the base model, the hardening coefficient (<span class="math notranslate nohighlight">\(h_0\)</span>) is multiplied by the slip interaction matrix, <span class="math notranslate nohighlight">\(h_{\alpha\beta}\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[\dot{g^{\alpha}} = h_{0} \, h_{\alpha \beta} \, \left (g_s - g^{\alpha} \over g_s - g_{0} \right)^{n} \dot{\gamma},\]</div>
+<p>The diagonal entries of the matrix correspond to <em>self-hardening</em>, while the off-diagonal entries correspond to <em>latent hardening</em>.  The special case of isotropic hardening corresponds to equal self-hardening and latent hardening, i.e. <span class="math notranslate nohighlight">\(h_{\alpha \beta} = 1 \, \forall \, \alpha,\beta\)</span>.
+The coefficients generally depend on the type of interactions between systems, but two specific cases are implemented:</p>
+<ul>
+<li><p>2-parameter interaction matrix, where the parameters are the diagonal (self-hardening) value, <span class="math notranslate nohighlight">\(d\)</span>, and the off-diagonal (latent hardening) value, <span class="math notranslate nohighlight">\(h\)</span>.</p>
+<p>The corresponding input is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hardening</span> <span class="n">anisotropic</span>
+
+<span class="n">interaction_matrix_parameters</span> <span class="o">&lt;</span><span class="n">diag</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Self-hardening + co-planar latent hardening, for which latent hardening is limited to coplanar slip systems (other interaction parameters are 0) <a class="reference internal" href="#carson17" id="id11"><span>[CARSON17]</span></a>.  In this case, the slip interaction matrix is defined by the diagonal entry, <span class="math notranslate nohighlight">\(d\)</span>, and the off-diagonal entries, <span class="math notranslate nohighlight">\(h_{1},\dots, h_{n}\)</span> (depending on the crystal symmetry / number of slip planes).</p>
+<p>The corresponding input is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hardening</span> <span class="n">anisotropic</span>
+
+<span class="n">interaction_matrix_parameters</span> <span class="o">&lt;</span><span class="n">diag</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h2</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h3</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h4</span><span class="o">&gt;</span>                                    <span class="p">(</span><span class="k">for</span> <span class="n">fcc</span><span class="p">)</span>
+<span class="n">interaction_matrix_parameters</span> <span class="o">&lt;</span><span class="n">diag</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h2</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h3</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h4</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h5</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h6</span><span class="o">&gt;</span>                          <span class="p">(</span><span class="k">for</span> <span class="n">bcc</span><span class="p">)</span>
+<span class="n">interaction_matrix_parameters</span> <span class="o">&lt;</span><span class="n">diag</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h2</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h3</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h4</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h5</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h6</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h7</span><span class="o">&gt;</span>                     <span class="p">(</span><span class="k">for</span> <span class="n">hcp</span><span class="p">)</span>
+<span class="n">interaction_matrix_parameters</span> <span class="o">&lt;</span><span class="n">diag</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h2</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h3</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h4</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h5</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h6</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h7</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h8</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h9</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h10</span><span class="o">&gt;</span>     <span class="p">(</span><span class="k">for</span> <span class="n">bct</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</section>
+<section id="coupling-model-evolutions">
+<span id="id12"></span><h4>Coupling Model Evolutions<a class="headerlink" href="#coupling-model-evolutions" title="Link to this heading"></a></h4>
+<p>An example of using several evolutions of the <a class="reference internal" href="#base-model"><span class="std std-ref">Base Model</span></a> is as follows.  We introduce both <a class="reference internal" href="#saturation-strength"><span class="std std-ref">Saturation Strength Evolution</span></a> and <a class="reference internal" href="#anisotropic-hardening"><span class="std std-ref">Anisotropic Hardening</span></a>.  The slip law becomes:</p>
+<div class="math notranslate nohighlight">
+\[\dot{g^{\alpha}} = h_{0} h_{\alpha\beta} \left (g_{s}(\dot{\gamma}) - g^{\alpha} \over g_{s}(\dot{\gamma}) - g_{0} \right)^{n} \dot{\gamma},
+\quad \hbox{with} \quad
+\dot{\gamma} = \sum_{\alpha} \left|\dot{\gamma}^{\alpha}\right|.\]</div>
+<p>where <span class="math notranslate nohighlight">\(g_{s}(\dot{\gamma})\)</span> is the function for the saturation strength, which evolves via:</p>
+<div class="math notranslate nohighlight">
+\[g_{s}(\dot{\gamma}) = g_{s0} \left (\dot{\gamma} \over \dot{\gamma}_{s0} \right)^{m'}.\]</div>
+<p>The corresponding input is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hardening</span> <span class="n">saturation_evolution</span><span class="p">,</span><span class="n">anisotropic</span>
+
+<span class="n">g_0</span>                          <span class="o">&lt;</span><span class="n">strength</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">&gt;</span>
+<span class="n">g_s0</span>                         <span class="o">&lt;</span><span class="n">strength</span><span class="o">&gt;</span>
+<span class="n">h_0</span>                          <span class="o">&lt;</span><span class="n">strength</span><span class="o">&gt;</span>
+<span class="n">n</span>                            <span class="o">&lt;</span><span class="n">hardening</span> <span class="n">exponent</span><span class="o">&gt;</span>
+<span class="n">gammadot_s0</span>                  <span class="o">&lt;</span><span class="n">slip</span> <span class="n">rate</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">&gt;</span>
+<span class="n">m_prime</span>                      <span class="o">&lt;</span><span class="n">strength</span><span class="o">&gt;</span>
+<span class="n">interaction_matrix_parameters</span> <span class="o">&lt;</span><span class="n">diag</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">h</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<div role="list" class="citation-list">
+<div class="citation" id="carson17" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id11">CARSON17</a><span class="fn-bracket">]</span></span>
+<ol class="upperalpha simple" start="18">
+<li><p>Carson, M. Obstalecki, M. Miller, and P.R. Dawson. Characterizing heterogeneous intragranular deformations in polycrystalline solids using diffraction-based and mechanics-based metrics. <em>Modelling and Simulation in Materials Science and Engineering</em>, 25:055008, 2017.</p></li>
+</ol>
+</div>
+<div class="citation" id="turkmen04" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id6">TURKMEN04</a><span class="fn-bracket">]</span></span>
+<p>H.S. Turkmen, M.P. Miller, P.R. Dawson, and J.C. Moosbrugger. A slip-based model for strength evolution during cyclic loading. <em>Journal of Engineering Materials and Technology</em>, 126(4):329-338, 2004. (Note that minor differences exist between the implemented model described above and the formulation described in the paper).</p>
+</div>
+<div class="citation" id="courtney90" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id8">COURTNEY90</a><span class="fn-bracket">]</span></span>
+<p>Thomas H. Courtney. <em>Mechanical behavior of materials</em>. eng. 2. ed. Long Grove, Illinois: Waveland Press, 2005. isbn: 9781577664253.</p>
+</div>
+</div>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="decoupling" role="note">
+<span class="label"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id1">1</a>,<a role="doc-backlink" href="#id2">2</a>)</span>
+<p>This allows for the decoupling of the hydrostatic and deviatoric portions of the elastic deformation, in the problem resolution.</p>
+</aside>
+<aside class="footnote brackets" id="isotropic-hardening" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id10">2</a><span class="fn-bracket">]</span></span>
+<p>Note that, for crystals with different families of slip systems (HCP and BCT materials), this implies faster (absolute) hardening on the slip systems of larger slip strengths (specifically, for an HCP material, the slip rates on the basal, prismatic, and pyramidal slip systems will harden such that the ratios of slip strengths remain constant).</p>
+</aside>
+</aside>
+</section>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="config.html" class="btn btn-neutral float-left" title="Configuration File (simulation.cfg)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="loading.html" class="btn btn-neutral float-right" title="Loading (simulation.cfg)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright ACME Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

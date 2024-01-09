@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Convergence Parameters (simulation.cfg) &mdash; FEPX 2.0.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/my_theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/documentation_options.js?v=51b770b3"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Crystal Structures" href="crystal.html" />
+    <link rel="prev" title="Simulation Results (simulation.cfg)" href="output.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> FEPX
+          </a>
+              <div class="version">
+                2.0.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../features.html">Features</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="copying.html">Conditions of Use</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html">Configuration File (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="material.html">Crystal Behavior (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loading.html">Loading (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="output.html">Simulation Results (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Convergence Parameters (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#velocity-convergence">Velocity Convergence</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#conjugate-gradient-convergence">Conjugate Gradient Convergence</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#material-state-convergence">Material State Convergence</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#general-convergence">General Convergence</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#termination">Termination</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#other-parameters">Other Parameters</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="crystal.html">Crystal Structures</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fileformat.html">File and Directory Formats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="versions.html">Versions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="develhistory.html">Development History (1990-2020)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gpl.html">GNU General Public License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fdl.html">GNU Free Documentation License</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../papers.html">Reference Papers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../applications.html">Applications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../downloads.html">Downloads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community.html">Community</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">FEPX</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Documentation</a> &raquo;</li>
+      <li>Convergence Parameters (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/doc/running.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="convergence-parameters-simulation-cfg">
+<span id="running"></span><h1>Convergence Parameters (<code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code>)<a class="headerlink" href="#convergence-parameters-simulation-cfg" title="Link to this heading"></a></h1>
+<p>These options modify the tolerances and general behavior of the solution algorithms, and all have default values already defined.
+They should only be modified by those who know what they are doing.</p>
+<section id="velocity-convergence">
+<h2>Velocity Convergence<a class="headerlink" href="#velocity-convergence" title="Link to this heading"></a></h2>
+<p>The velocity solver employs a hybrid successive-approximation/Newton-Raphson algorithm. Convergence of the velocity solution is based on a convergence parameter, which unless otherwise noted, is defined as the norm of the change in the velocity field, divided by the norm of the velocity field, <span class="math notranslate nohighlight">\(||\Delta u||/||u||\)</span>. Other parameters are also used to assess the convergence of the velocity solution. The following parameters pertain to the convergence of the velocity solver:</p>
+<ul class="simple">
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">nl_max_iters</span> <span class="pre">&lt;iterations&gt;</span></code>: maximum allowable number of iterations of the nonlinear velocity solver (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">50</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">nl_tol_strict</span> <span class="pre">&lt;tolerance&gt;</span></code>: desired tolerance on the elasto-viscoplastic velocity solution (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">5e-4</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">nl_tol_loose</span> <span class="pre">&lt;tolerance&gt;</span></code>: acceptable level of convergence if the desired level of convergence cannot be reached via <code class="xref py py-data docutils literal notranslate"><span class="pre">nl_tol_strict</span></code> (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">5e-4</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">nl_tol_min</span> <span class="pre">&lt;tolerance&gt;</span></code>: tolerance on the norm of the change in velocity, divided by the number of degrees of freedom, <span class="math notranslate nohighlight">\((||u||/ \rm max(ndof))\)</span>. This parameter is useful for assessing convergence when the macroscopic velocity is near zero (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">1e-10</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">nl_tol_switch_ref</span> <span class="pre">&lt;tolerance&gt;</span></code>: value of the convergence parameter at which the solution algorithm switches from successive-approximation to Newton-Raphson. To only use successive-approximations, set the value of <code class="xref py py-data docutils literal notranslate"><span class="pre">nr_tol_switch_ref</span></code> equal to the value of <code class="xref py py-data docutils literal notranslate"><span class="pre">nl_tol_strict</span></code> (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">1e-2</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">nl_tol_conv</span> <span class="pre">&lt;tolerance&gt;</span></code>: parameter between 0 and 1 that is used to assess whether the Newton-Raphson algorithm is converging slowly (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">0.2</span></code>).</p></li>
+</ul>
+</section>
+<section id="conjugate-gradient-convergence">
+<h2>Conjugate Gradient Convergence<a class="headerlink" href="#conjugate-gradient-convergence" title="Link to this heading"></a></h2>
+<p>The solution of the linear system of equations <span class="math notranslate nohighlight">\([K]\{\Delta u\} = -\{R\}\)</span> is performed using a conjugate gradient solver. The following parameters pertain to the convergence of the conjugate gradient solver:</p>
+<ul class="simple">
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">cg_max_iters</span> <span class="pre">&lt;iterations&gt;</span></code>: maximum allowable number of iterations of the conjugate gradient solver (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">16000</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">cg_tol</span> <span class="pre">&lt;tolerance&gt;</span></code>: desired tolerance on the conjugate gradient solver (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">1e-8</span></code>).</p></li>
+</ul>
+</section>
+<section id="material-state-convergence">
+<h2>Material State Convergence<a class="headerlink" href="#material-state-convergence" title="Link to this heading"></a></h2>
+<p>The convergence of the material stress state for both the viscoplastic and elasto-viscoplastic solutions is assessed by the following parameters:</p>
+<ul class="simple">
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">sx_max_iters_state</span> <span class="pre">&lt;iterations&gt;</span></code>: maximum number of iterations on material state (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">100</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">sx_max_iters_newton</span> <span class="pre">&lt;iterations&gt;</span></code>: maximum number of iterations of the Newton algorithm used to solve for crystal stress (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">100</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">sx_tol</span> <span class="pre">&lt;tolerance&gt;</span></code>: tolerance on the stress solution (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">1e-4</span></code>).</p></li>
+</ul>
+</section>
+<section id="general-convergence">
+<h2>General Convergence<a class="headerlink" href="#general-convergence" title="Link to this heading"></a></h2>
+<p>These options may control standard simulation behavior or pertain to specific deformation modes.</p>
+<ul class="simple">
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">max_incr</span> <span class="pre">&lt;increments&gt;</span></code> specifies the maximum number of increments (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">50000</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">max_total_time</span> <span class="pre">&lt;time&gt;</span></code> specifies the maximum deformation time (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">12000.0</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">load_tol</span> <span class="pre">&lt;tolerance&gt;</span></code> is the the target load tolerance. A small positive load tolerance (e.g. 0.1 <span class="math notranslate nohighlight">\(\times\)</span> control surface area) improves load control while reducing the number of small steps near target loads (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">0.0</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">dtime_factor</span> <span class="pre">&lt;time&gt;</span></code> is a number greater than or equal to 1 which is used when calculating time increments near target loads (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">1.001</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">max_bc_iter</span> <span class="pre">&lt;iterations&gt;</span></code> specifies the maximum number of boundary condition iterations (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">10</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">min_pert_frac</span> <span class="pre">&lt;fraction&gt;</span></code> is the minimum fraction of the control velocity by which the secondary and tertiary surface velocities are perturbed during boundary condition iterations (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">0.001</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">load_tol_abs</span> <span class="pre">&lt;tolerance&gt;</span></code> is the absolute tolerance on the secondary and tertiary loads. The absolute load criterion is that both loads are within the absolute load tolerance of the ideal load. Loads are considered to be within tolerance if either the absolute or relative criterion is satisfied (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">0.1</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">load_tol_rel</span> <span class="pre">&lt;tolerance&gt;</span></code> is the relative load tolerance on the secondary and tertiary loads. It represents a fraction of the load in the control direction. The relative load criterion is that the difference between the load and ideal load, normalized by the load in the control direction, is less than the relative load tolerance. Loads are considered to be within tolerance if either the absolute or relative criterion is satisfied (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">0.001</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">max_strain_incr</span> <span class="pre">&lt;increments&gt;</span></code> specifies the maximum strain increment for dwell episodes (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">0.001</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">max_strain</span> <span class="pre">&lt;strain&gt;</span></code> specifies the maximum allowable macroscopic strain (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">0.2</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">max_eqstrain</span> <span class="pre">&lt;strain&gt;</span></code> specifies the maximum allowable macroscopic equivalent strain (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">0.2</span></code>).</p></li>
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">max_iter_hard_limit</span> <span class="pre">&lt;iterations&gt;</span></code> specifies the maximum allowable iterations on the Backward Euler approximation used to update hardnesses (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">10</span></code>).</p></li>
+</ul>
+</section>
+<section id="termination">
+<h2>Termination<a class="headerlink" href="#termination" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">check_necking</span> <span class="pre">{on,off}</span></code> specifies whether or not to terminate simulation when specimen begins to neck (default: <code class="xref py py-data docutils literal notranslate"><span class="pre">off</span></code>).</p></li>
+</ul>
+</section>
+<section id="other-parameters">
+<h2>Other Parameters<a class="headerlink" href="#other-parameters" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">uniform_elts</span> <span class="pre">&lt;logical&gt;</span></code> specifies whether orientations and critical resolved shear stresses should be uniform inside individual elements, instead of having different values at different Gauss points (default <code class="xref py py-data docutils literal notranslate"><span class="pre">false</span></code>).</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="output.html" class="btn btn-neutral float-left" title="Simulation Results (simulation.cfg)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="crystal.html" class="btn btn-neutral float-right" title="Crystal Structures" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright ACME Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
