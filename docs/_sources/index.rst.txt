@@ -18,7 +18,7 @@ FEPX is a finite element software package for polycrystal plasticity. It can mod
 
     See also FEPX's companion program, `Neper <https://neper.info>`_, a polycrystal generation and meshing tool. Neper acts as the primary pre- and post-processor for FEPX.
 
-FEPX is currently maintained and developed by the Advanced Computational Materials Engineering Laboratory `ACME Lab <https://acmelab.ua.edu>`_ at The University of Alabama.
+FEPX is currently developed by the Advanced Computational Materials Engineering Laboratory `ACME Lab <https://acmelab.ua.edu>`_ at The University of Alabama, USA, and CNRS, France.
 
 .. toctree::
     :hidden:

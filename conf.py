@@ -14,8 +14,8 @@ import sphinx_rtd_theme
 project = u'FEPX'
 version = u'2.0.0'
 release = version
-author = u'ACME Lab'
-copyright = u'ACME Lab'
+author = u'ACME Lab, CNRS'
+copyright = u'ACME Lab, CNRS'
 language = 'en'
 
 master_doc = 'index'
