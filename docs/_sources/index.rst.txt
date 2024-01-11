@@ -21,13 +21,13 @@ FEPX is a finite element software package for polycrystal plasticity. It can mod
 FEPX is currently developed by the Advanced Computational Materials Engineering Laboratory `ACME Lab <https://acmelab.ua.edu>`_ at The University of Alabama, USA, and CNRS, France.
 
 .. toctree::
-    :hidden:
-    :maxdepth: 2
+   :hidden:
+   :maxdepth: 2
 
-    features.rst
-    doc/index.rst
-    doc/examples.rst
-    papers.rst
-    applications.rst
-    downloads.rst
-    community.rst
+   features.rst
+   doc/index.rst
+   doc/tutorials.rst
+   papers.rst
+   applications.rst
+   downloads.rst
+   community.rst
