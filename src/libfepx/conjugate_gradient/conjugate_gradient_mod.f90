@@ -383,102 +383,20 @@ contains
     part_res_norm = sum(delta_vel*delta_vel)
 
 
-    ! System with MPC ----------------------------------------------------------------------------------
-    case("MPC")
+       ! System with PBC or MPC ----------------------------------------------------------------------------
+    case("PBC","MPC")
 
-      where (mesh%g_ones .ne. 0)
-        buff_rhs=rhs/mesh%g_ones
-        buff_ru=ru/mesh%g_ones
-      end where
+      select case(type_bc)
 
-      call part_gather(rhs_ebe, buff_rhs, mesh%elt_dofs, exec%dof_trace)
-      call part_gather(ru_ebe, buff_ru, mesh%elt_dofs, exec%dof_trace)
-      call part_scatter(rhs_p,rhs_ebe, int(loading%conn_mpc), loading%mpc_trace)
-      call part_scatter(ru_p,ru_ebe, int(loading%conn_mpc), loading%mpc_trace)
+        case("MPC")
+          call all_to_prim("MPC", rhs_p, rhs, loading, mesh, exec)
+          call all_to_prim("MPC", ru_p, ru, loading, mesh, exec)
 
-    ru_p = rhs_p - ru_p
-    rhs_p = rhs_p*gdiag
-    zu_p = ru_p*gdiag
+        case("PBC")
+          call all_to_prim("PBC", rhs_p, rhs, loading, mesh, exec)
+          call all_to_prim("PBC", ru_p, ru, loading, mesh, exec)
 
-    part_mag = sum(zu_p*zu_p)
-
-    call par_sum(part_mag, mag)
-
-    mag = dsqrt(mag)
-
-    ! cg iterations
-
-    xnumer_o = 1.0d0
-    pu = 0.0d0
-    error = 1.0d0
-    num_iters = 0
-
-    do while (error .gt. exec%cg_tol)
-      num_iters = num_iters + 1
-
-      if (num_iters .gt. exec%cg_max_iters) then
-        call PAR_quit('error  : cg_solver_ebe: Max. iterations reached.')
-      end if
-
-      part_xnumer = sum(ru_p*gdiag*ru_p)
-
-      call par_sum(part_xnumer, xnumer)
-
-      beta = xnumer/xnumer_o
-
-      if (num_iters .eq. 1) beta = 0.0d0
-
-      xnumer_o = xnumer
-
-      pu_p = zu_p + beta*pu_p
-
-        call part_gather(pu_p_ebe, pu_p, int(loading%conn_mpc), loading%mpc_trace)
-        call part_scatter(pu, pu_p_ebe, mesh%elt_dofs, exec%dof_trace)
-
-        pu = loading%coeff_ps*pu/mesh%g_ones
-
-      call sparse_matvec_ebe(apu, pu, temp1, temp2, gstif, loading%bcs_vel_defined, kdim, dof_sub, &
-        & dof_sup, elt_sub, elt_sup, exec%dof_trace, mesh%elt_dofs)
-
-        apu_p = 0.0d0
-
-        where (mesh%g_ones .ne. 0)
-          buff_apu=apu/mesh%g_ones
-        end where
-
-        call part_gather(apu_ebe, buff_apu, mesh%elt_dofs, exec%dof_trace)
-        call part_scatter(apu_p,apu_ebe, int(loading%conn_mpc), loading%mpc_trace)
-
-      part_alpha = sum(pu_p*apu_p)
-
-      call par_sum(part_alpha, alpha)
-
-      alpha = xnumer/alpha
-
-      sol_p = sol_p + alpha*pu_p
-      ru_p = ru_p - alpha*apu_p
-      zu_p = ru_p*gdiag
-
-      part_error = sum(zu_p*zu_p)
-
-      call par_sum(part_error, error)
-
-      error = dsqrt(error)/mag
-
-    end do
-
-      call part_gather(sol_p_ebe, sol_p, int(loading%conn_mpc), loading%mpc_trace)
-      call part_scatter(delta_vel, sol_p_ebe, mesh%elt_dofs, exec%dof_trace)
-
-      delta_vel = loading%coeff_ps*delta_vel/mesh%g_ones
-      part_res_norm = sum(sol_p*sol_p)
-
-
-    ! System with PBC ----------------------------------------------------------------------------------
-    case("PBC")
-
-      call all_to_prim("PBC", rhs_p, rhs, loading, mesh, exec)
-      call all_to_prim("PBC", ru_p, ru, loading, mesh, exec)
+      end select
 
       ru_p = rhs_p - ru_p
       rhs_p = rhs_p*gdiag
@@ -490,13 +408,10 @@ contains
       zu_p = ru_p*gdiag
 
       part_mag = sum(zu_p*zu_p)
-
       call par_sum(part_mag, mag)
-
       mag = dsqrt(mag)
 
       ! cg iterations
-
       xnumer_o = 1.0d0
       pu = 0.0d0
       error = 1.0d0
@@ -520,16 +435,36 @@ contains
 
         pu_p = zu_p + beta*pu_p
 
-        call prim_to_all("PBC", type_system, pu, pu_p, loading, mesh, exec)
+        select case(type_bc)
 
-        if (type_system .eq. "v") then
-          pu = pu - loading%offset_ps
-        end if
+          case("MPC")
+            call prim_to_all("MPC", type_system, pu, pu_p, loading, mesh, exec)
+
+            if (type_system .eq. "v") then
+              pu = pu - loading%offset_ps
+            end if
+
+          case("PBC")
+            call prim_to_all("PBC", type_system, pu, pu_p, loading, mesh, exec)
+
+            if (type_system .eq. "v") then
+              pu = pu - loading%label_sg*loading%offset_ps
+            end if
+        
+        end select
 
         call sparse_matvec_ebe(apu, pu, temp1, temp2, gstif, loading%bcs_vel_defined, kdim, dof_sub, &
               & dof_sup, elt_sub, elt_sup, exec%dof_trace, mesh%elt_dofs)
 
-        call all_to_prim("PBC", apu_p, apu, loading, mesh, exec)
+        select case(type_bc)
+
+          case("MPC")
+            call all_to_prim("MPC", apu_p, apu, loading, mesh, exec)
+          
+          case("PBC")
+            call all_to_prim("PBC", apu_p, apu, loading, mesh, exec)
+        
+        end select
 
         part_alpha = sum(pu_p*apu_p)
 
@@ -549,7 +484,18 @@ contains
 
       end do
 
-      call prim_to_all("PBC", type_system, delta_vel, sol_p, loading, mesh, exec)
+      select case(type_bc)
+
+      case("MPC")
+        call prim_to_all("MPC", type_system, delta_vel, sol_p, loading, mesh, exec)
+      
+        !if (type_system .eq. "v") then
+        !  delta_vel = loading%coeff_ps*delta_vel - loading%offset_ps
+        !end if
+
+      case("PBC")
+        call prim_to_all("PBC", type_system, delta_vel, sol_p, loading, mesh, exec)
+      end select
 
       part_res_norm = sum(sol_p*sol_p)
 

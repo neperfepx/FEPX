@@ -31,12 +31,12 @@ if ("${test_mode}" MATCHES "Normal" AND NOT "${test_mode_force_minimal}" EQUAL 1
   foreach(ref_file ${ref_files})
     string(REPLACE "ref.sim" "simulation.sim" test_file ${ref_file})
     if (NOT "${test_file}" MATCHES ".png")
-      if ("${test_diff}" MATCHES "Exact")
+      if ("${test_diff}" MATCHES "Hard")
         execute_process(COMMAND ${CMAKE_COMMAND} -E compare_files
                         ${test_file} ${ref_file}
                         RESULT_VARIABLE RESVAR)
       else()
-        execute_process(COMMAND neper --diff
+        execute_process(COMMAND ${test_prog} --diff
                         ${test_file} ${ref_file}
                         RESULT_VARIABLE RESVAR)
       endif()

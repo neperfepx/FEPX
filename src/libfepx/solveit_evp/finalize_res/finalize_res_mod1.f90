@@ -277,18 +277,6 @@ contains
 
     ! Update previous variables
 
-    results%workrate = 0.0d0
-
-    ! All values below vtiny are forced to zero
-
-    where (results%work .le. vtiny)
-      results%work(:) = 0.0d0
-    end where
-
-    where (work_rate .le. vtiny)
-      work_rate(:) = 0.0d0
-    end where
-
     results%workrate = work_rate
 
   end subroutine finalize_res_totalwork
@@ -383,16 +371,6 @@ contains
 
       results%work_pl(i) = workp_step(i) + results_prev%work_pl(i)
     end do
-
-    ! All values below vtiny are forced to zero
-
-    where (results%work_pl .le. vtiny)
-      results%work_pl(:) = 0.0d0
-    end where
-
-    where (workp_rate .le. vtiny)
-      workp_rate(:) = 0.0d0
-    end where
 
     results%workrate_pl = workp_rate
 

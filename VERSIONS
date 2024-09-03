@@ -1,5 +1,14 @@
-New in 2.0.1-1 (09 Jan 2024):
-- Made minor fix.
+New in 2.0.1 (03 Sep 2024):
+- Fixed check_necking, fixed minor bugs.
+- Added g_0 and g_s0 from_file inputs from external .opt file.
+- Fixed simulation.cfg parsing (long lines).
+- Fixed simulation.sim overwriting and related terminal messages.
+- Fixed bug related to .sh files being moved into the inputs folder.
+- Fixed bug in precipitate bowing model where precipite burgers vector is used
+  instead of matrix.
+- Improved code testing.
+- Added OUTPUT_PRECISION variable.
+- Made various other changes and improvements.
 
 New in 2.0.0 (09 Jan 2024):
 - Overhaul source code.

@@ -80,6 +80,14 @@ contains
         call matrix_vec_mult(my_crys%bcc_h1, &
             & abs(sliprate(1:12, ind)), shrate(1:12), 12)
 
+      ! Fully anisotropic with 112 slip systems available 
+
+      else if (my_crys%interaction_matrix_parameters_num .eq. 3) then
+        call matrix_vec_mult(my_crys%bcc_h1, &
+            & abs(sliprate(1:12, ind)), shrate(1:12), 12)
+        call matrix_vec_mult(my_crys%bcc_112_h1, &
+            & abs(sliprate(13:24, ind)), shrate(13:24), 12)
+
         ! Co-planar
 
       else if (my_crys%interaction_matrix_parameters_num .eq. 7) then
@@ -95,31 +103,34 @@ contains
             & abs(sliprate(9:10, ind)), shrate(9:10), 2)
         call matrix_vec_mult(my_crys%bcc_h6, &
             & abs(sliprate(11:12, ind)), shrate(11:12), 2)
-      end if
 
-      if (my_crys%g_0_bcc_112 .gt. 0.0d0) then
-        ! Fully anisotropic
-
-        if (my_crys%interaction_matrix_parameters_112_num .eq. 2) then
-          call matrix_vec_mult(my_crys%bcc_112_h1, &
-              & abs(sliprate(13:24, ind)), shrate(13:24), 12)
-
-          ! Co-planar
-
-        else if (my_crys%interaction_matrix_parameters_112_num .eq. 7) then
-          call matrix_vec_mult(my_crys%bcc_112_h1, &
-              & abs(sliprate(13:14, ind)), shrate(13:14), 2)
-          call matrix_vec_mult(my_crys%bcc_112_h2, &
-              & abs(sliprate(15:16, ind)), shrate(15:16), 2)
-          call matrix_vec_mult(my_crys%bcc_112_h3, &
-              & abs(sliprate(17:18, ind)), shrate(17:18), 2)
-          call matrix_vec_mult(my_crys%bcc_112_h4, &
-              & abs(sliprate(19:20, ind)), shrate(19:20), 2)
-          call matrix_vec_mult(my_crys%bcc_112_h5, &
-              & abs(sliprate(21:22, ind)), shrate(21:22), 2)
-          call matrix_vec_mult(my_crys%bcc_112_h6, &
-              & abs(sliprate(23:24, ind)), shrate(23:24), 2)
-        end if
+        ! Co-planar with 112 slip systems available 
+    
+      else if (my_crys%interaction_matrix_parameters_num .eq. 13) then
+        call matrix_vec_mult(my_crys%bcc_h1, &
+            & abs(sliprate(1:2, ind)), shrate(1:2), 2)
+        call matrix_vec_mult(my_crys%bcc_h2, &
+            & abs(sliprate(3:4, ind)), shrate(3:4), 2)
+        call matrix_vec_mult(my_crys%bcc_h3, &
+            & abs(sliprate(5:6, ind)), shrate(5:6), 2)
+        call matrix_vec_mult(my_crys%bcc_h4, &
+            & abs(sliprate(7:8, ind)), shrate(7:8), 2)
+        call matrix_vec_mult(my_crys%bcc_h5, &
+            & abs(sliprate(9:10, ind)), shrate(9:10), 2)
+        call matrix_vec_mult(my_crys%bcc_h6, &
+            & abs(sliprate(11:12, ind)), shrate(11:12), 2)
+        call matrix_vec_mult(my_crys%bcc_112_h1, &
+            & abs(sliprate(13:14, ind)), shrate(13:14), 2)
+        call matrix_vec_mult(my_crys%bcc_112_h2, &
+            & abs(sliprate(15:16, ind)), shrate(15:16), 2)
+        call matrix_vec_mult(my_crys%bcc_112_h3, &
+            & abs(sliprate(17:18, ind)), shrate(17:18), 2)
+        call matrix_vec_mult(my_crys%bcc_112_h4, &
+            & abs(sliprate(19:20, ind)), shrate(19:20), 2)
+        call matrix_vec_mult(my_crys%bcc_112_h5, &
+            & abs(sliprate(21:22, ind)), shrate(21:22), 2)
+        call matrix_vec_mult(my_crys%bcc_112_h6, &
+            & abs(sliprate(23:24, ind)), shrate(23:24), 2)
       end if
 
     case ("hcp")

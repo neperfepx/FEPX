@@ -9,7 +9,7 @@ module orientation_conversion_mod
 ! Note: The conversions here assume no convention ("active" or "passive"). The
 ! default assumption in FEPX is a "passive" convention. If an "active"
 ! convention is chosen by the user, the internal rotation matrix is transposed
-! when converted from it's original orientation convention, and again before
+! when converted from its original orientation convention, and again before
 ! output to files. FEPX assumes "active" to mean "sample-to-crystal"
 ! transformation, and "passive" to mean "crystal-to-sample" transformation.
 
@@ -116,6 +116,7 @@ contains
     allocate(angle(m))
 
     r = 0.0d0
+    axis = 0.0d0
     axis(1, :) = 1.0d0
 
     call vec3_norm(rotvec, angle)

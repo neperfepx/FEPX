@@ -506,7 +506,7 @@ contains
 
         if (bc_iter_1 .eq. exec%max_bc_iter) then
           call par_quit('Error  :     > Maximum number of boundary&
-              & condition iterations exceeded.')
+              & condition iterations exceeded.', exec%clock_start)
         end if
       end do bc_iteration_1
 
@@ -670,7 +670,7 @@ contains
 
         if (bc_iter_2 .eq. exec%max_bc_iter) then
           call par_quit('Error  :     > Maximum number of boundary&
-              & condition iterations exceeded')
+              & condition iterations exceeded', exec%clock_start)
         end if
 
         ! Update perturbation magnitude
@@ -778,34 +778,26 @@ contains
         if (istep .eq. loading%num_steps) then
           ! Job finished successfully
 
-          call write_dot_sim_file_complete_steps(printing, loading, istep)
-
-          ! Finalize clock values and print to console
-
-          if (myid .eq. 0) then
-            call cpu_time(clock_end)
-            write (*, '(a, f10.3, a)') 'Info   : Elapsed time:', &
-                & (clock_end - exec%clock_start), ' secs.'
-          end if
+          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading, istep)
 
           call par_quit('Info   : Final step terminated. Simulation&
-              & completed successfully.')
+              & completed successfully.', exec%clock_start)
         end if
 
         ! Check that maximum strain has not been exceeded
 
         if (maxval(abs(macro_eng_strain)) .ge. exec%max_strain) then
-          call write_dot_sim_file_complete_steps(printing, loading, istep)
+          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading, istep)
 
-          call par_quit('Error  :     > Maximum eng. strain exceeded.')
+          call par_quit('Error  :     > Maximum eng. strain exceeded.', exec%clock_start)
         end if
 
         ! Check that maximum strain_eq has not been exceeded
 
         if (curr_eqstrain .ge. exec%max_eqstrain) then
-          call write_dot_sim_file_complete_steps(printing, loading, istep)
+          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading, istep)
 
-          call par_quit('Error  :     > Maximum eqv. strain exceeded.')
+          call par_quit('Error  :     > Maximum eqv. strain exceeded.', exec%clock_start)
         end if
 
         istep = istep + 1
@@ -829,9 +821,9 @@ contains
         if (maxval(abs(macro_eng_strain)) .ge. exec%max_strain) then
           ! mpk - 10/2021: Don't write that we have completed the final
           !   step. We are currently in the middle of a step.
-          call write_dot_sim_file_complete_steps(printing, loading, istep - 1)
+          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading, istep - 1)
 
-          call par_quit('Info   :     > Maximum eng. strain exceeded.')
+          call par_quit('Info   :     > Maximum eng. strain exceeded.', exec%clock_start)
         end if
 
         ! Check that maximum strain_eq has not been exceeded
@@ -839,9 +831,9 @@ contains
         if (curr_eqstrain .ge. exec%max_eqstrain) then
           ! mpk - 10/2021: Don't write that we have completed the final
           !   step. We are currently in the middle of a step.
-          call write_dot_sim_file_complete_steps(printing, loading, istep - 1)
+          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading, istep - 1)
 
-          call par_quit('Info   :     > Maximum eqv. strain exceeded.')
+          call par_quit('Info   :     > Maximum eqv. strain exceeded.', exec%clock_start)
         end if
       end if
 

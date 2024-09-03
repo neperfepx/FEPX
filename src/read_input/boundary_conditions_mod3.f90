@@ -106,17 +106,17 @@ contains
       do j = 1, 3
         if (L_defined(i, j)) then
           loading%loading_direction = i
-          loading%loading_face = j
+          loading%loading_face = j * 2
 
           strainrate = L(i,j)
 
-          nset1 = achar (loading%loading_face + ichar ('x') - 1) // '0'
-          nset2 = achar (loading%loading_face + ichar ('x') - 1) // '1'
+          nset1 = achar (j + ichar ('x') - 1) // '0'
+          nset2 = achar (j + ichar ('x') - 1) // '1'
 
           if (loading_options%bc_type(L_defined_bcindex(i, j)) .eq. "grip") then
 
             call mesh_lengths (mesh, lengths)
-            loading%gage_length = lengths(loading%loading_face)
+            loading%gage_length = lengths(j)
 
             loading_options%bc_var = "vel"
             loading_options%num_bcs = 6
@@ -136,7 +136,7 @@ contains
           else if (loading_options%bc_type(L_defined_bcindex(i, j)) .eq. "minimal") then
 
             call mesh_lengths (mesh, lengths)
-            loading%gage_length = lengths(loading%loading_face)
+            loading%gage_length = lengths(j)
             dir = achar (loading%loading_direction + ichar ('x') - 1)
 
             loading_options%bc_var = "vel"

@@ -40,6 +40,7 @@ module parallel_mod
   public :: par_min
   public :: par_message
   public :: par_quit
+  public :: par_barrier
   public :: par_gather
   public :: par_gatherv
   public :: par_gatherv_array
@@ -327,7 +328,27 @@ contains
 
   !===========================================================================
 
-  subroutine par_quit(message, abort)
+  subroutine par_barrier()
+
+    !  Blocks the caller until all processes in the communicator have called it.
+    !   https://www.mpich.org/static/docs/v3.1.3/www3/MPI_Barrier.html
+    !---------------------------------------------------------------------------
+
+    ! Locals:
+
+    integer :: ierr
+
+    !---------------------------------------------------------------------------
+
+    call mpi_barrier(mpi_comm_world, ierr)
+
+    return
+
+  end subroutine par_barrier
+
+  !===========================================================================
+
+  subroutine par_quit(message, clock_start, method)
 
     !  Clean up and exit.
 
@@ -335,36 +356,35 @@ contains
 
     ! Arguments:
     ! message: Message to write
-    ! abort: Flag that forces mpi to abort over finalize
+    ! method: "finalize" (default) or "abort"
 
     character*(*), intent(in) :: message
-    logical, intent(in), optional :: abort
+    real(rk), intent(in), optional  :: clock_start
+    character(len=*), intent(in), optional :: method
 
     ! Locals:
 
     integer :: ierr, enverr = 1
-    logical :: use_abort
+    real(rk) :: clock_end
     character(len=72), parameter :: footer = "============================&
         &============================================"
 
     !---------------------------------------------------------------------------
 
-    use_abort = .false.
-
-    if (present(abort)) then
-      if (abort) then
-        use_abort = .true.
+    if (present(clock_start) .and. clock_start .gt. 0.0d0) then
+      if (myid .eq. 0) then
+        call cpu_time(clock_end)
+        write (*, '(a, f10.3, a)') 'Info   : Elapsed time:', (clock_end - clock_start), ' secs.'
       end if
     end if
 
     call par_message(6, message, allwrite=.false.)
     call par_message(6, footer, allwrite=.false.)
 
-    if (use_abort) then
-      call mpi_abort(mpi_comm_world, enverr, ierr)
-
-    else
+    if (.not. present(method) .or. method .eq. "finalize") then
       call mpi_finalize(ierr)
+    else if (method .eq. "abort") then
+      call mpi_abort(mpi_comm_world, enverr, ierr)
     end if
 
     stop

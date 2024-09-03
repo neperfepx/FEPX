@@ -410,8 +410,9 @@ module types_mod
     real(rk) :: m
     real(rk) :: gammadot_0
     real(rk) :: h_0
-    real(rk) :: g_0
-    real(rk) :: g_0_bcc_112
+    real(rk), allocatable :: g_0(:,:)
+    real(rk), allocatable :: g_0_tmp(:)
+    logical :: g_0_112 = .false.
     real(rk) :: g_s0
     real(rk) :: n
     real(rk) :: c11
@@ -437,6 +438,7 @@ module types_mod
     logical :: anisotropic
     logical :: cyclic
     logical :: saturation_evolution
+    ! Precipitation hardening parameters
     logical :: precipitation
     logical :: precipitation_cutting
     logical :: precipitation_bowing
@@ -450,20 +452,17 @@ module types_mod
     real(rk) :: r_p
     real(rk) :: b_m
     real(rk) :: c_p
+    real(rk) :: precipitation_strength
 
     logical :: use_aniso_m
     real(rk) :: aniso_m (10) ! hardwiring as a temporary patch
 
-    integer :: hratio_num ! Number of input strength values
-    real(rk), allocatable :: hratio_cubic(:) ! fcc and bcc only
-    real(rk), allocatable :: hratio_hcp(:) ! hcp only
-    real(rk), allocatable :: hratio_bct(:) ! bct only
-    real(rk), allocatable :: hratio_cubic_112(:)
+    integer :: num_vals ! Number of input strength values
+    integer :: num_g_0_vals_112 ! Number of input strength values
 
     real(rk) :: bulk_shear_mod
     real(rk) :: bulk_mod
 
-    integer :: hratio_num_112
 
     real(rk) :: t_min
 
@@ -483,12 +482,7 @@ module types_mod
     real(rk) :: bct_h2(2, 2), bct_h3(2, 2), bct_h4(4, 4), bct_h5(2, 2), &
         & bct_h6(4, 4), bct_h7(2, 2), bct_h8(2, 2), bct_h9(4, 4), bct_h10(8, 8)
 
-    ! Slip strength ratios
     ! Hardening-related parameters.
-    real(rk), allocatable :: interaction_matrix_parameters_112(:)
-    integer :: interaction_matrix_parameters_112_num
-    ! Precipitation hardening parameters
-
     integer :: numslip
     integer :: numvertices
 
@@ -646,11 +640,27 @@ module types_mod
     !> initial element orientations, indexed elt_sub:elt_sup
     real(rk), allocatable :: ori(:,:,:)
 
+    !> initial element crss, indexed elt_sub:elt_sup  (optional)
+    real(rk), allocatable :: crss(:,:,:)
+    !> initial element saturation strength, indexed elt_sub:elt_sup  (optional)
+    real(rk), allocatable :: sat_str(:,:)
+
     !> orientation parameterization (rodrigues, etc.)
     character(len=50) :: orientation_parameterization
 
     !> orientation convention (active or passive)
     character(len=50) :: orientation_convention
+
+    
+    ! Optional input flags
+
+    logical :: g_s_from_file = .false.
+    logical :: g_0_from_file = .false.
+
+    !> crss file hardening
+    logical :: crss_defined = .false.
+    !> saturation strength file hardening
+    logical :: sat_str_defined = .false.
 
     integer :: num_fasets
 

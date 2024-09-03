@@ -127,8 +127,12 @@ contains
       write (*, '(a)') "Info   :     > set imposed strain rate state"
     end if
   
-    call set_imposed_strain_rate_state(loading, loading_options)
-  
+    call initiate_driving_matrix_parallel(mesh, loading, exec)
+    
+    call derive_gage_length(loading, mesh, exec)
+    
+    call set_imposed_strain_rate_state(loading, loading_options, mesh, exec)
+
     call calc_bcs_steps(loading_options, mesh, loading)
     
     call split_diagonal_periodicity_vectors(loading)
@@ -139,9 +143,6 @@ contains
 
     call calc_driving_nodes_ebe(mesh, loading, exec)
     
-    call derive_gage_length(loading, mesh, exec)
-
-    loading%offset_ps = loading%offset_ps*loading%gage_length
     loading%step_velocity = loading%step_velocity*loading%gage_length
     
     call calc_bcs_steps(loading_options, mesh, loading)
@@ -153,7 +154,6 @@ contains
     call fix_rigid_body_motion(loading_options, loading, mesh)
 
     do i = dof_sub, dof_sup
-      !loading%label_sg(i) = loading%label_pv(i)*loading%label_pv_drive(i)
       loading%label_sg(i) = loading%label_pv(i)
 
       if (loading%label_sg(i) .ne. 0.0d0) then
@@ -163,7 +163,6 @@ contains
     
     call part_gather(loading%label_sg_ebe, real(loading%label_sg,rk), mesh%elt_dofs, exec%dof_trace)
 
-    !loading%offset_ps = loading%offset_ps*loading%label_sg
     call part_gather(loading%offset_ps_ebe, real(loading%offset_ps,rk), mesh%elt_dofs, exec%dof_trace)
 
     call propagate_bcs_mpcs(mesh, exec, loading)

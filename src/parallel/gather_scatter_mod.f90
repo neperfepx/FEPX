@@ -522,7 +522,7 @@ contains
           &ipoint out of bounds')
 
         if (ipoint > dim2_sups(tr%num_procs)) then
-          call par_quit('segv', .true.)
+          call par_quit('segv', -1.0d0, "abort")
         end if
 
         if (dim2_to_processors(ipoint) - 1 .ne. tr%myid) then ! moving

@@ -62,7 +62,7 @@ contains
     call find_indices(my_phase, phase, indices, num_ind, elt_sub - 1)
 
     ratio(1, indices) = (crss_sat(indices) - &
-        & crss(1, indices))/(crss_sat(indices) - crys%g_0)
+        & crss(1, indices))/(crss_sat(indices) - crys%g_0(1, :))
 
     select case (icode)
 
@@ -75,7 +75,7 @@ contains
 
     case (2) ! eval_rate_der
       dfunc(1, indices) = -crys%h_0/ &
-          & (crss_sat(indices) - crys%g_0)* &
+          & (crss_sat(indices) - crys%g_0(1, :))* &
           & shrate(indices)*mysign(1, indices)*crys%n
 
       dfunc(2:n_slip, indices) = spread(dfunc(1, indices), &
@@ -134,7 +134,7 @@ contains
 
         ratio(1:crys%numslip, i) = (crss_sat(i) - &
             & crss(1:crys%numslip, i))/(crss_sat(i) - &
-            & crys%g_0)
+            & crys%g_0(1:crys%numslip,i))
 
         call calculate_shrate(mesh, sliprate, shrate, crys%structure, i, crys)
 
@@ -151,7 +151,7 @@ contains
 
         case (2) ! eval_rate_der
           dfunc(1:crys%numslip, i) = -crys%h_0/ &
-              & (crss_sat(i) - crys%g_0)* &
+              & (crss_sat(i) - crys%g_0(1:crys%numslip, i))* &
               & shrate(1:crys%numslip)*mysign(1:crys%numslip, i)* &
               & crys%n
 
@@ -268,7 +268,7 @@ contains
       if (islip .eq. 1) then
         ratio(islip, indices) = (crss_sat(indices) - &
             & crss(islip, indices))/(crss_sat(indices) - &
-            & crys%g_0)
+            & crys%g_0(islip,indices))
 
         select case (icode)
 
@@ -279,7 +279,7 @@ contains
 
         case (2) ! eval_rate_der
           dfunc(islip, indices) = -crys%h_0/ &
-              & (crss_sat(indices) - crys%g_0)* &
+              & (crss_sat(indices) - crys%g_0(islip, indices))* &
               & active_shrate(indices)*mysign(islip, indices)* &
               & crys%n
 

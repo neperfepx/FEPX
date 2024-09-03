@@ -1,0 +1,11 @@
+$ElsetCrssSat
+2 1
+1 44.0d0
+2 44.0d0
+$EndElsetCrssSat
+$ElsetCrss
+2 32
+1 22.0d0 22.0d0 22.0d0 22.0d0 22.0d0 32.0d0 32.0d0 32.0d0 32.0d0 32.0d0
+2 22.0d0 22.0d0 22.0d0 22.0d0 22.0d0 32.0d0 32.0d0 32.0d0 32.0d0 32.0d0
+$EndElsetCrss
+

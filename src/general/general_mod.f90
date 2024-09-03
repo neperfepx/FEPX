@@ -14,7 +14,7 @@ module general_mod
   integer :: elt_sub, elt_sup, node_sub, node_sup, dof_sub, dof_sup
   integer, allocatable :: list_dof_sub(:), list_dof_sup(:)
 
-  real(rk) :: vtiny = 1.0d-16
+  real(rk) :: vtiny = 1.0d-15
   ! FEM parameters and other stuff
   integer, parameter :: ndim = 10 ! 10-noded tetrahedra
   integer, parameter :: kdim = 3*ndim

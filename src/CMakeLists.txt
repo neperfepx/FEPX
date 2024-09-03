@@ -5,7 +5,7 @@
 # Top-level CMakeLists.txt for building FEPX
 cmake_minimum_required(VERSION 3.0)
 project(fepx Fortran)
-set(FEPX_VERSION \"2.0.1-1\")
+set(FEPX_VERSION \"2.0.1\")
 
 # Prepare CMake for Fortran and locate MPI package
 enable_language(Fortran)
@@ -17,7 +17,9 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(BUILD_TESTING_MODE "Normal" CACHE STRING "Choose the testing mode: Normal Minimal Writing")
-set(BUILD_TESTING_DIFF "Exact" CACHE STRING "Choose the testing method: Exact Neper")
+set(BUILD_TESTING_DIFF "Soft" CACHE STRING "Choose the testing method: Soft Hard")
+
+set(OUTPUT_PRECISION "1e-12" CACHE STRING "Output precision (for real numbers)")
 
 # Option for verbose build
 option(VERBOSE "Build verbose Makefiles" OFF)
@@ -57,7 +59,7 @@ endif()
 if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
     set(CMAKE_Fortran_MODDIR_FLAG   "-J")
 #    set(CMAKE_Fortran_FLAGS         "")
-    set(CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g -fcheck=all -fbacktrace -fbounds-check -Wall")
+    set(CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g -fcheck=all -fbacktrace -fbounds-check -Wall -Wno-argument-temporarily-ignored -Wno-unused-dummy-argument")
     set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -ftree-vectorize -funroll-loops")
 # IFORT is currently not supported, but will be in the future
 #ELSEIF(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
@@ -108,7 +110,7 @@ file(GLOB fepx
     read_input/read_input_periodicity/periodicity_mod2.f90
     read_input/read_input_periodicity/periodicity_mod3.f90
     
-    general/crys_type_mod.f90
+    general/crys_type_mod1.f90
     general/crys_type_mod2.f90
     general/crys_type_mod3.f90
     general/general_mod.f90

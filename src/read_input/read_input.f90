@@ -31,16 +31,16 @@ contains
     type(exec_type), intent(inout) :: exec
 
     integer :: i
-    character(len=20) :: mesh_file = "", ori_file = "", phase_file = ""
+    character(len=20) :: mesh_file = "", ori_file = "", phase_file = "", &
+                        & opt_file = ""
     type(loading_options_type) :: loading_options
 
   call loading_options_set_default(loading_options)
 
-  call read_config(mesh_file, ori_file, phase_file, printing, loading_options, &
-                  & crys, exec)
+  call read_config(mesh_file, opt_file, ori_file, phase_file, printing,  &
+                  & loading_options, crys, mesh, exec)
 
   call crys_initparams(crys)
-
   ! read mesh and initialize partition sizes -----------------------------------
   call read_meshsize(mesh_file, mesh)
 
@@ -49,18 +49,19 @@ contains
   dof_sub = 3*(node_sub - 1) + 1
   dof_sup = 3*node_sup
 
-  call read_mesh(mesh_file, ori_file, phase_file, mesh)
+  mesh%maxnumslip = 0
+  call read_mesh(mesh_file, opt_file, ori_file, phase_file, mesh)
   !  ---------------------------------------------------------------------------
 
   if (mesh%num_phases .ne. size(crys)) then
     call par_quit('Error  :     > Number of phases in mesh and config file&
         & do not match.')
       end if
-
-  mesh%maxnumslip = 0
-  do i = 1, size(crys)
-    mesh%maxnumslip = max (mesh%maxnumslip, crys(i)%numslip)
-  end do
+  if (mesh%maxnumslip .eq. 0 ) then
+    do i = 1, size(crys)
+      mesh%maxnumslip = max (mesh%maxnumslip, crys(i)%numslip)
+    end do
+  end if
 
   if (myid .eq. 0) then
     write (*, '(a)') 'Info   : Initializing simulation...'

@@ -97,7 +97,7 @@ contains
 
   !===========================================================================
 
-  subroutine read_mesh(mesh_file, ori_file, phase_file, mesh)
+  subroutine read_mesh(mesh_file, opt_file, ori_file, phase_file, mesh)
 
     ! Parse the .msh file and have each processor store only what it needs.
 
@@ -107,21 +107,28 @@ contains
     ! line: Input line on current record to be parsed.
 
     character(len=*), intent(in) :: mesh_file
+    character(len=*), intent(in) :: opt_file
     character(len=*), intent(in) :: ori_file
     character(len=*), intent(in) :: phase_file
     type(mesh_type), intent(inout) :: mesh
+    
 
     integer :: iostatus
     integer :: eofstat
     character(len=256) :: line
-    integer :: status
+    character(len=32)  :: iarray(16)
+    integer :: status, nlines, i
     integer, allocatable :: elset_ids_inv(:)
     integer :: nb_elsets
     integer, allocatable :: elt_elset(:)
     real(rk), allocatable :: elset_oris(:, :)
+    real(rk), allocatable :: elset_crss(:, :)
+    real(rk), allocatable :: elset_sat_str(:, :)
     integer :: file_id
 
     logical :: eltoris_defined = .false.
+    logical :: eltcrss_defined = .false.
+    logical :: eltsat_str_defined = .false.
 
     open (newunit=file_id, file=mesh_file, status='old', action='read', &
         & iostat=iostatus)
@@ -217,6 +224,100 @@ contains
           &to hang.'
     end if
 
+    
+    if (opt_file .ne. "") then
+      open (newunit=file_id, file=opt_file, status='old', action='read', &
+          & iostat=iostatus)
+
+      ! Initialize eofstat and loop over the entire file until eof is reached.
+      eofstat = 0
+
+      if (iostatus .ne. 0) then
+        call par_quit("Error  :     > Failure to open `simulation.opt' file.")
+      end if
+
+      if (myid .eq. 0) then
+        write (*, '(a,a,a)') "Info   :   [i] Parsing file `", trim(opt_file), "'..."
+      end if
+
+      do while (eofstat .eq. 0)
+        ! Read in line and determine which section is to be parsed.
+        ! The below line is a temporary fix to avoid program hangs - jc
+        line = ""
+  
+        read (file_id, '(a)', iostat=eofstat) line
+        
+        select case (line)
+
+        case ('$ElsetCrss') ! Per-elset crss (optional).
+          backspace (file_id)
+          if ((mesh%g_0_from_file .eqv. .true.) .and. (eltcrss_defined .eqv. .false.)) then
+            call read_elsetflag(file_id, eltcrss_defined, elset_crss,'ElsetCrss', &
+            & mesh)
+            mesh%crss_defined = .true.
+          else ! if not reading skip lines
+            read (file_id, '(a)', iostat=eofstat) line
+            read (line, *) iarray(1:2)
+            read (iarray(1), *) nlines
+            do i = 1, nlines
+              read (file_id, *) line
+            end do
+          end if
+        case ('$ElementCrss') ! Per-element crss (optional).
+          backspace (file_id)
+          if (mesh%g_0_from_file .eqv. .true.) then
+            call read_eltflag(file_id, eltcrss_defined, elset_crss,'ElementCrss', &
+            & mesh)
+            mesh%crss_defined = .true.
+          else ! if not reading skip lines 
+            read (file_id, '(a)', iostat=eofstat) line
+            read (line, *) iarray(1:2)
+            read (iarray(1), *) nlines
+            do i = 1, nlines
+              read (file_id, *) line
+            end do
+          end if
+
+        case ('$ElsetCrssSat') ! Per-elset saturation strength (optional).
+          backspace (file_id)
+          if ((mesh%g_s_from_file .eqv. .true.) .and. (eltsat_str_defined .eqv. .false.)) then
+            call read_elsetflag(file_id, eltsat_str_defined, elset_sat_str,'ElsetCrssSat', &
+                & mesh)
+            mesh%sat_str_defined = .true.
+          else ! if not reading skip lines
+            read (file_id, '(a)', iostat=eofstat) line
+            read (line, *) iarray(1:2)
+            read (iarray(1), *) nlines
+            do i = 1, nlines
+              read (file_id, *) line
+            end do
+          end if
+
+        case ('$ElementCrssSat') ! Per-element saturation strength (optional).
+          backspace (file_id)
+          if (mesh%g_s_from_file .eqv. .true.) then
+            call read_eltflag(file_id, eltsat_str_defined, elset_sat_str,'ElementCrssSat', &
+                & mesh)
+            mesh%sat_str_defined = .true.
+          else ! if not reading skip lines
+            read (file_id, '(a)', iostat=eofstat) line
+            read (line, *) iarray(1:2)
+            read (iarray(1), *) nlines
+            do i = 1, nlines
+              read (file_id, *) line
+            end do
+          end if
+        end select
+
+      end do  
+
+      if (myid .eq. 0) then
+        write (*, '(a,a,a)') "Info   :   [i] Parsed file `", trim(opt_file), "'."
+      end if
+      close (file_id) 
+
+    end if
+
     if (ori_file .ne. "") then
 
       open (newunit=file_id, file=ori_file, status='old', action='read', &
@@ -260,7 +361,23 @@ contains
 
       close (file_id)
     end if
+    !
+    if (mesh%crss_defined .eqv. .true.) then
 
+      allocate (mesh%crss(size(elset_crss,1), elt_sub:elt_sup,nqpt))
+
+      call read_mesh_init_eltcrss(mesh, eltcrss_defined, elset_crss, elt_elset, nb_elsets)
+
+    end if
+    !
+    if (mesh%sat_str_defined .eqv. .true.) then
+
+      allocate (mesh%sat_str(size(elset_sat_str,1), elt_sub:elt_sup))
+
+      call read_mesh_init_eltsat_str(mesh, eltsat_str_defined, elset_sat_str, elt_elset, nb_elsets)
+
+    end if
+    !
     allocate (mesh%ori(3, 3, elt_sub:elt_sup))
 
     call read_mesh_init_eltoris(mesh, eltoris_defined, elt_elset, elset_oris, nb_elsets)

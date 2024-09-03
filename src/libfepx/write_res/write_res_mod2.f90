@@ -24,6 +24,7 @@ module write_res_mod2
   use orientation_conversion_mod
   use units_mod
   use parallel_mod
+  use fepx_config_mod
 
   implicit none
 
@@ -51,7 +52,7 @@ contains
     write (fmt, *) '(', numdim, '(e13.7,1x))'
     
     ! Write to file
-    write (ounit, fmt) (var(i), i=start, end)
+    write (ounit, fmt) (anint (var(i) / output_precision) * output_precision, i=start, end)
 
   end subroutine write_res_vector
 
@@ -75,7 +76,7 @@ contains
     write (fmt, *) '(', numdim, '(e13.7,1x))'
 
     ! Write to file
-    write (ounit, fmt) (var(:, i), i=start, end)
+    write (ounit, fmt) (anint (var(:, i) / output_precision) * output_precision, i=start, end)
 
   end subroutine write_res_array
 
@@ -100,12 +101,22 @@ contains
 
     ! Write to file
     if (numdim .eq. 6) then
-      write (ounit, fmt) ((/var(1, 1, i), var(2, 2, i), var(3, 3, i), &
-        & var(2, 3, i), var(1, 3, i), var(1, 2, i)/), i=start, end)
+      write (ounit, fmt) ((/anint (var(1, 1, i) / output_precision) * output_precision, &
+                            anint (var(2, 2, i) / output_precision) * output_precision, &
+                            anint (var(3, 3, i) / output_precision) * output_precision, &
+                            anint (var(2, 3, i) / output_precision) * output_precision, &
+                            anint (var(1, 3, i) / output_precision) * output_precision, &
+                            anint (var(1, 2, i) / output_precision) * output_precision/), i=start, end)
     else if (numdim .eq. 9) then
-      write (ounit, fmt) ((/var(1, 1, i), var(1, 2, i), var(1, 3, i), &
-        & var(2, 1, i), var(2, 2, i), var(2, 3, i), &
-        & var(3, 1, i), var(3, 2, i), var(3, 3, i)/), i=start, end)
+      write (ounit, fmt) ((/anint (var(1, 1, i) / output_precision) * output_precision, &
+                            anint (var(1, 2, i) / output_precision) * output_precision, &
+                            anint (var(1, 3, i) / output_precision) * output_precision, &
+                            anint (var(2, 1, i) / output_precision) * output_precision, &
+                            anint (var(2, 2, i) / output_precision) * output_precision, &
+                            anint (var(2, 3, i) / output_precision) * output_precision, &
+                            anint (var(3, 1, i) / output_precision) * output_precision, &
+                            anint (var(3, 2, i) / output_precision) * output_precision, &
+                            anint (var(3, 3, i) / output_precision) * output_precision/), i=start, end)
     end if
 
   end subroutine write_res_tensor

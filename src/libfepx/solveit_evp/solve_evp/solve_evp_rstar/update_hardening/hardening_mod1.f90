@@ -88,7 +88,7 @@ contains
       do is = 1, num_slip
         shrate(indices) = shrate(indices) + abs(results%sliprate(is, indices, qpt))
       end do
-
+      ! If saturation evolution is active
       if (crys(iphase)%saturation_evolution .eqv. .true.) then
         where (my_phase .eq. iphase)
           where (shrate .gt. 0.0d0)
@@ -100,23 +100,34 @@ contains
             crss_sat = crys(iphase)%g_s0
           end where
         end where
-
+      
+      ! If saturation evolution is NOT active
       else if (crys(iphase)%saturation_evolution .eqv. .false.) then
-        where (my_phase .eq. iphase)
-          crss_sat = crys(iphase)%g_s0
-        end where
+        if (mesh%crss_defined .eqv. .false.) then
+          if (mesh%sat_str_defined .eqv. .true.) then
+            crss_sat = mesh%sat_str(1,:)
+          else 
+            where (my_phase .eq. iphase)
+              crss_sat = crys(iphase)%g_s0
+            end where
+          end if
+        else if (mesh%crss_defined .eqv. .true.)  then
+          if (mesh%sat_str_defined .eqv. .true.) then
+            crss_sat = mesh%sat_str(1,:)
+          else 
+            call par_quit("Error  :     > Invalid definiton of hardening parameters")
+          end if
+        end if
       end if
 
-      if (crys(iphase)%h_0 .eq. 0.d0) then
+      if ((crys(iphase)%h_0 .eq. 0.d0)) then
         results%crss(:, indices, qpt) = results_prev%crss(:, indices, qpt)
       end if
-
       deallocate (indices)
     end do !num_phases
 
     if (euler_method .eq. 'euler_forward') then
       ! Initial guess via Forward Euler
-
       call hard_law(mesh, crys, results%acmslip(:, :, qpt), &
           & results%sliprate(:, :, qpt), hard_rate, dhard_rate, &
           & results_prev%crss(:, :, qpt), crss_sat, results%sliprate(:, :, qpt), &
@@ -168,9 +179,8 @@ contains
       do iter_hard = 1, exec%max_iter_hard_limit
         ! Should we add "where (.not. converged) clause here?
         ! Yes, but we need to pass mask argument to hard_law
-
         crss_tmp = results%crss(:, :, qpt)
-
+        !
         call hard_law(mesh, crys, results%acmslip(:, :, qpt), &
             & results%sliprate(:, :, qpt), hard_rate, dhard_rate, &
             & crss_tmp, crss_sat, results%sliprate(:, :, qpt), &
@@ -248,7 +258,7 @@ contains
           do islip = 1, n_slip
             where (my_phase .eq. iphase)
               where ((dabs(res(islip, :)) .lt. &
-                  & exec%toler_hard*crys(iphase)%g_0) .and. &
+                  & exec%toler_hard*crys(iphase)%g_0(islip, :)) .and. &
                   & (newton_ok(islip, :)) .and. (.not. done)) &
                   & converged(islip, :) = .true.
             end where
@@ -279,9 +289,9 @@ contains
             if (all(newton_ok(1:n_slip, i))) newton_ok_all(i) = .true.
           end do
         end do
-
         inewton = count(.not. newton_ok_all)
         if ((count(converged_all) + inewton) .eq. elt_sup - elt_sub + 1) exit
+
       end do
 
       if (iter_hard > exec%max_iter_hard_limit) then

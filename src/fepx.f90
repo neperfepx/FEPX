@@ -29,6 +29,12 @@ program FEPX
   type(results_type) :: results
   type(printing_type) :: printing
 
+  ! Managing command-line arguments ----------------------------------------------
+
+  if (command_argument_count() .ge. 2) then
+    call fepx_runonarguments
+  end if
+
   ! Initializing -----------------------------------------------------------------
 
   call fepx_init(exec)
@@ -74,6 +80,6 @@ program FEPX
 
   ! Exiting ----------------------------------------------------------------------
 
-  call par_quit('Info   : Completed simulation successfully')
+  call par_quit('Info   : Completed simulation successfully',clock_start=exec%clock_start)
 
 end program FEPX

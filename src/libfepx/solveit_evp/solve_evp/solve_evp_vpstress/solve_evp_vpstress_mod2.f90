@@ -163,7 +163,8 @@ contains
       call crys_get(crys(iphase), vertices=sig_fs)
 
       n_edge = crys(iphase)%numvertices
-      sig_fs = sig_fs*crys(iphase)%g_0
+
+      sig_fs = sig_fs*crys(iphase)%g_0(1,elt_sub)
 
       do i = 1, n_edge
         do j = 1, 5
@@ -216,7 +217,7 @@ contains
       ! rc 6/24/2016 reordered the where loops as well so it only runs the
       !   parts needed
 
-      sig_fs = sig_fs*crys(iphase)%g_0
+      sig_fs = sig_fs*crys(iphase)%g_0(1,elt_sub)
 
       ! rc 6/24/2016: Reordered loops for better memory striding
       do j = 1, n_edge
@@ -230,76 +231,10 @@ contains
       end do
 
       deallocate (sig_fs)
+
     end do !num_phases
 
   end subroutine vertex_stress
-
-  subroutine scale_stress(mesh, crys, sig, crss)
-
-    ! Rescale stress initial guess according to hardness.
-
-    !---------------------------------------------------------------------------
-
-    ! Arguments:
-    ! sig: Initial guess for stress (input/output)
-    ! crss: Crystal hardnesses
-
-    type(mesh_type) :: mesh
-    type(crys_type) :: crys (:)
-    real(rk), intent(inout) :: sig(5, elt_sub:elt_sup)
-    real(rk), intent(in) :: crss(elt_sub:elt_sup)
-
-    ! Locals:
-
-    integer :: my_phase(elt_sub:elt_sup)
-    integer :: islip
-    integer :: i
-    integer :: k
-    integer :: iphase
-    integer :: num_ind
-    integer, pointer :: indices(:) => null()
-    real(rk), pointer  :: p_hat_vec(:, :) => null()
-    real(rk) :: taumax(elt_sub:elt_sup)
-    real(rk) :: tau(elt_sub:elt_sup)
-
-    !---------------------------------------------------------------------------
-
-    my_phase = mesh%elt_phase(elt_sub:elt_sup)
-
-    !-tm  from donald's verion:
-
-    taumax = 1.0d-8  ! deb/ prevent div by 0
-    !taumax = 0.0d0
-
-    do iphase = 1, mesh%num_phases
-      call crys_get(crys(iphase), dev=p_hat_vec)
-
-      call find_indices(my_phase, iphase, indices, num_ind, elt_sub - 1)
-
-      do islip = 1, crys(iphase)%numslip
-        call ss_project(p_hat_vec(:, islip), sig, num_ind, indices, tau)
-
-        tau(indices) = dabs(tau(indices))
-
-        ! maybe: where ((tau(:,indices) .gt. taumax) taumax=tau
-        where ((my_phase .eq. iphase) .and. (tau .gt. taumax))
-          taumax = tau
-        end where
-      end do
-
-      deallocate (p_hat_vec)
-      deallocate (indices)
-    end do !num_phases
-
-    tau = crss/taumax
-
-    do k = elt_sub, elt_sup
-      do i = 1, 5
-        sig(i, k) = sig(i, k)*tau(k)
-      end do
-    end do
-
-  end subroutine scale_stress
 
   subroutine solve_newton_vp(mesh, crys, exec, sig, d_vec, crss, irc, eps, converged, &
       &vp_log)
@@ -443,46 +378,5 @@ contains
     irc = -2
 
   end subroutine solve_newton_vp
-
-  !> Computes the average strength of the crystal slip systems
-  subroutine compute_avg_crss(mesh, crys, crss, crss_avg)
-
-    type(mesh_type) :: mesh
-    type(crys_type) :: crys (:)
-    real(rk), intent(in) :: crss(mesh%maxnumslip, elt_sub:elt_sup)
-    real(rk), intent(inout) :: crss_avg(elt_sub:elt_sup)
-
-    integer, pointer :: indices(:) => null()
-    integer :: islip
-    integer :: n_slip
-    integer :: iphase
-    integer :: num_ind
-
-    !---------------------------------------------------------------------------
-
-    crss_avg = 0.0d0
-
-    ! Goes through the total number of phases in the material
-    do iphase = 1, mesh%num_phases
-      n_slip = crys(iphase)%numslip
-
-      ! Finds the indices corresponding to the current phase the loop is on
-
-      call find_indices(mesh%elt_phase(elt_sub:elt_sup), iphase, indices, num_ind, elt_sub - 1)
-
-      ! Sums up the crystal slip strengths corresponding to the given indices
-
-      do islip = 1, n_slip
-        crss_avg(indices) = crss_avg(indices) + crss(islip, indices)
-      end do
-
-      ! Calculates the average of these slip systems
-
-      crss_avg(indices) = crss_avg(indices)/n_slip
-
-      deallocate (indices)
-    end do
-
-  end subroutine compute_avg_crss
 
 end module solve_evp_vpstress_mod2

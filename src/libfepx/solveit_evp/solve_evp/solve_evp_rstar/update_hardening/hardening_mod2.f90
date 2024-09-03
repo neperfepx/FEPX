@@ -93,7 +93,6 @@ contains
       else if (crys(i)%anisotropic) then
         call anisotropic_hardening(mesh, crys(i), i, sliprate, func, dfunc, crss, crss_sat, icode, &
             & mysign, my_phase)
-
       else
         call par_quit('Error  :     > Invalid hardening model option input.')
       end if

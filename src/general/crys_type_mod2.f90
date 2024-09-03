@@ -26,8 +26,7 @@ module crys_type_mod2
 
 contains
 
-  subroutine crys_create(my_crys, structure, c_over_a, hratio_cubic, &
-      & hratio_hcp, hratio_bct, hratio_cubic_112, self)
+  subroutine crys_create(my_crys, structure, c_over_a, self)
 
     ! Create a crystal type object
 
@@ -36,20 +35,12 @@ contains
     ! Arguments:
     ! structure: Crystal type
     ! self: Result, crystal type object
-    ! hratio_cubic: Array of fcc and bcc slip system strengths ratios
-    ! hratio_hcp: Array of hcp slip system strengths ratios
-    ! hratio_bct: Array of bct slip system strengths ratios
     ! c_over_a: Hexagonal c/a ratio
-    ! hratio_hcp: Ratio of pyramidal strengths to basal/prismatic
 
     type(crys_type) :: my_crys
     character(len=4), intent(in) :: structure
-    real(rk), intent(in), optional :: hratio_cubic(12)
-    real(rk), intent(in), optional :: hratio_hcp(18)
-    real(rk), intent(in), optional :: hratio_bct(32)
     real(rk), intent(in), optional :: c_over_a
-    real(rk), intent(in), optional :: hratio_cubic_112(12)
-    type(crys_type) :: self
+    type(crys_type), intent(inout) :: self
 
     ! Locals:
 
@@ -68,19 +59,10 @@ contains
     select case (structure)
 
     case ("fcc")
-      call schmidtensors(my_crys, structure, self%schmid_3x3, &
-          & hratio_cubic=hratio_cubic)
+      call schmidtensors(my_crys, structure, self%schmid_3x3)
 
     case ("bcc")
-      if (my_crys%g_0_bcc_112 .le. 0.0d0) then
-        call schmidtensors(my_crys, structure, self%schmid_3x3, &
-            & hratio_cubic=hratio_cubic)
-
-      else if (my_crys%g_0_bcc_112 .gt. 0.0d0) then
-        call schmidtensors(my_crys, structure, self%schmid_3x3, &
-            & hratio_cubic=hratio_cubic, &
-            & hratio_cubic_112=hratio_cubic_112)
-      end if
+        call schmidtensors(my_crys, structure, self%schmid_3x3)
 
     case ("hcp")
       if (present(c_over_a)) then
@@ -90,8 +72,7 @@ contains
         cratio = dflt_cratio
       end if
 
-      call schmidtensors(my_crys, structure, self%schmid_3x3, c_over_a=cratio, &
-          & hratio_hcp=hratio_hcp)
+      call schmidtensors(my_crys, structure, self%schmid_3x3, c_over_a=cratio)
 
     case ("bct")
       if (present(c_over_a)) then
@@ -101,8 +82,7 @@ contains
         cratio = dflt_cratio
       end if
 
-      call schmidtensors(my_crys, structure, self%schmid_3x3, c_over_a=cratio, &
-          & hratio_bct=hratio_bct)
+      call schmidtensors(my_crys, structure, self%schmid_3x3, c_over_a=cratio)
 
     case default
     end select
@@ -157,8 +137,7 @@ contains
 
   !===========================================================================
 
-  subroutine schmidtensors(my_crys, structure, schmid, c_over_a, hratio_cubic,&
-      & hratio_hcp, hratio_bct, hratio_cubic_112)
+  subroutine schmidtensors(my_crys, structure, schmid, c_over_a)
 
     ! Create Schmid tensors for specified crystal type
 
@@ -168,19 +147,11 @@ contains
     ! structure: Crystal type
     ! schmid: Schmid tensors
     ! c_over_a: Hexagonal c/a ratio
-    ! hratio_cubic: Ratio of fcc and bcc slip strengths
-    ! hratio_hcp: Ratio of hcp slip strengths
-    ! hratio_bct: Ratios of bct slip strengths
 
     type(crys_type) :: my_crys
     character(len=4), intent(in) :: structure
     real(rk), pointer :: schmid(:, :, :)
     real(rk), intent(in), optional :: c_over_a
-
-    real(rk), intent(in), optional :: hratio_cubic(12)
-    real(rk), intent(in), optional :: hratio_hcp(18)
-    real(rk), intent(in), optional :: hratio_bct(32)
-    real(rk), intent(in), optional :: hratio_cubic_112(12)
 
     ! Locals:
 
@@ -281,7 +252,6 @@ contains
 
     real(rk) :: hcp_n_c(3, 18) = 0.0d0
     real(rk) :: hcp_d_c(3, 18) = 0.0d0
-    real(rk) :: scale = 0.0d0
 
     ! Plane normals, Miller-Bravais notation
 
@@ -425,14 +395,10 @@ contains
         schmid(:, :, i) = matmul(reshape(cub_110_c(:, i), (/3, 1/)), &
             & reshape(cub_111_c(:, i), (/1, 3/)))
 
-        ! Scale by relative strengths
-
-        scale = 1.0d0/hratio_cubic(i)
-        !schmid(:, :, i) = scale * schmid(:, :, i)
       end do
 
     case ("bcc")
-      if (my_crys%g_0_bcc_112 .lt. 0.0d0) then
+      if (my_crys%g_0_112 .eqv. .false.) then
         allocate (schmid(3, 3, 12))
         schmid = 0.0d0
 
@@ -442,13 +408,11 @@ contains
           cub_110_c(:, i) = cub_110(:, i)/norm2(cub_110(:, i))
           cub_111_c(:, i) = cub_111(:, i)/norm2(cub_111(:, i))
 
-          scale = 1.0d0/hratio_cubic(i)
-
           schmid(:, :, i) = matmul(reshape(cub_111_c(:, i), (/3, 1/)), &
-              & reshape(cub_110_c(:, i), (/1, 3/)))*scale
+              & reshape(cub_110_c(:, i), (/1, 3/)))
         end do
 
-      else if (my_crys%g_0_bcc_112 .gt. 0.0d0) then
+      else
         allocate (schmid(3, 3, 24))
         schmid = 0.0d0
 
@@ -458,20 +422,16 @@ contains
           cub_110_c(:, i) = cub_110(:, i)/norm2(cub_110(:, i))
           cub_111_c(:, i) = cub_111(:, i)/norm2(cub_111(:, i))
 
-          scale = 1.0d0/hratio_cubic(i)
-
           schmid(:, :, i) = matmul(reshape(cub_111_c(:, i), (/3, 1/)), &
-              & reshape(cub_110_c(:, i), (/1, 3/)))*scale
+              & reshape(cub_110_c(:, i), (/1, 3/)))
         end do
 
         do i = 13, 24
           cub_211_c(:, i - 12) = cub_211(:, i - 12)/ &
               & norm2(cub_211(:, i - 12))
 
-          scale = 1.0d0/hratio_cubic_112(i - 12)
-
           schmid(:, :, i) = matmul(reshape(cub_111_c(:, i), (/3, 1/)), &
-              & reshape(cub_211_c(:, i), (/1, 3/)))*scale
+              & reshape(cub_211_c(:, i), (/1, 3/)))
         end do
       end if
 
@@ -498,10 +458,6 @@ contains
         schmid(:, :, i) = matmul(reshape(hcp_d_c(:, i), (/3, 1/)), &
             & reshape(hcp_n_c(:, i), (/1, 3/)))
 
-        ! Scale by relative strengths
-
-        scale = 1.0d0/hratio_hcp(i)
-        schmid(:, :, i) = scale*schmid(:, :, i)
       end do
 
     case ("bct")
@@ -531,10 +487,6 @@ contains
         schmid(:, :, i) = matmul(reshape(bct_d_c(:, i), (/3, 1/)), &
             & reshape(bct_n_c(:, i), (/1, 3/)))
 
-        ! Scale by relative strengths
-
-        scale = 1.0d0/hratio_bct(i)
-        schmid(:, :, i) = scale*schmid(:, :, i)
       end do
 
     case default
@@ -1556,15 +1508,16 @@ contains
 
   !===============================================================================
 
-  subroutine set_bcc_block_matrices(diag, h1, h2, h3, h4, h5, h6, my_crys)
+  subroutine set_bcc_block_matrices(diag, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10,&
+    & h11, h12, my_crys)
 
     ! Define hardening interaction matrix for bcc crystal type
 
     ! Arguments:
     ! diag: Matrix diagonal value
-    ! h1, h2, h3, h4, h5, h6: Hardening interaction values
+    ! h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12: Hardening interaction values
     real(rk), intent(in) :: diag
-    real(rk), intent(in) :: h1, h2, h3, h4, h5, h6
+    real(rk), intent(in) :: h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12
     ! Locals:
     ! i: Looping index
     integer :: i
@@ -1579,6 +1532,20 @@ contains
         my_crys%bcc_h1(i, i) = diag
       end do
 
+    else if (my_crys%interaction_matrix_parameters_num .eq. 3) then
+      allocate (my_crys%bcc_h1(12, 12))
+      my_crys%bcc_h1 = h1
+      do i = 1, 12
+        my_crys%bcc_h1(i, i) = diag
+      end do
+
+      allocate (my_crys%bcc_112_h1(12, 12))
+      my_crys%bcc_112_h1 = h7
+      do i = 1, 12
+        my_crys%bcc_112_h1(i, i) = diag
+      end do
+      my_crys%bcc_h2 = 0.0d0
+
     else if (my_crys%interaction_matrix_parameters_num .eq. 7) then
       allocate (my_crys%bcc_h1(2, 2))
       my_crys%bcc_h1 = reshape((/diag, h1, h1, diag/), (/2, 2/))
@@ -1588,30 +1555,23 @@ contains
       my_crys%bcc_h5 = reshape((/diag, h5, h5, diag/), (/2, 2/))
       my_crys%bcc_h6 = reshape((/diag, h6, h6, diag/), (/2, 2/))
 
+
+    else if (my_crys%interaction_matrix_parameters_num .eq. 13) then
+      allocate (my_crys%bcc_h1(2, 2))
+      my_crys%bcc_h1 = reshape((/diag, h1, h1, diag/), (/2, 2/))
+      my_crys%bcc_h2 = reshape((/diag, h2, h2, diag/), (/2, 2/))
+      my_crys%bcc_h3 = reshape((/diag, h3, h3, diag/), (/2, 2/))
+      my_crys%bcc_h4 = reshape((/diag, h4, h4, diag/), (/2, 2/))
+      my_crys%bcc_h5 = reshape((/diag, h5, h5, diag/), (/2, 2/))
+      my_crys%bcc_h6 = reshape((/diag, h6, h6, diag/), (/2, 2/))
+      my_crys%bcc_112_h1 = reshape((/diag, h7, h7, diag/), (/2, 2/))
+      my_crys%bcc_112_h2 = reshape((/diag, h8, h8, diag/), (/2, 2/))
+      my_crys%bcc_112_h3 = reshape((/diag, h9, h9, diag/), (/2, 2/))
+      my_crys%bcc_112_h4 = reshape((/diag, h10, h10, diag/), (/2, 2/))
+      my_crys%bcc_112_h5 = reshape((/diag, h11, h11, diag/), (/2, 2/))
+      my_crys%bcc_112_h6 = reshape((/diag, h12, h12, diag/), (/2, 2/))
     end if
 
-    if (my_crys%g_0_bcc_112 .gt. 0.0d0) then
-
-      if (my_crys%interaction_matrix_parameters_112_num .eq. 2) then
-        allocate (my_crys%bcc_112_h1(12, 12))
-        my_crys%bcc_112_h1 = h1
-        do i = 1, 12
-          my_crys%bcc_112_h1(i, i) = diag
-        end do
-        my_crys%bcc_h2 = 0.0d0
-
-      else if (my_crys%interaction_matrix_parameters_112_num .eq. 7) then
-        allocate (my_crys%bcc_h1(2, 2))
-        my_crys%bcc_112_h1 = reshape((/diag, h1, h1, diag/), (/2, 2/))
-        my_crys%bcc_112_h2 = reshape((/diag, h2, h2, diag/), (/2, 2/))
-        my_crys%bcc_112_h3 = reshape((/diag, h3, h3, diag/), (/2, 2/))
-        my_crys%bcc_112_h4 = reshape((/diag, h4, h4, diag/), (/2, 2/))
-        my_crys%bcc_112_h5 = reshape((/diag, h5, h5, diag/), (/2, 2/))
-        my_crys%bcc_112_h6 = reshape((/diag, h6, h6, diag/), (/2, 2/))
-
-      end if
-
-    end if
 
   end subroutine set_bcc_block_matrices
 

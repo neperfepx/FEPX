@@ -61,6 +61,20 @@ contains
    
     ! System with MPC ---------------------------------------------------------------------------------- 
     case("MPC")
+      call part_gather(primarray_ebe, primarray, int(loading%conn_mpc), loading%mpc_trace)
+     
+     allarray = 0.0d0
+     
+     call part_scatter(allarray, primarray_ebe, mesh%elt_dofs, exec%dof_trace)
+    
+     allarray=allarray/mesh%g_ones
+
+     if (type_system .eq. "dv") then
+       allarray = loading%coeff_ps*allarray
+     else 
+       allarray = loading%coeff_ps*allarray + loading%offset_ps
+     end if
+
 
     ! System with PBC ---------------------------------------------------------------------------------- 
     case("PBC")
@@ -99,7 +113,7 @@ contains
        allarray = loading%coeff_ps*(allarray + allarray_secondary_drive - allarray_primary_drive)
      else 
        allarray = loading%coeff_ps*(allarray + allarray_secondary_drive - allarray_primary_drive) &
-         &+ loading%offset_ps
+         &+ loading%label_sg*loading%offset_ps
      end if
 
     end select
@@ -139,6 +153,15 @@ contains
     ! System with MPC ---------------------------------------------------------------------------------- 
     case("MPC")
 
+      where (mesh%g_ones .ne. 0)
+        array_norm=allarray/mesh%g_ones
+      end where
+
+      call part_gather(array_ebe, array_norm, mesh%elt_dofs, exec%dof_trace)
+
+      call part_scatter(primarray, array_ebe, int(loading%conn_mpc), loading%mpc_trace)
+      
+    
     ! System with PBC ---------------------------------------------------------------------------------- 
     case("PBC")
 

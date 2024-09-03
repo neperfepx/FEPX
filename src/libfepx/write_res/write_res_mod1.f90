@@ -94,10 +94,13 @@ contains
     character(len=16), allocatable :: elt_results(:)
     real(rk), allocatable  :: result_buffer(:),result_buffer_arr(:,:)
     real(rk), allocatable  :: result_buffer_tensor(:,:,:)
-    character(len=256):: filename,dir_name
+    character(len=10000):: filename,dir_name,cwd
     character(len=8):: step_num
     character(len=8) :: charid ! assumes less than 10,000 processes
     real(rk), parameter :: pi_over_180 = 4.0d0*datan(1.0d0)/180.0d0
+    character(len=50) :: fmt
+
+    real(rk) :: eps = 1e-15
 
     !---------------------------------------------------------------------------
 
@@ -106,8 +109,8 @@ contains
     allocate (elt_results(1))
     node_results(1) = ' **entity node'
     elt_results(1) = ' **entity elt'
-
-    dir_name = "simulation.sim"
+    call getcwd(cwd)
+    dir_name = trim(cwd)//"/simulation.sim"
     write (step_num, '(a,i0)') "step",step
     write (charid, '(i0)') myid + 1
     ! Begin writing output
@@ -119,8 +122,10 @@ contains
       allocate(result_buffer(1:mesh%num_nodes*3))      
       call par_gatherv(results%coo(dof_sub: dof_sup),result_buffer,3*mesh%global_info(2,:),mesh%global_info(3,:))      
       filename = trim(dir_name)//'/results/nodes/coo/coo.'//trim(step_num)
-      open (printing%coo_u, file=filename)
-      if (myid == 0)  call write_res_vector(result_buffer(:), printing%coo_u, 3, step,1,mesh%num_nodes*3)
+      if (myid == 0)  then 
+        open (printing%coo_u, file=filename)
+        call write_res_vector(result_buffer(:), printing%coo_u, 3, step,1,mesh%num_nodes*3)
+      end if
       call add_to_output_files_list(printing, step, 'coo', node_results, pflag_node)
       deallocate(result_buffer)
     end if
@@ -130,8 +135,10 @@ contains
       allocate(result_buffer(1:mesh%num_nodes*3))      
       call par_gatherv((results%coo-mesh%coo),result_buffer,3*mesh%global_info(2,:),mesh%global_info(3,:))  
       filename = trim(dir_name)//'/results/nodes/disp/disp.'//trim(step_num)
-      open (printing%disp_u, file=filename)
-      if (myid == 0)  call write_res_vector(result_buffer(:), printing%disp_u,  3, step,1,mesh%num_nodes*3)
+      if (myid == 0)  then 
+        open (printing%disp_u, file=filename)
+        call write_res_vector(result_buffer(:), printing%disp_u,  3, step,1,mesh%num_nodes*3)
+      end if
       call add_to_output_files_list(printing, step, 'disp', node_results, pflag_node)
       deallocate(result_buffer)
     end if
@@ -140,9 +147,11 @@ contains
     if (printing%print_vel) then
       allocate(result_buffer(1:mesh%num_nodes*3))      
       call par_gatherv(results%vel,result_buffer,3*mesh%global_info(2,:),mesh%global_info(3,:))      
-      filename = trim(dir_name)//'/results/nodes/vel/vel.'//trim(step_num)
-      open (printing%vel_u, file=filename)
-      if (myid == 0)  call write_res_vector(result_buffer(:), printing%vel_u,  3, step,1,mesh%num_nodes*3)
+      filename = trim(dir_name)//'/results/nodes/vel/vel.'//trim(step_num)      
+      if (myid == 0)  then 
+        open (printing%vel_u, file=filename)
+        call write_res_vector(result_buffer(:), printing%vel_u,  3, step,1,mesh%num_nodes*3)
+      end if
       call add_to_output_files_list(printing, step, 'vel', node_results, pflag_node)
       deallocate(result_buffer)
     end if
@@ -154,7 +163,7 @@ contains
       !
       io = printing%ori_u
       filename = trim(dir_name)//'/results/elts/ori/ori.'//trim(step_num)
-      open (io, file=filename)
+      if (myid == 0) open (io, file=filename)
       !
       ! Determine passive (c2s) or active (s2c) from orientation options
       if (mesh%orientation_convention .eq. 'passive') then
@@ -204,7 +213,7 @@ contains
     if (printing%print_crss) then
       io = printing%crss_u
       filename = trim(dir_name)//'/results/elts/crss/crss.'//trim(step_num)
-      open (io, file=filename)
+      if (myid==0) open (io, file=filename)
       call add_to_output_files_list(printing, step, 'crss', elt_results, pflag_elt)
 
       numdim= mesh%maxnumslip
@@ -217,79 +226,26 @@ contains
           ! Check if the element is fcc
           if (crys(phase)%structure .eq. "fcc") then
             ! Next, check if the hardening is isotropic or anisotropic.
-            if (.not. crys(phase)%anisotropic) then
-              if ((crys(phase)%hratio_num .eq. 1)) then
-                write (io, '(1(e13.7,1x))') crys(phase)%hratio_cubic(1)*(result_buffer_arr(1, j))
-              else
-                write (io, '(12(e13.7,1x))') crys(phase)%hratio_cubic(1:12)*(result_buffer_arr(1, j))
-              end if
-            else
-              write (io, '(12(e13.7,1x))') crys(phase)%hratio_cubic(1:12)*(result_buffer_arr(:, j))
-            end if
+            write (io, '(12(e13.7,1x))')(result_buffer_arr(:, j))
+            !
           ! Else, check if the element is bcc
           else if (crys(phase)%structure .eq. "bcc") then
             ! Next, check if 112 slip is considered
-            if (crys(phase)%g_0_bcc_112 .lt. 0.0d0) then ! Not considered
+            if (crys(phase)%g_0_112 .eqv. .false. )then ! Not considered
               ! Next, check if the hardening is isotropic or anisotropic.
-              if (.not. crys(phase)%anisotropic) then
-                if ((crys(phase)%hratio_num .eq. 1)) then
-                  write (io, '(1(e13.7,1x))') crys(phase)%hratio_cubic(1)*(result_buffer_arr(1, j))
-                else
-                  write (io, '(12(e13.7,1x))') crys(phase)%hratio_cubic(1:12)*(result_buffer_arr(1, j))
-                end if
-              else
-                write (io, '(12(e13.7,1x))') crys(phase)%hratio_cubic(1:12)*(result_buffer_arr(:, j))
-              end if
-            else if (crys(phase)%g_0_bcc_112 .gt. 0.0d0) then ! Considered
+              write (io, '(12(e13.7,1x))') (result_buffer_arr(:, j))
+            else if (crys(phase)%g_0_112 .eqv. .true.) then ! Considered
               ! Next, check if the hardening is isotropic or anisotropic.
-              if (.not. crys(phase)%anisotropic) then
-                if ((crys(phase)%hratio_num .eq. 1)) then
-                  write (io, '(2(e13.7,1x))') crys(phase)%hratio_cubic(1)*(result_buffer_arr(1, j)), &
-                    crys(phase)%hratio_cubic_112(1)*(result_buffer_arr(1, j))
-                else
-                  write (io, '(24(e13.7,1x))') crys(phase)%hratio_cubic(1:12)*(result_buffer_arr(1, j)), &
-                    crys(phase)%hratio_cubic_112(1:12)*(result_buffer_arr(1, j))
-                end if
-              else
-                write (io, '(24(e13.7,1x))') crys(phase)%hratio_cubic(1:12)*(result_buffer_arr(:, j)), &
-                  crys(phase)%hratio_cubic_112(1:12)*(result_buffer_arr(:, j))
-              end if
+              write (io, '(24(e13.7,1x))') (result_buffer_arr(:, j))
             end if
           ! Else, check if the element is hcp.
           else if (crys(phase)%structure .eq. "hcp") then
             ! Next, check if the hardening is isotropic or anisotropic.
-            if (.not. crys(phase)%anisotropic) then
-              if ((crys(phase)%hratio_num .eq. 3)) then
-                write (io, '(3(e13.7,1x))') (result_buffer_arr(1, j))*crys(phase)%hratio_hcp(1), &
-                  & (result_buffer_arr(1, j))*crys(phase)%hratio_hcp(4), &
-                  & (result_buffer_arr(1, j))*crys(phase)%hratio_hcp(7)
-              else
-                write (io, '(18(e13.7,1x))') crys(phase)%hratio_hcp(1:18)*(result_buffer_arr(1, j))
-              end if
-            else
-              write (io, '(18(e13.7,1x))') (result_buffer_arr(:, j))*crys(phase)%hratio_hcp(1:18)
-            end if
+            write (io, '(18(e13.7,1x))') (result_buffer_arr(:, j))
           ! Else, check if the element is bct.
           else if (crys(phase)%structure .eq. "bct") then
             ! Next, check if the hardening is isotropic or anisotropic.
-            if (.not. crys(phase)%anisotropic) then
-              if ((crys(phase)%hratio_num .eq. 10)) then
-                write (io, '(10(e13.7,1x))') crys(phase)%hratio_bct(1)*(result_buffer_arr(1, j)), &
-                  & crys(phase)%hratio_bct(3)*(result_buffer_arr(1, j)), &
-                  & crys(phase)%hratio_bct(5)*(result_buffer_arr(1, j)), &
-                  & crys(phase)%hratio_bct(7)*(result_buffer_arr(1, j)), &
-                  & crys(phase)%hratio_bct(11)*(result_buffer_arr(1, j)), &
-                  & crys(phase)%hratio_bct(13)*(result_buffer_arr(1, j)), &
-                  & crys(phase)%hratio_bct(17)*(result_buffer_arr(1, j)), &
-                  & crys(phase)%hratio_bct(19)*(result_buffer_arr(1, j)), &
-                  & crys(phase)%hratio_bct(21)*(result_buffer_arr(1, j)), &
-                  & crys(phase)%hratio_bct(25)*(result_buffer_arr(1, j))
-              else
-                write (io, '(32(e13.7,1x))') crys(phase)%hratio_bct(1:32)*(result_buffer_arr(1, j))
-              end if
-            else
-              write (io, '(32(e13.7,1x))') crys(phase)%hratio_bct(1:32)*(result_buffer_arr(:, j))
-            end if
+            write (io, '(32(e13.7,1x))')(result_buffer_arr(:, j))
           end if
         end do
       end if        
@@ -303,7 +259,7 @@ contains
       ! 
       io = printing%strain_el_u
       filename = trim(dir_name)//'/results/elts/strain_el/strain_el.'//trim(step_num)
-      open (io, file=filename)
+      if (myid == 0) open (io, file=filename)
       call add_to_output_files_list(printing, step, 'strain_el', elt_results, pflag_elt)
       ! 
       numdim=6
@@ -326,7 +282,7 @@ contains
       !
       io = printing%strain_pl_u
       filename = trim(dir_name)//'/results/elts/strain_pl/strain_pl.'//trim(step_num)
-      open (io, file=filename)
+      if (myid == 0) open (io, file=filename)
       call add_to_output_files_list(printing, step, 'strain_pl', elt_results, pflag_elt)
       !
       numdim=6
@@ -352,7 +308,7 @@ contains
       ! 
       io = printing%strain_u
       filename = trim(dir_name)//'/results/elts/strain/strain.'//trim(step_num)
-      open (io, file=filename)
+      if (myid == 0) open (io, file=filename)
       call add_to_output_files_list(printing, step, 'strain', elt_results, pflag_elt)
       !
       numdim= 9
@@ -376,7 +332,7 @@ contains
       io =  printing%stress_u
       filename = trim(dir_name)//'/results/elts/stress/stress.'//trim(step_num)
       call add_to_output_files_list(printing, step, 'stress', elt_results, pflag_elt)  
-      open (io,file=filename)
+      if (myid == 0) open (io,file=filename)
       ! 
       numdim= 9
       if (step .eq. 0) then
@@ -397,7 +353,7 @@ contains
     if (printing%print_sliprate) then
       io = printing%sliprate_u
       filename = trim(dir_name)//'/results/elts/sliprate/sliprate.'//trim(step_num)
-      open (io,file=filename)
+      if (myid == 0) open (io,file=filename)
       call add_to_output_files_list(printing, step, 'sliprate', elt_results, pflag_elt)
 
       numdim= mesh%maxnumslip
@@ -410,19 +366,9 @@ contains
         if (myid .eq. 0) then
           do i =  1, mesh%num_elts
             phase = mesh%elt_phase(i)
-            if (crys(phase)%structure .eq. "fcc") then
-              write (io, '(12(e13.7,1x))') (result_buffer_arr(j, i), j=1, 12)
-            else if (crys(phase)%structure .eq. "bcc") then
-              if (crys(phase)%g_0_bcc_112 .lt. 0.0d0) then
-                write (io, '(12(e13.7,1x))') (result_buffer_arr(j, i), j=1, 12)
-              else if (crys(phase)%g_0_bcc_112 .gt. 0.0d0) then
-                write (io, '(24(e13.7,1x))') (result_buffer_arr(j, i), j=1, 24)
-              end if
-            else if (crys(phase)%structure .eq. "hcp") then
-              write (io, '(18(e13.7,1x))') (result_buffer_arr(j, i), j=1, 18)
-            else if (crys(phase)%structure .eq. "bct") then
-              write (io, '(32(e13.7,1x))') (result_buffer_arr(j, i), j=1, 32)
-            end if
+            write (fmt, *) '(', crys(phase)%numslip, '(e13.7,1x))'
+
+            write (io, fmt) (anint (result_buffer_arr(j, i) / eps) * eps, j=1, crys(phase)%numslip)
           end do
         end if
         deallocate(result_buffer_arr)
@@ -435,7 +381,7 @@ contains
     if (printing%print_rss) then
       io = printing%rss_u
       filename = trim(dir_name)//'/results/elts/rss/rss.'//trim(step_num)
-      open (io,file=filename)
+      if (myid == 0) open (io,file=filename)
       call add_to_output_files_list(printing, step, 'rss', elt_results, pflag_elt)
       numdim= mesh%maxnumslip
       if (step .eq. 0) then
@@ -446,13 +392,9 @@ contains
         if (myid .eq. 0) then
           do i = 1, mesh%num_elts
             phase = mesh%elt_phase(i)
-            if ((crys(phase)%structure .eq. "fcc") .or. (crys(phase)%structure .eq. "bcc")) then
-              write (io, '(12(e13.7,1x))') (result_buffer_arr(j, i), j=1, 12)
-            else if (crys(phase)%structure .eq. "hcp") then
-              write (io, '(18(e13.7,1x))') (result_buffer_arr(j, i), j=1, 18)
-            else if (crys(phase)%structure .eq. "bct") then
-              write (io, '(32(e13.7,1x))') (result_buffer_arr(j, i), j=1, 32)
-            end if
+            write (fmt, *) '(', crys(phase)%numslip, '(e13.7,1x))'
+
+            write (io, fmt) (anint (result_buffer_arr(j, i) / eps) * eps, j=1, crys(phase)%numslip)
           end do
         end if
         deallocate(result_buffer_arr)
@@ -464,7 +406,7 @@ contains
     if (printing%print_stress_eq) then  
       io = printing%stress_eq_u
       filename = trim(dir_name)//'/results/elts/stress_eq/stress_eq.'//trim(step_num)     
-      open (io, file=filename)
+      if (myid == 0) open (io, file=filename)
       call add_to_output_files_list(printing, step, 'stress_eq', elt_results, pflag_elt)
       if (step .eq. 0) then
         if (myid == 0) call write_res_zeros( io, 1, 1, mesh%num_elts)
@@ -482,7 +424,7 @@ contains
     if (printing%print_defrate_eq) then
       io = printing%defrate_eq_u
       filename = trim(dir_name)//'/results/elts/defrate_eq/defrate_eq.'//trim(step_num)
-      open ( io, file=filename)
+      if (myid == 0) open ( io, file=filename)
       call add_to_output_files_list(printing, step, 'defrate_eq', elt_results, pflag_elt)
       if (step .eq. 0) then
         if (myid == 0) call write_res_zeros( io, 1, 1, mesh%num_elts)
@@ -499,7 +441,7 @@ contains
     if (printing%print_strain_eq) then
       io = printing%strain_eq_u
       filename = trim(dir_name)//'/results/elts/strain_eq/strain_eq.'//trim(step_num)
-      open (io, file=filename)
+      if (myid == 0) open (io, file=filename)
       call add_to_output_files_list(printing, step, 'strain_eq', elt_results, pflag_elt)
       if (step .eq. 0) then
         if (myid == 0) call write_res_zeros( io, 1, 1, mesh%num_elts)
@@ -517,7 +459,7 @@ contains
     if (printing%print_defrate_pl_eq) then
       io = printing%defrate_pl_eq_u
       filename = trim(dir_name)//'/results/elts/defrate_pl_eq/defrate_pl_eq.'//trim(step_num)
-      open (io, file=filename)
+      if (myid == 0) open (io, file=filename)
       call add_to_output_files_list(printing, step, 'defrate_pl_eq', elt_results, pflag_elt)
       if (step .eq. 0) then
         if (myid == 0) call write_res_zeros( io, 1, 1, mesh%num_elts)
@@ -535,7 +477,7 @@ contains
     if (printing%print_strain_pl_eq) then
       io = printing%strain_pl_eq_u
       filename = trim(dir_name)//'/results/elts/strain_pl_eq/strain_pl_eq.'//trim(step_num)
-      open (io, file=filename) 
+      if (myid == 0) open (io, file=filename) 
       call add_to_output_files_list(printing, step, 'strain_pl_eq', elt_results, pflag_elt)
       if (step .eq. 0) then
         if (myid == 0) call write_res_zeros( io, 1, 1, mesh%num_elts)
@@ -554,7 +496,7 @@ contains
     if (printing%print_strain_el_eq) then
       io = printing%strain_el_eq_u
       filename = trim(dir_name)//'/results/elts/strain_el_eq/strain_el_eq.'//trim(step_num)
-      open (io, file=filename)  
+      if (myid == 0) open (io, file=filename)  
       call add_to_output_files_list(printing, step, 'strain_el_eq', elt_results, pflag_elt)
       if (step .eq. 0) then
         if (myid == 0) call write_res_zeros( io, 1, 1, mesh%num_elts)
@@ -574,7 +516,7 @@ contains
     if (printing%print_velgrad) then
       io = printing%velgrad_u
       filename = trim(dir_name)//'/results/elts/velgrad/velgrad.'//trim(step_num)
-      open (io , file=filename)
+      if (myid == 0) open (io , file=filename)
       call add_to_output_files_list(printing, step, 'velgrad', elt_results, pflag_elt)
       numdim=9
       if (step .eq. 0) then
@@ -594,7 +536,7 @@ contains
     if (printing%print_defrate_pl) then
       io = printing%defrate_pl_u
       filename = trim(dir_name)//'/results/elts/defrate_pl/defrate_pl.'//trim(step_num)
-      open (io, file=filename)
+      if (myid == 0) open (io, file=filename)
       call add_to_output_files_list(printing, step, 'defrate_pl', elt_results, pflag_elt)
       numdim = 6
       if (step .eq. 0) then
@@ -629,7 +571,7 @@ contains
       call add_to_output_files_list(printing, step, 'spinrate', elt_results, pflag_elt)
       filename = trim(dir_name)//'/results/elts/spinrate/spinrate.'//trim(step_num)
       numdim = 3
-      open (io, file=filename)
+      if (myid == 0) open (io, file=filename)
       allocate(result_buffer_arr(numdim,1:mesh%num_elts))
       if (step .eq. 0) then
         if (myid == 0) call write_res_zeros( io, numdim, 1, mesh%num_elts)
@@ -659,7 +601,7 @@ contains
     if (printing%print_rotrate) then
       io = printing%rotrate_u
       filename = trim(dir_name)//'/results/elts/rotrate/rotrate.'//trim(step_num)
-      open (io, file=filename)
+      if (myid == 0) open (io, file=filename)
       call add_to_output_files_list(printing, step, 'rotrate', elt_results, pflag_elt)
       numdim = 3
       if (step .eq. 0) then
@@ -698,7 +640,7 @@ contains
 
       io = printing%rotrate_spin_u
       filename = trim(dir_name)//'/results/elts/rotrate_spin/rotrate_spin.'//trim(step_num)
-      open (io, file=filename)
+      if (myid == 0) open (io, file=filename)
       call add_to_output_files_list(printing, step, 'rotrate_spin', elt_results, pflag_elt)
       numdim = 3
       !      
@@ -739,7 +681,7 @@ contains
     if (printing%print_rotrate_slip) then
       io = printing%rotrate_slip_u
       filename = trim(dir_name)//'/results/elts/rotrate_slip/rotrate_slip.'//trim(step_num)
-      open (io, file=filename)
+      if (myid == 0) open (io, file=filename)
       call add_to_output_files_list(printing, step, 'rotrate_slip', elt_results, pflag_elt)
       numdim = 3
       !      
@@ -781,7 +723,7 @@ contains
     if (printing%print_slip) then
       io = printing%slip_u
       filename = trim(dir_name)//'/results/elts/slip/slip.'//trim(step_num)
-      open (io, file=filename)
+      if (myid == 0) open (io, file=filename)
       call add_to_output_files_list(printing, step, 'slip', elt_results, pflag_elt)
       
       numdim= mesh%maxnumslip
@@ -794,23 +736,11 @@ contains
          & numdim*mesh%global_info(4,:))
         !
         if (myid .eq. 0) then
-          do i =  1, mesh%num_elts
-            phase  = mesh%elt_phase(i)
-            if (crys(phase)%structure .eq. "fcc") then
-              write (io, '(12(e13.7,1x))') (result_buffer_arr(j, i), j=1, 12)
-            else if (crys(phase)%structure .eq. "bcc") then
-              if (crys(phase)%g_0_bcc_112 .lt. 0.0d0) then
-                write (io, '(12(e13.7,1x))') (result_buffer_arr(j, i), j=1, 12)
-              else if (crys(phase)%g_0_bcc_112 .gt. 0.0d0) then
-                write (io, '(24(e13.7,1x))') (result_buffer_arr(j, i), j=1, 24)
-              end if
-            else if (crys(phase)%structure .eq. "hcp") then
-              write (io, '(18(e13.7,1x))') (result_buffer_arr(j, i), &
-                  & j=1, 18)
-            else if (crys(phase)%structure .eq. "bct") then
-              write (io, '(32(e13.7,1x))') (result_buffer_arr(j, i), &
-                  & j=1, 32)
-            end if
+          do i = 1, mesh%num_elts
+            phase = mesh%elt_phase(i)
+            write (fmt, *) '(', crys(phase)%numslip, '(e13.7,1x))'
+
+            write (io, fmt) (anint (result_buffer_arr(j, i) / eps) * eps, j=1, crys(phase)%numslip)
           end do
         end if
         deallocate(result_buffer_arr)
@@ -822,7 +752,7 @@ contains
     if (printing%print_work) then
       io = printing%work_u
       filename = trim(dir_name)//'/results/elts/work/work.'//trim(step_num)
-      open (io, file=filename)  
+      if (myid == 0) open (io, file=filename)  
       call add_to_output_files_list(printing, step, 'work', elt_results, pflag_elt)
       !      
       if (step .eq. 0) then
@@ -840,7 +770,7 @@ contains
     if (printing%print_work_pl) then
       io = printing%work_pl_u
       filename = trim(dir_name)//'/results/elts/work_pl/work_pl.'//trim(step_num)
-      open (io, file=filename)
+      if (myid == 0) open (io, file=filename)
       call add_to_output_files_list(printing, step, 'work_pl', elt_results, pflag_elt)
       !      
       if (step .eq. 0) then
@@ -859,7 +789,7 @@ contains
     if (printing%print_defrate) then
       io =printing%defrate_u
       filename = trim(dir_name)//'/results/elts/defrate/defrate.'//trim(step_num)
-      open (io, file=filename)
+      if (myid == 0) open (io, file=filename)
       call add_to_output_files_list(printing, step, 'defrate', elt_results, pflag_elt)
       numdim = 9
       !      
@@ -878,7 +808,7 @@ contains
     if (printing%print_workrate) then
       io =printing%workrate_u
       filename = trim(dir_name)//'/results/elts/workrate/workrate.'//trim(step_num)
-      open (io , file=filename)
+      if (myid == 0) open (io , file=filename)
       call add_to_output_files_list(printing, step, 'workrate', elt_results, pflag_elt)
       !      
       if (step .eq. 0) then
@@ -896,7 +826,7 @@ contains
     if (printing%print_workrate_pl) then
       io = printing%workrate_pl_u
       filename = trim(dir_name)//'/results/elts/workrate_pl/workrate_pl.'//trim(step_num)
-      open (io, file=filename)
+      if (myid == 0) open (io, file=filename)
       call add_to_output_files_list(printing, step, 'workrate_pl', elt_results, pflag_elt)
 
       if (step .eq. 0) then
@@ -954,10 +884,34 @@ contains
       write (io, '(a)') ' **format'
       write (io, '(a)') '   1.0'
       write (io, '(a)') ' **input'
-      write (io, '(a)') '  *msh'
-      write (io, '(a)') '   simulation.msh'
-      write (io, '(a)') '  *cfg'
-      write (io, '(a)') '   simulation.cfg'
+      if (ut_file_exists ("simulation.tess")) then
+        write (io, '(a)') '  *tess'
+        write (io, '(a)') '   simulation.tess'
+      end if
+      if (ut_file_exists ("simulation.cfg")) then
+        write (io, '(a)') '  *cfg'
+        write (io, '(a)') '   simulation.cfg'
+      end if
+      if (ut_file_exists ("simulation.msh")) then
+        write (io, '(a)') '  *msh'
+        write (io, '(a)') '   simulation.msh'
+      end if
+      if (ut_file_exists ("simulation.ori")) then
+        write (io, '(a)') '  *ori'
+        write (io, '(a)') '   simulation.ori'
+      end if
+      if (ut_file_exists ("simulation.phase")) then
+        write (io, '(a)') '  *phase'
+        write (io, '(a)') '   simulation.phase'
+      end if
+      if (ut_file_exists ("simulation.opt")) then
+        write (io, '(a)') '  *opt'
+        write (io, '(a)') '   simulation.opt'
+      end if
+      if (ut_file_exists ("simulation.tesr")) then
+        write (io, '(a)') '  *tesr'
+        write (io, '(a)') '   simulation.tesr'
+      end if
       write (io, '(a)') ' **general'
       write (io, '(a,5(i0,1x))') '   ', mesh%num_cell, mesh%num_nodes,&
           & mesh%num_elts, mesh%num_elsets, num_procs

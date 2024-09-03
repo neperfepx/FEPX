@@ -2,10 +2,12 @@
  **format
    1.0
  **input
-  *msh
-   simulation.msh
+  *tess
+   simulation.tess
   *cfg
    simulation.cfg
+  *msh
+   simulation.msh
  **general
    0 69 24 2 2
   *orides

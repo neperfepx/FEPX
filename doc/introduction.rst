@@ -82,6 +82,33 @@ FEPX is written in Fortran, and it can run on any Unix-like system (including Ma
 
 This procedure uses the default configuration options and should work out-of-the-box if you have a Fortran compiler, OpenMPI, and CMake installed. Testing is performed on GFortran version 6 and greater, and OpenMPI version 2 and greater (other Fortran compilers and MPI distributions may also work, though they are not explicitly supported or tested). A minimum version of CMake version 3.0 is required to utilize the build system.
 
+Fine Configuration
+~~~~~~~~~~~~~~~~~~
+
+Program configuration options can be specified, before installation, using CMake variables.   This can be done using a terminal tool:
+
+.. code-block:: console
+
+  $ ccmake ..
+
+or an interactive tool:
+
+.. code-block:: console
+
+  $ cmake-gui ..
+
+or directly at the command line, using Cmake's :data:`-D` option:
+
+.. code-block:: console
+
+  $ cmake -D<VARIABLE1>=<VALUE1> -D<VARIABLE2>=<VALUE2> ..
+
+The program configuration variable concerns the precision of the output:
+
+- :code:`OUTPUT_PRECISION`, default :data:`1e-12` (12 decimal digits).
+
+  Values are printed to this precision, and smaller values (in absolute value) are printed as :data:`0`.
+
 Testing FEPX
 ------------
 
@@ -99,31 +126,17 @@ or (equivalently):
 
 This runs the tests in :code:`Normal` mode, for which the produced output files are compared to reference ones.
 
-The (packaged) reference output files are generated on Ubuntu version 22.04, using compiler GFortran version 11.4.0 and OpenMPI version 4.1.2 (note: CMake will switch to the MPI Fortran compiler to build FEPX, which will be built against GFortran version 11.4.0). It is expected that different versions may result in minor (insignificant) changes to the output, though this will generally result in failed tests. If this happens, you may switch to the :code:`Minimal` mode as described in the following.
-
-The testing mode is controlled by variable :code:`BUILD_TESTING_MODE`, which may be changed using:
-
-.. code-block:: console
-
-  $ ccmake ..
-
-for an interactive command-line tool, or:
-
-.. code-block:: console
-
-  $ cmake-gui ..
-
-for an interactive graphical tool, or directly at the command line, using Cmake's :data:`-D` option:
-
-.. code-block:: console
-
-  $ cmake -DBUILD_TESTING_MODE={Normal,Minimal,Writing} ..
+The (packaged) reference output files are generated on Ubuntu version 22.04, using compiler GFortran version 11.4.0 and OpenMPI version 4.1.2 (note: CMake will switch to the MPI Fortran compiler to build FEPX, which will be built against GFortran version 11.4.0). It is expected that different versions may result in minor (insignificant) changes to the output, though this will generally result in failed tests. If this happens, you may switch to the :code:`Minimal` mode as described in the following. The testing mode is controlled by variable :code:`BUILD_TESTING_MODE`, which may be changed as described in :ref:`fine_configuration`.
 
 - The (default) :code:`Normal` mode checks if the program completes without error and if the produced output is the same as a set of reference output.
 
 - The :code:`Minimal` mode only checks if the program completes without error. This mode may be useful when installing on a machine which has program or library versions different from the ones with which the reference output was generated.
 
 - The :code:`Writing` mode overwrites the reference outputs with the generated output.  This mode may be useful when installing on a machine which has program or library versions different from the ones with which the reference output was generated and the user needs a reference output before making changes to the source code.
+
+In the standard case where the testing mode is :code:`Normal`, it is further possible to choose how the produced output is compared to the reference output using the variable :code:`BUILD_TESTING_DIFF`, which can take the value of :code:`Soft` to allow for small differences (the default, recommended) or :code:`Hard` otherwise.
+
+.. note:: As the program is tested on a different environment from the one on which the reference files were generated (specified above), it may happen that some tests fail.  This problem can generally be ignored.
 
 Getting Started
 ---------------

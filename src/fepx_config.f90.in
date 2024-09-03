@@ -6,4 +6,6 @@ module fepx_config_mod
 
   character(len=50) :: version = @FEPX_VERSION@
 
+ real :: output_precision = @OUTPUT_PRECISION@
+
 end module fepx_config_mod

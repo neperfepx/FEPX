@@ -340,7 +340,7 @@ contains
 
         if (bc_iter .ge. exec%max_bc_iter) then
           call par_quit('Error  :     > Maximum number of &
-              &boundary conditions reached.')
+              &boundary conditions reached.', exec%clock_start)
         end if
 
         bc_iter = bc_iter + 1
@@ -631,8 +631,8 @@ contains
         if (maxval(abs(macro_eng_strain)) .ge. exec%max_strain) then
           ! mpk - 10/2021: Don't write that we have completed the final
           !   step. We are currently in the middle of a step.
-          call write_dot_sim_file_complete_steps(printing, loading, istep - 1)
-          call par_quit('Info   :     > Maximum eng. strain exceeded.')
+          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading, istep - 1)
+          call par_quit('Info   :     > Maximum eng. strain exceeded.', exec%clock_start)
         end if
 
         ! Check that maximum strain_eq has not been exceeded
@@ -640,24 +640,24 @@ contains
         if (curr_eqstrain .ge. exec%max_eqstrain) then
           ! mpk - 10/2021: Don't write that we have completed the final
           !   step. We are currently in the middle of a step.
-          call write_dot_sim_file_complete_steps(printing, loading, istep - 1)
+          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading, istep - 1)
 
-          call par_quit('Info   :     > Maximum eqv. strain exceeded.')
+          call par_quit('Info   :     > Maximum eqv. strain exceeded.', exec%clock_start)
         end if
 
         if (is_necking) then
-          call write_dot_sim_file_complete_steps(printing, loading, istep)
-          call par_quit('Error  :     > Specimen is necking.')
+          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading, istep)
+          call par_quit('Error  :     > Specimen is necking.', exec%clock_start)
         end if
 
         if (is_limit_tripped) then
-          call write_dot_sim_file_complete_steps(printing, loading, istep)
+          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading, istep)
           call par_quit('Error  :     > Maximum time or maximum &
-              &increments exceeded.')
+              &increments exceeded.', exec%clock_start)
         end if
 
         if (istep .eq. loading%num_steps) then
-          call write_dot_sim_file_complete_steps(printing, loading, istep)
+          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading, istep)
           ! Finalize clock values and print to console
 
           if (myid .eq. 0) then
@@ -667,7 +667,7 @@ contains
           end if
 
           call par_quit('Info   : Final step terminated. Simulation&
-              & completed successfully.')
+              & completed successfully.', exec%clock_start)
         end if
 
         ! Advance step count

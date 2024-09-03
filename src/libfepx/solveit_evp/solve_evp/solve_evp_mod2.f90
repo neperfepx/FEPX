@@ -205,8 +205,8 @@ contains
           !   simple anisotropic hardening model but might end up getting
           !   rid of it later versions
           where ((.not. done) .and. (my_phase .eq. iphase) &
-          & .and. (diff_norm_s .lt. (exec%toler_state*crys(iphase)%g_0)) &
-          & .and. (diff_crss(islip, :) .lt. (exec%toler_state*crys(iphase)%g_0)))
+          & .and. (diff_norm_s .lt. (exec%toler_state*crys(iphase)%g_0(1,elt_sub))) &
+          & .and. (diff_crss(islip, :) .lt. (exec%toler_state*crys(iphase)%g_0(1,elt_sub))))
 
             done = .true.
             jiter_state = iter_state

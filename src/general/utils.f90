@@ -197,8 +197,8 @@ subroutine string_numsubstrings (myString, count)
   character(len=*), intent(in) :: myString
   integer, intent(out) :: count
 
-  character(len=255) :: myString2
-  character(len=255) :: delimiter
+  character(len=10000) :: myString2
+  character(len=10000) :: delimiter
   integer :: i, length
 
   ! Set the delimiter to a space
@@ -307,12 +307,22 @@ subroutine ut_dir_remove (directory)
     character(len=:), allocatable :: command
 
     allocate(character(len=1000) :: command)
-    write(command, '(A,A)') 'rm -r ', trim(directory)
+    write(command, '(A,A)') 'rm -rf ', trim(directory)
 
     call execute_command_line(command)
 
     deallocate(command)
 
 end subroutine ut_dir_remove
+
+function ut_file_exists (filename) result(file_exists)
+
+    character(len=*), intent(in) :: filename
+
+    logical :: file_exists
+
+    inquire (file=filename, exist=file_exists)
+
+end function ut_file_exists
 
 end module utils_mod

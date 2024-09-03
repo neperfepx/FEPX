@@ -61,6 +61,8 @@ module loading_type_mod
 
     case ('uniaxial_strain_target')
       loading%step_complete = .false.
+      loading%prev_load = loading%curr_load
+      loading%curr_load = load(loading%loading_face, :)
 
       ! FIXME 1e-6?
       if (time + 1e-6 .gt. loading%target_time(loading%curr_step)) then
@@ -193,16 +195,14 @@ module loading_type_mod
     if (loading%curr_step .gt. loading%num_steps) return
 
     index = loading%loading_direction
-
-    if ((.not. loading%step_complete) .and. &
-        & ((loading%curr_load(index) - loading%prev_load(index))/loading%target_sign(loading%curr_step)&
+    if (((loading%curr_load(index) - loading%prev_load(index))/loading%target_sign(loading%curr_step)&
         & .lt. 0.0)) then
       is_necking = .true.
-      loading%step_complete = .true.
       loading%all_steps_complete = .true.
 
-      ! Update step because get_print_flag checks flag from previous step.
-      loading%curr_step = loading%curr_step + 1
+      ! 03/06/2023 if exiting when checking necking it is unnecessary to increment loading step etm
+      !! Update step because get_print_flag checks flag from previous step.
+      !! loading%curr_step = loading%curr_step + 1
     end if
 
     return

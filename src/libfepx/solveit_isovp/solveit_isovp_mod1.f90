@@ -101,9 +101,9 @@ contains
       ! If multi-point constraints, solve the reduced linear system only on primary dofs
       else if ((loading%mpc_status .eqv. .true.) .and. (mesh%num_periodicity .eq. 0)) then
         ! Form the diagonal part of the primary stiffness matrix (Jacobi's preconditioning)
-        call assemble_diagonals("MPC", loading, mesh, exec, estiff, gdiag)
+        call assemble_diagonals("general", loading, mesh, exec, estiff, gdiag)
         ! Solve the linear system using the congujate gradient method
-        cg_iter_out = cg_solver_ebe("MPC", "v", gdiag, estiff, results%vel, my_force, loading, exec, mesh)
+        cg_iter_out = cg_solver_ebe("general", "v", gdiag, estiff, results%vel, my_force, loading, exec, mesh)
     
       ! If PBC
       else if ((loading%mpc_status .eqv. .false.) .and. (mesh%num_periodicity .gt. 0)) then

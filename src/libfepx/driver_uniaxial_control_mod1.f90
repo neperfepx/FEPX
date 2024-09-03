@@ -74,7 +74,7 @@ contains
     buff_secondary_drive_vel = 0.0d0
     secondary_drive_vel_ebe = 0.0d0
     load = 0.0d0
-    
+
     ! Standard simulation (no restart)
     if (.not. exec%restart) then
       ! Running isovp solution
@@ -94,26 +94,6 @@ contains
        buff_vel=buff_vel/mesh%g_ones
 
        results%vel = loading%coeff_ps*buff_vel+loading%offset_ps
-
-     else if ((loading%mpc_status .eqv. .false.) .and. (mesh%num_periodicity .gt. 0)) then
-
-       call part_gather(vel_ebe, results%vel, int(loading%conn_mpc), loading%mpc_trace)
-       buff_vel = 0.0d0
-       call part_scatter(buff_vel, vel_ebe, mesh%elt_dofs, exec%dof_trace)
-       buff_vel=buff_vel/mesh%g_ones
-       
-       call part_gather(primary_drive_vel_ebe, results%vel, int(loading%primary_drive_ebe), loading%mpc_trace)
-       buff_primary_drive_vel = 0.0d0
-       call part_scatter(buff_primary_drive_vel, primary_drive_vel_ebe, mesh%elt_dofs, exec%dof_trace)
-       buff_primary_drive_vel=buff_primary_drive_vel/mesh%g_ones
-       
-       call part_gather(secondary_drive_vel_ebe, results%vel, int(loading%secondary_drive_ebe), loading%mpc_trace)
-       buff_secondary_drive_vel = 0.0d0
-       call part_scatter(buff_secondary_drive_vel, secondary_drive_vel_ebe, mesh%elt_dofs, exec%dof_trace)
-       buff_secondary_drive_vel=buff_secondary_drive_vel/mesh%g_ones
-
-       results%vel = loading%coeff_ps*(buff_vel + loading%label_sg*(1 - loading%imposed_state)*&
-                    &(buff_primary_drive_vel + buff_secondary_drive_vel))+ loading%label_sg*loading%offset_ps
 
       end if
 
@@ -212,11 +192,11 @@ contains
 
       ! Write step results
       if (loading%step_complete) then
-
         ! write results per se
         if (loading%step_print(loading%curr_step)) then
           !
           call write_res(loading%curr_step, mesh, crys, results, dtime, printing)
+
           ! writing restart
           if (printing%print_restart) then
             call write_restart_field(loading%curr_step, mesh, results)
@@ -245,28 +225,21 @@ contains
         if (loading_checklimit(exec, time, incr)) then
           loading%step_complete = .true.
           loading%all_steps_complete = .true.
-          call write_dot_sim_file_complete_steps(printing, loading)
-          call par_quit('Error  :     > Maximum time or maximum increments exceeded.')
+          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading)
+          call par_quit('Error  :     > Maximum time or maximum increments exceeded.', exec%clock_start)
         end if
 
         ! optionally, checking for necking
         if (exec%check_necking .and. loading_isnecking(loading)) then
-          call write_dot_sim_file_complete_steps(printing, loading)
-          call par_quit('Error  :     > Specimen is necking.')
+          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading)
+          call par_quit('Error  :     > Specimen is necking.', exec%clock_start)
         end if
       end if
-
+      
       if (loading%all_steps_complete) then
-        call write_dot_sim_file_complete_steps(printing, loading)
-        ! Finalize clock values and print to console
+        if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading)
 
-        if (myid .eq. 0) then
-          call cpu_time(clock_end)
-          write (*, '(a, f10.3, a)') 'Info   : Elapsed time:', &
-              & clock_end - exec%clock_start, ' secs.'
-        end if
-
-        call par_quit('Info   : Final step terminated. Simulation completed successfully.')
+        call par_quit('Info   : Final step terminated. Simulation completed successfully.', exec%clock_start)
       end if
 
     end do time_stepping

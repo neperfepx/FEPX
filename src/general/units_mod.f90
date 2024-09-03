@@ -38,7 +38,7 @@ contains
     integer, intent(in) :: myid
     ! Locals:
     integer :: iostatus
-    character(len=64):: filename,dir_name
+    character(len=10000):: filename,dir_name,cwd
     character(len=8) :: charid ! assumes less than 10,000 processes
     character(len=256) :: message
     logical :: file_exists
@@ -46,8 +46,6 @@ contains
     character(len=8) :: rst_num_str
 
     !---------------------------------------------------------------------------
-
-    call ut_dir_remove ("simulation.sim")
 
     ! Print 1-indexed process numbers
     write (charid, '(i0)') myid + 1
@@ -74,12 +72,14 @@ contains
     ! Only for main process
     if (myid .eq. 0) then
       !  .sim
-      dir_name = "simulation.sim"
+      call getcwd(cwd)
+      dir_name = trim(cwd)//"/simulation.sim"
       call system('mkdir '//trim(dir_name))
       call system('cd '//trim(dir_name))
       call system('mkdir '//trim(dir_name)//'/inputs')
-      call system('cp simulation.* '//trim(dir_name)//'/inputs')
-      call system('cp *.sh inputs')
+      call system('cp simulation.tess simulation.cfg simulation.msh simulation.ori&
+                   & simulation.phase simulation.opt simulation.tesr '//trim(dir_name)//'/inputs 2> /dev/null')
+      call system('cp *.sh '//trim(dir_name)//'/inputs'//' 2> /dev/null')
       call system('mkdir '//trim(dir_name)//'/results')
       call system('mkdir '//trim(dir_name)//'/results/nodes')
       call system('mkdir '//trim(dir_name)//'/results/elts')
@@ -206,18 +206,20 @@ contains
         case ("normal") ! Normal simulation, no restart
           do i = 1, mesh%num_fasets
             ! Loop over all force units
+            filename = trim(dir_name)//'/results/forces/'//mesh%faset_labels(i)
             open (printing%force_u + i - 1, &
-              & file=(''//trim(dir_name)//'/results/forces/'//mesh%faset_labels(i)), iostat=iostatus)
+              & file=filename, iostat=iostatus,status='new')
             if (iostatus .ne. 0) then
               write (message, '(a,a,a)') 'Error  :     > io &
-                &Failure to open post.force.', mesh%faset_labels(i), ' file'
+                &Failure to open ', trim(filename), ' file'
               call par_quit(trim(adjustl(message)))
             end if
           end do
         case ("restart") ! Restart simulation, new file
           do i = 1, mesh%num_fasets
             filename = 'post.force.rst'//trim(rst_num_str)//'.'//mesh%faset_labels(i)
-            open (printing%force_u + i - 1, file=filename, iostat=iostatus)
+            open (printing%force_u + i - 1, &
+              & file=filename, iostat=iostatus,status='new')
             if (iostatus .ne. 0) then
               write (message, '(a,a,a)') 'Error  :     > io &
                 &Failure to open ', trim(filename), ' file.'

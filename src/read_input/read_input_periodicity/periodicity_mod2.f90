@@ -140,10 +140,12 @@ contains
 
   end subroutine split_diagonal_periodicity_vectors
 
-  subroutine set_imposed_strain_rate_state(loading, loading_options)
+  subroutine set_imposed_strain_rate_state(loading, loading_options, mesh, exec)
   
     type(loading_type), intent(inout) :: loading
     type(loading_options_type), intent(inout) :: loading_options
+    type(mesh_type), intent(inout) :: mesh
+    type(exec_type), intent(inout) :: exec
        
     ! Local:
     real(rk) :: max_vel
@@ -163,30 +165,30 @@ contains
     do i = 1, loading_options%imposed_strain_rate_state%nb_comp
       select case (loading_options%imposed_strain_rate_state%comp(i))
         case ('xx', '11')
-          call apply_loading_as_offset_to_drive_nodes(loading, loading_options, label_list_x, 1, i)
+          call apply_loading_as_offset(loading, loading_options, label_list_x, 1, i, 1)
           curr_dir = 1
 
         case ('yy', '22')
-          call apply_loading_as_offset_to_drive_nodes(loading, loading_options, label_list_y, 2, i)
+          call apply_loading_as_offset(loading, loading_options, label_list_y, 2, i, 2)
           curr_dir = 2
 
         case ('zz', '33')
-          call apply_loading_as_offset_to_drive_nodes(loading, loading_options, label_list_z, 3, i)
+          call apply_loading_as_offset(loading, loading_options, label_list_z, 3, i, 3)
           curr_dir = 3
 
         case ('xy', 'yx', '12', '21')
-          call apply_loading_as_offset_to_drive_nodes(loading, loading_options, label_list_x, 2, i)
-          call apply_loading_as_offset_to_drive_nodes(loading, loading_options, label_list_y, 1, i)
-          curr_dir = 1
-
-        case ('xz','zx', '13', '31')
-          call apply_loading_as_offset_to_drive_nodes(loading, loading_options, label_list_x, 3, i)
-          call apply_loading_as_offset_to_drive_nodes(loading, loading_options, label_list_z, 1, i)
+          call apply_loading_as_offset(loading, loading_options, label_list_x, 2, i, -3)
+          call apply_loading_as_offset(loading, loading_options, label_list_y, 1, i, -3)
           curr_dir = 2
 
+        case ('xz','zx', '13', '31')
+          call apply_loading_as_offset(loading, loading_options, label_list_x, 3, i, -2)
+          call apply_loading_as_offset(loading, loading_options, label_list_z, 1, i, -2)
+          curr_dir = 1
+
         case ('yz','zy', '23', '32')
-          call apply_loading_as_offset_to_drive_nodes(loading, loading_options, label_list_y, 3, i)
-          call apply_loading_as_offset_to_drive_nodes(loading, loading_options, label_list_z, 2, i)
+          call apply_loading_as_offset(loading, loading_options, label_list_y, 3, i, -1)
+          call apply_loading_as_offset(loading, loading_options, label_list_z, 2, i, -1)
           curr_dir = 3
 
       end select
@@ -213,7 +215,6 @@ contains
       end if
     end do
 
-
   end subroutine set_imposed_strain_rate_state
 
   subroutine free_non_imposed_drive_nodes(loading)
@@ -231,6 +232,21 @@ contains
 
   end subroutine free_non_imposed_drive_nodes
 
+  subroutine initiate_driving_matrix_parallel(mesh, loading, exec)
+
+    type(loading_type), intent(inout) :: loading
+    type(exec_type), intent(in) :: exec
+    type(mesh_type), intent(in) :: mesh
+
+    call part_gather(loading%primary_drive_ebe, real(loading%primary_drive,rk), mesh%elt_dofs, exec%dof_trace)
+    call part_gather(loading%secondary_drive_ebe, real(loading%secondary_drive,rk), mesh%elt_dofs, exec%dof_trace)
+    
+    call part_scatter_setup(1, kdim, dof_sub, dof_sup, elt_sub, elt_sup, &
+      & int(loading%primary_drive_ebe), loading%primary_drive_trace)
+    call part_scatter_setup(1, kdim, dof_sub, dof_sup, elt_sub, elt_sup, &
+      & int(loading%secondary_drive_ebe), loading%secondary_drive_trace)
+
+  end subroutine initiate_driving_matrix_parallel
 
   subroutine calc_driving_nodes_ebe(mesh, loading, exec)
 
@@ -238,37 +254,19 @@ contains
     type(exec_type), intent(in) :: exec
     type(mesh_type), intent(in) :: mesh
 
-    integer :: i
     real(rk) :: buff_imp_st(dof_sub:dof_sup)
     
     buff_imp_st = 0.0d0
     
-    call part_gather(loading%primary_drive_ebe, real(loading%primary_drive,rk), mesh%elt_dofs, exec%dof_trace)
-    call part_gather(loading%secondary_drive_ebe, real(loading%secondary_drive,rk), mesh%elt_dofs, exec%dof_trace)
     call part_gather(loading%label_pv_ebe, real(loading%label_pv,rk), mesh%elt_dofs, exec%dof_trace)
     call part_gather(loading%label_pv_drive_ebe, real(loading%label_pv_drive,rk), mesh%elt_dofs, exec%dof_trace)
     call part_gather(loading%imposed_state_ebe, real(loading%imposed_state,rk), mesh%elt_dofs, exec%dof_trace)
     
-    call part_scatter_setup(1, kdim, dof_sub, dof_sup, elt_sub, elt_sup, &
-      & int(loading%primary_drive_ebe), loading%primary_drive_trace)
-    call part_scatter_setup(1, kdim, dof_sub, dof_sup, elt_sub, elt_sup, &
-      & int(loading%secondary_drive_ebe), loading%secondary_drive_trace)
-
     call part_gather(loading%imposed_state_ebe, real(loading%imposed_state,rk), int(loading%secondary_drive_ebe), &
           & loading%secondary_drive_trace)
     call part_gather(loading%offset_ps_ebe, real(loading%offset_ps,rk), int(loading%secondary_drive_ebe), &
           & loading%secondary_drive_trace)
-    call part_scatter(buff_imp_st, loading%imposed_state_ebe, mesh%elt_dofs, exec%dof_trace)
-    call part_scatter(loading%offset_ps, loading%offset_ps_ebe, mesh%elt_dofs, exec%dof_trace)
     
-    do i =dof_sub, dof_sup
-      if (int(buff_imp_st(i)) .ne. 0) then
-        loading%imposed_state(i) = int(buff_imp_st(i)/buff_imp_st(i))
-      end if
-    end do
-
-    loading%offset_ps = loading%offset_ps/mesh%g_ones
-
   end subroutine calc_driving_nodes_ebe
   
   subroutine derive_gage_length(loading, mesh, exec)
@@ -280,8 +278,10 @@ contains
     real(rk) :: length_ps(dof_sub:dof_sup)
     real(rk) :: coo_primary_drive(dof_sub:dof_sup)
     real(rk) :: coo_secondary_drive(dof_sub:dof_sup)
+    real(rk) :: g_ones(dof_sub:dof_sup)
     real(rk) :: coo_primary_drive_ebe(kdim,elt_sub:elt_sup)
     real(rk) :: coo_secondary_drive_ebe(kdim,elt_sub:elt_sup)
+    real(rk) :: e_ones(kdim,elt_sub:elt_sup)
     real(rk) :: buff
     integer :: i
 
@@ -294,17 +294,20 @@ contains
     loading%gage_length = 0.0d0
     buff =0.0d0
 
+    e_ones = 1.0d0
+    g_ones = 0.0d0
+
 
     call part_gather(coo_primary_drive_ebe, mesh%coo, int(loading%primary_drive_ebe), loading%primary_drive_trace)
-
     call part_gather(coo_secondary_drive_ebe, mesh%coo, int(loading%secondary_drive_ebe), loading%secondary_drive_trace)
       
     call part_scatter(coo_primary_drive, coo_primary_drive_ebe, mesh%elt_dofs, exec%dof_trace)
-
     call part_scatter(coo_secondary_drive, coo_secondary_drive_ebe, mesh%elt_dofs, exec%dof_trace)
-
-    length_ps = abs(coo_primary_drive - coo_secondary_drive)/mesh%g_ones
     
+    call part_scatter(g_ones, e_ones, mesh%elt_dofs, exec%dof_trace)
+
+    length_ps = abs(coo_primary_drive - coo_secondary_drive)/g_ones
+
     do i = dof_sub, dof_sup
         
       if (i .eq. ((loading%pv_table%secondary_drive(1) - 1)*3 + 1)) then

@@ -64,9 +64,9 @@ contains
 
     allocate(plwork(maxnumvert, elt_sub:elt_sup))
 
+
     call scale_down_defr(d_vec_lat, results%defrate_eq(:, qpt))
     call compute_work(mesh, crys, plwork, d_vec_lat)
-    call compute_avg_crss(mesh, crys, results%crss(:, :, qpt), crss_avg)
 
     converged = .false.
 
@@ -81,8 +81,6 @@ contains
       call find_vertex(mesh, crys, vertex, direction, plwork)
 
       call vertex_stress(mesh, crys, sig_t, vertex, direction)
-
-      call scale_stress(mesh, crys, sig_t, crss_avg)
 
       where (.not. converged)
         results%sig_vec(1, :, qpt) = sig_t(1, :)

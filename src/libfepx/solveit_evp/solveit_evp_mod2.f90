@@ -104,7 +104,7 @@ contains
         end do
 
         call par_quit('Error  :       . elt_stif_evp: Negative &
-            &Jacobian(s)', abort=.true.)
+            &Jacobian(s)', method="abort")
       end if
 
       det(:, iqpt) = det(:, iqpt)*wtqp(1, iqpt)

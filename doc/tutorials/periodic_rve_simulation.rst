@@ -35,7 +35,7 @@ An FCC material with :ref:`aniso_elasticity` and the :ref:`base_model` for plast
       - 210.0
       - 330.0
 
-As the domain is a periodic "(representative) volume element", the loading is defined in terms of *strain rate*, *target strain* and *maximal strain increment*.  Minimal changes (compared to :ref:`simple_simulation` and :ref:`periodic_rve_simulation`) is made to the :ref:`config_file` file, as described (and highlighted) below.   However, in the current implementation, all components of the strain rate must be specified, and the shear components must be zero.  Rigid-body motions are fixed automatically.
+As the domain is a periodic "(representative) volume element", the loading is defined in terms of *strain rate*, *target strain* and *maximal strain increment*.  Minimal changes (compared to :ref:`simple_simulation` and :ref:`periodic_rve_simulation`) is made to the :ref:`config_file` file, as described (and highlighted) below.   However, in the current implementation, all components of the strain rate must be specified.  Rigid-body motions are fixed automatically.
 
 The example below shows plane tension-compression of the polycrystal.
 
