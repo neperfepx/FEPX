@@ -106,7 +106,7 @@ A step is divided into (time) *increments*.  There can be any number of incremen
 
   .. code::
 
-     [ number_or_incrs <num_incrs_1> ... <num_incrs_n> ]
+     [ number_of_incrs <num_incrs_1> ... <num_incrs_n> ]
      [ dtime           <dtime_1>     ... <dtime_n>     ]
      [ dtime_min       <dtime_min_1> ... <dtime_min_n> ]
      [ dstrain         <dstrain_1>   ... <dstrain_n>   ]

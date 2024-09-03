@@ -83,6 +83,15 @@ To read in grain/phase assignments from a :ref:`phase_file`, the following comma
 
     read_phase_from_file
 
+
+Config Overwriting
+^^^^^^^^^^^^^^^^^^^^^^^
+
+To read in hardening parameters from an :ref:`opt_file`, the following command may be used::
+
+    read_from_opt_file
+
+
 .. _restart:
 
 Simulation Restart

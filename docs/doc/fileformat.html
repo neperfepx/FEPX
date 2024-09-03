@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>File and Directory Formats &mdash; FEPX 2.0.0 documentation</title>
+  <title>File and Directory Formats &mdash; FEPX 2.0.1 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/my_theme.css" type="text/css" />
@@ -12,7 +12,7 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../_static/documentation_options.js?v=51b770b3"></script>
+        <script src="../_static/documentation_options.js?v=f5cff4aa"></script>
         <script src="../_static/doctools.js?v=888ff710"></script>
         <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
         <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -31,7 +31,7 @@
             <a href="../index.html" class="icon icon-home"> FEPX
           </a>
               <div class="version">
-                2.0.0
+                2.0.1
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
@@ -57,6 +57,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#mesh-file-simulation-msh">Mesh File (<code class="file docutils literal notranslate"><span class="pre">simulation.msh</span></code>)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#orientation-file-simulation-ori">Orientation File (<code class="file docutils literal notranslate"><span class="pre">simulation.ori</span></code>)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#phase-file-simulation-phase">Phase File (<code class="file docutils literal notranslate"><span class="pre">simulation.phase</span></code>)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#optional-inputs-file-simulation-opt">Optional Inputs File (<code class="file docutils literal notranslate"><span class="pre">simulation.opt</span></code>)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#restart-files-rst-n">Restart Files (<code class="file docutils literal notranslate"><span class="pre">rst&lt;N&gt;.*</span></code>)</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#uniaxial-restart-control">Uniaxial Restart Control</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#multiaxial-csr-restart-control">Multiaxial CSR Restart Control</a></li>
@@ -405,6 +406,27 @@ $EndGroups
 </pre></div>
 </div>
 <p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;group_entity&gt;</span></code> defines the phase assignment method and must always be defined as <code class="xref py py-data docutils literal notranslate"><span class="pre">elset</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;number_of_group_entities&gt;</span></code> is the number of grain/phase pairs defined in the field, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;entity_id&gt;</span></code> is a unique 1-indexed identification number, and <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;group&gt;</span></code> is an 1-indexed value that defines the phase for a given grain.</p>
+</section>
+<section id="optional-inputs-file-simulation-opt">
+<span id="opt-file"></span><h2>Optional Inputs File (<code class="file docutils literal notranslate"><span class="pre">simulation.opt</span></code>)<a class="headerlink" href="#optional-inputs-file-simulation-opt" title="Link to this heading"></a></h2>
+<p>The hardening parameter assignments for <code class="xref py py-data docutils literal notranslate"><span class="pre">g_0</span></code> and <code class="xref py py-data docutils literal notranslate"><span class="pre">g_s0</span></code> within the <code class="file docutils literal notranslate"><span class="pre">simulation.cfg</span></code> may be overridden via an external <code class="file docutils literal notranslate"><span class="pre">simulation.opt</span></code> file. This file contains formatting identical to the associated fields in the configuration file and is defined as:</p>
+<p>For per-grain (or <code class="xref py py-data docutils literal notranslate"><span class="pre">Elset</span></code>) values:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$Elset&lt;variable&gt;
+&lt;number_of_elsets&gt; &lt;maximum_num_values&gt;
+&lt;entity_id&gt; &lt;value_1&gt; ...
+...
+$EndElset&lt;variable&gt;
+</pre></div>
+</div>
+<p>For per-element values:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$Element&lt;variable&gt;
+&lt;number_of_elements&gt; &lt;maximum_num_values&gt;
+&lt;entity_id&gt; &lt;value_1&gt; ...
+...
+$EndElement&lt;variable&gt;
+</pre></div>
+</div>
+<p>where <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;variable&gt;</span></code> is <code class="xref py py-data docutils literal notranslate"><span class="pre">Crss</span></code> for <code class="xref py py-data docutils literal notranslate"><span class="pre">g_0</span></code>, which can be defined per slip system, and <code class="xref py py-data docutils literal notranslate"><span class="pre">CrssSat</span></code> for <code class="xref py py-data docutils literal notranslate"><span class="pre">g_s0</span></code> a scalar value. Additionally, <code class="xref py py-data docutils literal notranslate"><span class="pre">&lt;entity_id&gt;</span></code> is a unique 1-indexed identification number for the specified entities.</p>
 </section>
 <section id="restart-files-rst-n">
 <span id="restart-output"></span><h2>Restart Files (<code class="file docutils literal notranslate"><span class="pre">rst&lt;N&gt;.*</span></code>)<a class="headerlink" href="#restart-files-rst-n" title="Link to this heading"></a></h2>

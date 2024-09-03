@@ -376,10 +376,11 @@ The coefficients generally depend on the type of interactions between systems, b
 
     hardening anisotropic
 
-    interaction_matrix_parameters <diag> <h1> <h2> <h3> <h4>                                    (for fcc)
-    interaction_matrix_parameters <diag> <h1> <h2> <h3> <h4> <h5> <h6>                          (for bcc)
-    interaction_matrix_parameters <diag> <h1> <h2> <h3> <h4> <h5> <h6> <h7>                     (for hcp)
-    interaction_matrix_parameters <diag> <h1> <h2> <h3> <h4> <h5> <h6> <h7> <h8> <h9> <h10>     (for bct)
+    interaction_matrix_parameters <diag> <h1> <h2> <h3> <h4>                                            (for fcc)
+    interaction_matrix_parameters <diag> <h1> <h2> <h3> <h4> <h5> <h6>                                  (for bcc)
+    interaction_matrix_parameters <diag> <h1> <h2> <h3> <h4> <h5> <h6> <h7> <h8> <h9> <h10> <h11> <h12> (for bcc with 112 slip systems considered)
+    interaction_matrix_parameters <diag> <h1> <h2> <h3> <h4> <h5> <h6> <h7>                             (for hcp)
+    interaction_matrix_parameters <diag> <h1> <h2> <h3> <h4> <h5> <h6> <h7> <h8> <h9> <h10>             (for bct)
 
 .. _coupling_model_evolutions:
 

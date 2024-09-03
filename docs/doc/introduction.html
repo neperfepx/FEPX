@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Introduction &mdash; FEPX 2.0.0 documentation</title>
+  <title>Introduction &mdash; FEPX 2.0.1 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/my_theme.css" type="text/css" />
@@ -12,7 +12,7 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../_static/documentation_options.js?v=51b770b3"></script>
+        <script src="../_static/documentation_options.js?v=f5cff4aa"></script>
         <script src="../_static/doctools.js?v=888ff710"></script>
         <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
@@ -30,7 +30,7 @@
             <a href="../index.html" class="icon icon-home"> FEPX
           </a>
               <div class="version">
-                2.0.0
+                2.0.1
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
@@ -47,7 +47,10 @@
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Introduction</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#description">Description</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#resources-and-support">Resources and Support</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#installing-fepx">Installing FEPX</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#installing-fepx">Installing FEPX</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#fine-configuration">Fine Configuration</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#testing-fepx">Testing FEPX</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#getting-started">Getting Started</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#conventions-used-in-this-manual">Conventions Used in This Manual</a></li>
@@ -167,6 +170,27 @@
 </li>
 </ul>
 <p>This procedure uses the default configuration options and should work out-of-the-box if you have a Fortran compiler, OpenMPI, and CMake installed. Testing is performed on GFortran version 6 and greater, and OpenMPI version 2 and greater (other Fortran compilers and MPI distributions may also work, though they are not explicitly supported or tested). A minimum version of CMake version 3.0 is required to utilize the build system.</p>
+<section id="fine-configuration">
+<h3>Fine Configuration<a class="headerlink" href="#fine-configuration" title="Link to this heading"></a></h3>
+<p>Program configuration options can be specified, before installation, using CMake variables.   This can be done using a terminal tool:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ccmake<span class="w"> </span>..
+</pre></div>
+</div>
+<p>or an interactive tool:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>cmake-gui<span class="w"> </span>..
+</pre></div>
+</div>
+<p>or directly at the command line, using Cmake’s <code class="xref py py-data docutils literal notranslate"><span class="pre">-D</span></code> option:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>cmake<span class="w"> </span>-D&lt;VARIABLE1&gt;<span class="o">=</span>&lt;VALUE1&gt;<span class="w"> </span>-D&lt;VARIABLE2&gt;<span class="o">=</span>&lt;VALUE2&gt;<span class="w"> </span>..
+</pre></div>
+</div>
+<p>The program configuration variable concerns the precision of the output:</p>
+<ul>
+<li><p><code class="code docutils literal notranslate"><span class="pre">OUTPUT_PRECISION</span></code>, default <code class="xref py py-data docutils literal notranslate"><span class="pre">1e-12</span></code> (12 decimal digits).</p>
+<p>Values are printed to this precision, and smaller values (in absolute value) are printed as <code class="xref py py-data docutils literal notranslate"><span class="pre">0</span></code>.</p>
+</li>
+</ul>
+</section>
 </section>
 <section id="testing-fepx">
 <h2>Testing FEPX<a class="headerlink" href="#testing-fepx" title="Link to this heading"></a></h2>
@@ -179,24 +203,17 @@
 </pre></div>
 </div>
 <p>This runs the tests in <code class="code docutils literal notranslate"><span class="pre">Normal</span></code> mode, for which the produced output files are compared to reference ones.</p>
-<p>The (packaged) reference output files are generated on Ubuntu version 22.04, using compiler GFortran version 11.4.0 and OpenMPI version 4.1.2 (note: CMake will switch to the MPI Fortran compiler to build FEPX, which will be built against GFortran version 11.4.0). It is expected that different versions may result in minor (insignificant) changes to the output, though this will generally result in failed tests. If this happens, you may switch to the <code class="code docutils literal notranslate"><span class="pre">Minimal</span></code> mode as described in the following.</p>
-<p>The testing mode is controlled by variable <code class="code docutils literal notranslate"><span class="pre">BUILD_TESTING_MODE</span></code>, which may be changed using:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ccmake<span class="w"> </span>..
-</pre></div>
-</div>
-<p>for an interactive command-line tool, or:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>cmake-gui<span class="w"> </span>..
-</pre></div>
-</div>
-<p>for an interactive graphical tool, or directly at the command line, using Cmake’s <code class="xref py py-data docutils literal notranslate"><span class="pre">-D</span></code> option:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>cmake<span class="w"> </span>-DBUILD_TESTING_MODE<span class="o">={</span>Normal,Minimal,Writing<span class="o">}</span><span class="w"> </span>..
-</pre></div>
-</div>
+<p>The (packaged) reference output files are generated on Ubuntu version 22.04, using compiler GFortran version 11.4.0 and OpenMPI version 4.1.2 (note: CMake will switch to the MPI Fortran compiler to build FEPX, which will be built against GFortran version 11.4.0). It is expected that different versions may result in minor (insignificant) changes to the output, though this will generally result in failed tests. If this happens, you may switch to the <code class="code docutils literal notranslate"><span class="pre">Minimal</span></code> mode as described in the following. The testing mode is controlled by variable <code class="code docutils literal notranslate"><span class="pre">BUILD_TESTING_MODE</span></code>, which may be changed as described in <span class="xref std std-ref">fine_configuration</span>.</p>
 <ul class="simple">
 <li><p>The (default) <code class="code docutils literal notranslate"><span class="pre">Normal</span></code> mode checks if the program completes without error and if the produced output is the same as a set of reference output.</p></li>
 <li><p>The <code class="code docutils literal notranslate"><span class="pre">Minimal</span></code> mode only checks if the program completes without error. This mode may be useful when installing on a machine which has program or library versions different from the ones with which the reference output was generated.</p></li>
 <li><p>The <code class="code docutils literal notranslate"><span class="pre">Writing</span></code> mode overwrites the reference outputs with the generated output.  This mode may be useful when installing on a machine which has program or library versions different from the ones with which the reference output was generated and the user needs a reference output before making changes to the source code.</p></li>
 </ul>
+<p>In the standard case where the testing mode is <code class="code docutils literal notranslate"><span class="pre">Normal</span></code>, it is further possible to choose how the produced output is compared to the reference output using the variable <code class="code docutils literal notranslate"><span class="pre">BUILD_TESTING_DIFF</span></code>, which can take the value of <code class="code docutils literal notranslate"><span class="pre">Soft</span></code> to allow for small differences (the default, recommended) or <code class="code docutils literal notranslate"><span class="pre">Hard</span></code> otherwise.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>As the program is tested on a different environment from the one on which the reference files were generated (specified above), it may happen that some tests fail.  This problem can generally be ignored.</p>
+</div>
 </section>
 <section id="getting-started">
 <h2>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading"></a></h2>

@@ -388,6 +388,31 @@ The embedded grain/phase assignments within the :file:`simulation.msh` may be ov
 
 where :data:`<group_entity>` defines the phase assignment method and must always be defined as :data:`elset`, :data:`<number_of_group_entities>` is the number of grain/phase pairs defined in the field, :data:`<entity_id>` is a unique 1-indexed identification number, and :data:`<group>` is an 1-indexed value that defines the phase for a given grain.
 
+.. _opt_file:
+
+Optional Inputs File (:file:`simulation.opt`)
+---------------------------------------------
+
+The hardening parameter assignments for :data:`g_0` and :data:`g_s0` within the :file:`simulation.cfg` may be overridden via an external :file:`simulation.opt` file. This file contains formatting identical to the associated fields in the configuration file and is defined as::
+
+For per-grain (or :data:`Elset`) values::
+
+    $Elset<variable>
+    <number_of_elsets> <maximum_num_values>
+    <entity_id> <value_1> ...
+    ...
+    $EndElset<variable>
+
+For per-element values::
+
+    $Element<variable>
+    <number_of_elements> <maximum_num_values>
+    <entity_id> <value_1> ...
+    ...
+    $EndElement<variable>
+
+where :data:`<variable>` is :data:`Crss` for :data:`g_0`, which can be defined per slip system, and :data:`CrssSat` for :data:`g_s0` a scalar value. Additionally, :data:`<entity_id>` is a unique 1-indexed identification number for the specified entities.
+
 .. _restart_output:
 
 Restart Files (:file:`rst<N>.*`)

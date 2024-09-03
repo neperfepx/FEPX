@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Configuration File (simulation.cfg) &mdash; FEPX 2.0.0 documentation</title>
+  <title>Configuration File (simulation.cfg) &mdash; FEPX 2.0.1 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/my_theme.css" type="text/css" />
@@ -12,7 +12,7 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../_static/documentation_options.js?v=51b770b3"></script>
+        <script src="../_static/documentation_options.js?v=f5cff4aa"></script>
         <script src="../_static/doctools.js?v=888ff710"></script>
         <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
@@ -30,7 +30,7 @@
             <a href="../index.html" class="icon icon-home"> FEPX
           </a>
               <div class="version">
-                2.0.0
+                2.0.1
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
@@ -49,6 +49,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#general-structure">General Structure</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#special-commands">Special Commands</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#polycrystal-overwriting">Polycrystal Overwriting</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#config-overwriting">Config Overwriting</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#simulation-restart">Simulation Restart</a></li>
 </ul>
 </li>
@@ -170,6 +171,13 @@ Parameters within a block may generally be specified in any order; however, the 
 </div>
 <p>To read in grain/phase assignments from a <a class="reference internal" href="fileformat.html#phase-file"><span class="std std-ref">Phase File (simulation.phase)</span></a>, the following command may be used:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">read_phase_from_file</span>
+</pre></div>
+</div>
+</section>
+<section id="config-overwriting">
+<h3>Config Overwriting<a class="headerlink" href="#config-overwriting" title="Link to this heading"></a></h3>
+<p>To read in hardening parameters from an <a class="reference internal" href="fileformat.html#opt-file"><span class="std std-ref">Optional Inputs File (simulation.opt)</span></a>, the following command may be used:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">read_from_opt_file</span>
 </pre></div>
 </div>
 </section>
