@@ -105,59 +105,6 @@ In the simulation directory (:file:`simple_simulation`):
     Info   : Final step terminated. Simulation completed successfully.
     ========================================================================
 
-In the upper-level directory:
-
-  .. code-block:: console
-
-   $ fepx-pp simple_simulation
-
-    ==========================     F   E   P   X   ==========================
-    Info   : A finite element software package for  polycrystal plasticity.
-    Info   : Version 2.0.0
-    Info   : Running on 20 threads.
-    Info   : <https://fepx.info>
-    Info   : Copyright (C) 1996-2023, DPLab, ACME Lab, CNRS.
-    Info   : ---------------------------------------------------------------
-    Info   : MODULE  -S loaded with arguments:
-    Info   : [ini file] (none)
-    Info   : [com line] simple_simulation
-    Info   : ---------------------------------------------------------------
-    Info   : Reading input data...
-    Info   :   - Reading arguments...
-    Info   : Converting result directory into .sim directory...
-    Info   :   - Parsing results...
-    Info   :     > Input files: msh config
-    Info   :     > Node number      : 4008
-    Info   :     > Element number   : 2453
-    Info   :     > Elset number     : 20
-    Info   :     > Partition number : 4
-    Info   :     > Step number      : 1
-    Info   :     > Node results     : coo
-    Info   :     > Elt results      : ori strain stress
-    Info   :     [o] Writing directory `simple_simulation.sim'...
-    Info   :   - Writing inputs...
-    Info   :     [o] Writing directory `simple_simulation.sim/inputs'...
-    Info   :       . simulation.msh...
-    Info   :       . simulation.cfg...
-    Info   :       . *.sh...
-    cp: cannot stat 'simple_simulation/*.sh': No such file or directory
-    Info   :     [o] Wrote directory `simple_simulation.sim/inputs'.
-    Info   :   - Writing results...
-    Info   :     [o] Writing directory `simple_simulation.sim/results'...
-    Info   :     [o] Writing directory `simple_simulation.sim/results/nodes'...
-    Info   :       . coo .............................................. 100%
-    Info   :     [o] Wrote directory `simple_simulation.sim/results/nodes'.
-    Info   :     [o] Writing directory `simple_simulation.sim/results/elts'...
-    Info   :       . ori .............................................. 100%
-    Info   :       . strain ........................................... 100%
-    Info   :       . stress ........................................... 100%
-    Info   :     [o] Wrote directory `simple_simulation.sim/results/elts'.
-    Info   :     [o] Wrote directory `simple_simulation.sim'.
-    Info   : Elapsed time: 0.075 secs.
-    ========================================================================
-
-  .. note:: It is also possible to run :command:`fepx-pp .` from within the directory containing the input (and output) files, but the :ref:`simulation_directory` will still be generated in the upper-level directory.
-
 The content of the resulting :ref:`simulation_directory`, :file:`simple_simulation.sim`, is::
 
   simple_simulation.sim

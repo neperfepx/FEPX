@@ -1,3 +1,6 @@
+New in 2.0.2-1 (16 Sep 2024):
+- Fixed "simple simulation" tutorial.
+
 New in 2.0.1 (03 Sep 2024):
 - Fixed check_necking, fixed minor bugs.
 - Added g_0 and g_s0 from_file inputs from external .opt file.
