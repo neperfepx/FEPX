@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simple Simulation &mdash; FEPX 2.0.1 documentation</title>
+  <title>Simple Simulation &mdash; FEPX 2.1.0 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/my_theme.css" type="text/css" />
@@ -12,7 +12,7 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../../_static/documentation_options.js?v=f5cff4aa"></script>
+        <script src="../../_static/documentation_options.js?v=20623aea"></script>
         <script src="../../_static/doctools.js?v=888ff710"></script>
         <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
         <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -31,7 +31,7 @@
             <a href="../../index.html" class="icon icon-home"> FEPX
           </a>
               <div class="version">
-                2.0.1
+                2.1.0
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -253,61 +253,6 @@ An FCC material with <a class="reference internal" href="../material.html#aniso-
 <span class="go"> Info   : Final step terminated. Simulation completed successfully.</span>
 <span class="go"> ========================================================================</span>
 </pre></div>
-</div>
-</div></blockquote>
-<p>In the upper-level directory:</p>
-<blockquote>
-<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>fepx-pp<span class="w"> </span>simple_simulation
-
-<span class="go"> ==========================     F   E   P   X   ==========================</span>
-<span class="go"> Info   : A finite element software package for  polycrystal plasticity.</span>
-<span class="go"> Info   : Version 2.0.0</span>
-<span class="go"> Info   : Running on 20 threads.</span>
-<span class="go"> Info   : &lt;https://fepx.info&gt;</span>
-<span class="go"> Info   : Copyright (C) 1996-2023, DPLab, ACME Lab, CNRS.</span>
-<span class="go"> Info   : ---------------------------------------------------------------</span>
-<span class="go"> Info   : MODULE  -S loaded with arguments:</span>
-<span class="go"> Info   : [ini file] (none)</span>
-<span class="go"> Info   : [com line] simple_simulation</span>
-<span class="go"> Info   : ---------------------------------------------------------------</span>
-<span class="go"> Info   : Reading input data...</span>
-<span class="go"> Info   :   - Reading arguments...</span>
-<span class="go"> Info   : Converting result directory into .sim directory...</span>
-<span class="go"> Info   :   - Parsing results...</span>
-<span class="go"> Info   :     &gt; Input files: msh config</span>
-<span class="go"> Info   :     &gt; Node number      : 4008</span>
-<span class="go"> Info   :     &gt; Element number   : 2453</span>
-<span class="go"> Info   :     &gt; Elset number     : 20</span>
-<span class="go"> Info   :     &gt; Partition number : 4</span>
-<span class="go"> Info   :     &gt; Step number      : 1</span>
-<span class="go"> Info   :     &gt; Node results     : coo</span>
-<span class="go"> Info   :     &gt; Elt results      : ori strain stress</span>
-<span class="go"> Info   :     [o] Writing directory `simple_simulation.sim&#39;...</span>
-<span class="go"> Info   :   - Writing inputs...</span>
-<span class="go"> Info   :     [o] Writing directory `simple_simulation.sim/inputs&#39;...</span>
-<span class="go"> Info   :       . simulation.msh...</span>
-<span class="go"> Info   :       . simulation.cfg...</span>
-<span class="go"> Info   :       . *.sh...</span>
-<span class="go"> cp: cannot stat &#39;simple_simulation/*.sh&#39;: No such file or directory</span>
-<span class="go"> Info   :     [o] Wrote directory `simple_simulation.sim/inputs&#39;.</span>
-<span class="go"> Info   :   - Writing results...</span>
-<span class="go"> Info   :     [o] Writing directory `simple_simulation.sim/results&#39;...</span>
-<span class="go"> Info   :     [o] Writing directory `simple_simulation.sim/results/nodes&#39;...</span>
-<span class="go"> Info   :       . coo .............................................. 100%</span>
-<span class="go"> Info   :     [o] Wrote directory `simple_simulation.sim/results/nodes&#39;.</span>
-<span class="go"> Info   :     [o] Writing directory `simple_simulation.sim/results/elts&#39;...</span>
-<span class="go"> Info   :       . ori .............................................. 100%</span>
-<span class="go"> Info   :       . strain ........................................... 100%</span>
-<span class="go"> Info   :       . stress ........................................... 100%</span>
-<span class="go"> Info   :     [o] Wrote directory `simple_simulation.sim/results/elts&#39;.</span>
-<span class="go"> Info   :     [o] Wrote directory `simple_simulation.sim&#39;.</span>
-<span class="go"> Info   : Elapsed time: 0.075 secs.</span>
-<span class="go"> ========================================================================</span>
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>It is also possible to run <strong class="command">fepx-pp .</strong> from within the directory containing the input (and output) files, but the <a class="reference internal" href="../fileformat.html#simulation-directory"><span class="std std-ref">Simulation Directory (.sim)</span></a> will still be generated in the upper-level directory.</p>
 </div>
 </div></blockquote>
 <p>The content of the resulting <a class="reference internal" href="../fileformat.html#simulation-directory"><span class="std std-ref">Simulation Directory (.sim)</span></a>, <code class="file docutils literal notranslate"><span class="pre">simple_simulation.sim</span></code>, is:</p>

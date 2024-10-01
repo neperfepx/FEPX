@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.abspath('.'))
 import sphinx_rtd_theme
 
 project = u'FEPX'
-version = u'2.0.1'
+version = u'2.1.0'
 release = version
 author = u'ACME Lab, CNRS'
 copyright = u'ACME Lab, CNRS'
