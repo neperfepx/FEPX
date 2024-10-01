@@ -21,6 +21,7 @@ module read_input_cfg_mod
   use parallel_mod, only: par_quit
   use types_mod
   use utils_mod
+  use printing_type_mod
   
   ! Default for this module is private variables and subroutines
   private
@@ -160,7 +161,7 @@ subroutine read_config(mesh_file, opt_file, ori_file, phase_file, printing, &
       end if
   
     end do ! loop over file
-  
+    
     ! With number of phases, allocate and initialize crys
     allocate(crys(number_of_phases))
     do i = 1, number_of_phases
@@ -808,20 +809,32 @@ subroutine read_config(mesh_file, opt_file, ori_file, phase_file, printing, &
   
     integer :: i, num_inputs
     character(len=255) :: variable
+    character(len=255) :: entity
   
     !-----------------------------------------------------------------------------
   
     call string_numsubstrings (value, num_inputs)
+    !! Commented out as it's  noisy
+    ! write (*,*) "value = ", trim(adjustl(value))
+    ! write (*,*) "num_inputs = ", num_inputs
   
     do i = 1, num_inputs
   
       call string_substring (value, i, variable)
   
+      entity = "elt"
       select case(trim(adjustl(variable)))
         case('convergence')
           printing%print_conv = .true.
         case('coo')
           printing%print_coo = .true.
+          entity = "node"
+        case('disp')
+          printing%print_disp = .true.
+          entity = "node"
+        case('vel')
+          printing%print_vel = .true.
+          entity = "node"
         case('crss')
           printing%print_crss = .true.
         case('defrate')
@@ -832,8 +845,6 @@ subroutine read_config(mesh_file, opt_file, ori_file, phase_file, printing, &
           printing%print_defrate_pl = .true.
         case('defrate-pl-eq', 'defrate_pl_eq')
           printing%print_defrate_pl_eq = .true.
-        case('disp')
-          printing%print_disp = .true.
         case('forces')
           printing%print_forces = .true.
         case('ori')
@@ -870,8 +881,6 @@ subroutine read_config(mesh_file, opt_file, ori_file, phase_file, printing, &
           printing%print_stress = .true.
         case('stress-eq', 'stress_eq')
           printing%print_stress_eq = .true.
-        case('vel')
-          printing%print_vel = .true.
         case('velgrad')
           printing%print_velgrad = .true.
         case('work')
@@ -886,6 +895,12 @@ subroutine read_config(mesh_file, opt_file, ori_file, phase_file, printing, &
           write (*,*) variable
           call par_quit("Error  : Supplied value invalid for option print.")
       end select
+
+      if (entity .eq. "node") then
+        call ut_string_addtoarray (trim(adjustl(variable)), printing%node_results)
+      else if (entity .eq. "elt") then
+        call ut_string_addtoarray (trim(adjustl(variable)), printing%elt_results)
+      end if
   
     end do
   

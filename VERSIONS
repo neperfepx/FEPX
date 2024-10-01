@@ -1,4 +1,7 @@
-New in 2.0.2-1 (16 Sep 2024):
+New in 2.1.0 (01 Oct 2024):
+- Switch "active" and "passive" for orientation convention and updated mesh
+  parser for compatibility with Neper version 4.10.
+- Made various other fixes.
 - Fixed "simple simulation" tutorial.
 
 New in 2.0.1 (03 Sep 2024):

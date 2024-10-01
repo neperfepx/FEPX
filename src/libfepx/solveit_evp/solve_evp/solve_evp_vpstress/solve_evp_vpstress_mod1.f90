@@ -67,7 +67,7 @@ contains
 
     call scale_down_defr(d_vec_lat, results%defrate_eq(:, qpt))
     call compute_work(mesh, crys, plwork, d_vec_lat)
-
+    call compute_avg_crss(mesh, crys, results%crss(:, :, qpt), crss_avg)
     converged = .false.
 
     ! This loop used to be from 1 to n_edge, in order to try all vertices as

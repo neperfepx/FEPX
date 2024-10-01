@@ -14,6 +14,7 @@ module read_input_msh_mod2
   use gather_scatter_mod
   use surface_mod
   use parallel_mod
+  use utils_mod
 
   implicit none
 
@@ -130,7 +131,7 @@ contains
 
   !===========================================================================
 
-  subroutine read_mesh_version(io)
+  subroutine read_mesh_version(io, version)
 
     ! Read the mesh file version
 
@@ -140,6 +141,7 @@ contains
     ! io: Input unit for .msh file.
 
     integer, intent(in) :: io
+    character(len=*), intent(out) :: version
 
     ! Locals:
     ! ierr: Value that confirms if a read() fails.
@@ -147,7 +149,6 @@ contains
 
     integer :: ierr
     character(len=256) :: line
-    character(len=256) :: version
 
     !---------------------------------------------------------------------------
 
@@ -162,7 +163,7 @@ contains
     ! Read in the mesh version string.
     read (io, '(a)', iostat=ierr) version
 
-    if (version(1:3) .ne. '2.2') &
+    if (version(1:3) .ne. '2.2' .and. version(1:3) .ne. '2.3') &
         &call par_quit('Error  :     > Incorrect mesh version provided.')
 
     ! Read the end of section footer.
@@ -395,7 +396,7 @@ contains
     do i = 1, nb_elsets
       elset_ids_inv(elset_ids(i)) = i
     end do
-    
+
     mesh%num_elsets = nb_elsets
     ! Confirm that nelt (local) and mesh%num_elts (global) values match
     if (nelt .ne. mesh%num_elts) call par_quit('Error  :     > &
@@ -537,7 +538,7 @@ contains
 
       ! label periodic vector directions
       select case (sum_pvect)
-      
+
       case (100)
         mesh%periodicity(i)%pvect_label = 1
 
@@ -573,7 +574,7 @@ contains
 
       case (91)
         mesh%periodicity(i)%pvect_label = 12
-      
+
       case (-100)
         mesh%periodicity(i)%pvect_label = -1
 
@@ -695,7 +696,7 @@ contains
 
       ! skip empty fasets
       if (num_elts .ne. 0) then
-        
+
         ! Should semin/semax use the the surface elements from the 3d elements
         ! that are stored on the same processor range instead of something else?
         call par_partition(num_elts, num_procs, myid, semin, semax)
@@ -1161,7 +1162,6 @@ contains
     ! Locals:
     ! ierr: Value that confirms if a read() fails.
     ! i/j: Generic loop index.
-    ! s: Status value that read in string is a valid option.
     ! nlines: Read-in value for the number of lines that will be parsed.
     ! nspace/nvals: Storage values used for dividing a line into substrings.
     ! elset_id: Grain id - 1-indexed.
@@ -1173,7 +1173,7 @@ contains
     ! iarray: Substring array for internal read parsing.
     ! line: Input line on current record to be parsed.
 
-    integer :: ierr, i, j, s
+    integer :: ierr, i, j
     integer :: nlines, nspace, nvals, elset_id, delim_pos
     real(rk) :: ori(4)
     character(len=50)  :: parm_string, conv_string, ori_string
@@ -1261,62 +1261,23 @@ contains
 
     ! Parse the parameterization and confirm it is a valid option.
 
-    s = 0
-
     read (parm_string, '(a)') &
         & mesh%orientation_parameterization
 
     ! Confirm that the rest of the string is a valid input.
-    if (mesh%orientation_parameterization &
-        & .eq. 'axis-angle') then
-      s = 0
-
-    else if (mesh%orientation_parameterization &
-        & .eq. 'euler-bunge') then
-      s = 0
-
-    else if (mesh%orientation_parameterization &
-        & .eq. 'euler-kocks') then
-      s = 0
-
-    else if (mesh%orientation_parameterization &
-        & .eq. 'rodrigues') then
-      s = 0
-
-    else if (mesh%orientation_parameterization &
-        & .eq. 'quaternion') then
-      s = 0
-
-    else ! Orientation parameterization defined is incorrect.
-      s = 1
-    end if
-
-    if (s .eq. 1) then
+    if (mesh%orientation_parameterization .ne. 'axis-angle' &
+    .and. mesh%orientation_parameterization .ne. 'euler-bunge' &
+    .and. mesh%orientation_parameterization .ne. 'euler-kocks' &
+    .and. mesh%orientation_parameterization .ne. 'rodrigues' &
+    .and. mesh%orientation_parameterization .ne. 'quaternion') then
       call par_quit("Error  :     > orientation_parameterization &
           & contains an error or unexpected input type.")
     end if
 
-    ! Parse the convention and confirm it is a valid option.
-
-    s = 0
-
-    read (conv_string, '(a)') &
-        & mesh%orientation_convention
-
     ! Confirm that the rest of the string is a valid input.
-    if (mesh%orientation_convention &
-        & .eq. 'active') then
-      s = 0
-
-    else if (mesh%orientation_convention &
-        & .eq. 'passive') then
-      s = 0
-
-    else ! Orientation convention defined is incorrect.
-      s = 1
-    end if
-
-    if (s .eq. 1) then
+    read (conv_string, '(a)') mesh%orientation_convention
+    if (mesh%orientation_convention .ne. 'active' &
+       & .and. mesh%orientation_convention .ne. 'passive') then
       call par_quit("Error  :     > orientation_convention &
           & contains an error or unexpected input type.")
     end if
@@ -1358,7 +1319,7 @@ contains
     return
 
   end subroutine read_elsetorientations
-  
+
   !===========================================================================
 
   subroutine read_eltorientations(io, mesh, eltoris_defined, elset_oris)
@@ -1380,7 +1341,6 @@ contains
     ! Locals:
     ! ierr: Value that confirms if a read() fails.
     ! i/j: Generic loop index.
-    ! s: Status value that read in string is a valid option.
     ! nlines: Read-in value for the number of lines that will be parsed.
     ! nspace/nvals: Storage values used for dividing a line into substrings.
     ! elt: Element id - 1-indexed.
@@ -1391,7 +1351,7 @@ contains
     ! iarray: Substring array for internal read parsing.
     ! line: Input line on current record to be parsed.
 
-    integer :: ierr, i, j, s
+    integer :: ierr, i, j
     integer :: nlines, nspace, nvals, elt, delim_pos
     character(len=50)  :: parm_string, conv_string, ori_string
     character(len=32)  :: iarray(16)
@@ -1442,62 +1402,23 @@ contains
 
     ! Parse the parameterization and confirm it is a valid option.
 
-    s = 0
-
     read (parm_string, '(a)') &
         & mesh%orientation_parameterization
 
     ! Confirm that the rest of the string is a valid input.
-    if (mesh%orientation_parameterization &
-        & .eq. 'axis-angle') then
-      s = 0
-
-    else if (mesh%orientation_parameterization &
-        & .eq. 'euler-bunge') then
-      s = 0
-
-    else if (mesh%orientation_parameterization &
-        & .eq. 'euler-kocks') then
-      s = 0
-
-    else if (mesh%orientation_parameterization &
-        & .eq. 'rodrigues') then
-      s = 0
-
-    else if (mesh%orientation_parameterization &
-        & .eq. 'quaternion') then
-      s = 0
-
-    else ! Orientation parameterization defined is incorrect.
-      s = 1
-    end if
-
-    if (s .eq. 1) then
+    if (mesh%orientation_parameterization .ne. 'axis-angle'      &
+      .and. mesh%orientation_parameterization .ne. 'euler-bunge' &
+      .and. mesh%orientation_parameterization .ne. 'euler-kocks' &
+      .and. mesh%orientation_parameterization .ne. 'rodrigues'   &
+      .and. mesh%orientation_parameterization .ne. 'quaternion') then
       call par_quit("Error  :     > orientation_parameterization &
           & contains an error or unexpected input type.")
     end if
 
-    ! Parse the convention and confirm it is a valid option.
-
-    s = 0
-
-    read (conv_string, '(a)') &
-        & mesh%orientation_convention
-
     ! Confirm that the rest of the string is a valid input.
-    if (mesh%orientation_convention &
-        & .eq. 'active') then
-      s = 0
-
-    else if (mesh%orientation_convention &
-        & .eq. 'passive') then
-      s = 0
-
-    else ! Orientation convention defined is incorrect.
-      s = 1
-    end if
-
-    if (s .eq. 1) then
+    read (conv_string, '(a)') mesh%orientation_convention
+    if (mesh%orientation_convention .ne. 'active' &
+        .and. mesh%orientation_convention .ne. 'passive') then
       call par_quit("Error  :     > orientation_convention &
           & contains an error or unexpected input type.")
     end if
@@ -1558,7 +1479,6 @@ contains
     ! Locals:
     ! ierr: Value that confirms if a read() fails.
     ! i/j: Generic loop index.
-    ! s: Status value that read in string is a valid option.
     ! nlines: Read-in value for the number of lines that will be parsed.
     ! nspace/nvals: Storage values used for dividing a line into substrings.
     ! elt: Element id - 1-indexed.
@@ -1566,7 +1486,7 @@ contains
     ! iarray: Substring array for internal read parsing.
     ! line: Input line on current record to be parsed.
 
-    integer :: ierr, i, j, s
+    integer :: ierr, i, j
     integer :: my_phase(elt_sub:elt_sup)
     integer :: nlines, nspace, nvals, elt, nslips
     character(len=32)  :: iarray(16)
@@ -1608,7 +1528,7 @@ contains
     read (iarray(2), *) nslips
 
     ! Error checking for number of values read in
-    if (mesh%num_elsets .ne. nlines) then 
+    if (mesh%num_elsets .ne. nlines) then
       call par_quit("Error  :     > Number of grains specified not same as number of grains in mesh")
     end if
     ! Set a per-element logical to false.
@@ -1620,7 +1540,6 @@ contains
     my_phase = mesh%elt_phase(elt_sub:elt_sup)
     mesh%maxnumslip = nslips
 
-    s = 0    
     allocate (elset_flag(nslips, nlines))
     if (flag .ne. "ElsetCrss") then
       do i = 1, nlines
@@ -1630,36 +1549,36 @@ contains
       do i = 1, nlines
         read (io, '(a)', iostat=ierr) line
         nspace = count(transfer(line, 'a', len_trim(line)) .eq. " ")
-        allocate(tmp_crss(nspace))        
-        select case (nspace)  
+        allocate(tmp_crss(nspace))
+        select case (nspace)
           case(1)
-            if ( nslips .ne. 12 ) then 
+            if ( nslips .ne. 12 ) then
               call par_quit("Error  :     > Invalid number of inputs for crystal type")
-            end if 
+            end if
             ! Isotropic Cubic g_0 (1 value input)
             read(line, *) elt,tmp_crss(1)
             elset_flag(1:12,i) = tmp_crss(1)
           case(2)
-            if ( nslips .ne. 24 ) then 
+            if ( nslips .ne. 24 ) then
               call par_quit("Error  :     > Invalid number of inputs for crystal type")
-            end if 
+            end if
             ! Isotropic Cubic g_0 including 112 slip systems (2 values input)
             read(line, *) elt,tmp_crss
             elset_flag(1:12,i) = tmp_crss(1)
             elset_flag(13:24,i) = tmp_crss(2)
           case(3)
-            if ( nslips .ne. 18 ) then 
+            if ( nslips .ne. 18 ) then
               call par_quit("Error  :     > Invalid number of inputs for crystal type")
-            end if 
+            end if
             ! HCP Per-family g_0 (3 values inputs)
             read(line, *) elt,tmp_crss
             elset_flag(1:3,i) = tmp_crss(1)
             elset_flag(4:6,i) = tmp_crss(2)
             elset_flag(7:18,i) = tmp_crss(3)
           case(10)
-            if ( nslips .ne. 32 ) then 
+            if ( nslips .ne. 32 ) then
               call par_quit("Error  :     > Invalid number of inputs for crystal type")
-            end if 
+            end if
             ! BCT Per-family g_0 (10 values inputs)
             read(line, *) elt,tmp_crss
             elset_flag(1:2  ,i) = tmp_crss(1)
@@ -1673,30 +1592,30 @@ contains
             elset_flag(21:24,i) = tmp_crss(9)
             elset_flag(25:32,i) = tmp_crss(10)
           case(12)
-            if (nslips .ne. 12 ) then 
+            if (nslips .ne. 12 ) then
               call par_quit("Error  :     > Invalid number of inputs for crystal type")
-            end if 
+            end if
             ! Cubic Anisotropic g_0 (12 values input)
             read(line, *) elt,tmp_crss
             elset_flag(1:12,i) = tmp_crss(1:12)
           case(18)
-            if (nslips .ne. 18) then 
+            if (nslips .ne. 18) then
               call par_quit("Error  :     > Invalid number of inputs for crystal type")
-            end if 
+            end if
             ! HCP Fully anisotropic g_0 (18 values input)
             read(line, *) elt,tmp_crss
             elset_flag(1:18,i) = tmp_crss(1:18)
           case(24)
-            if (nslips .ne. 24) then 
+            if (nslips .ne. 24) then
               call par_quit("Error  :     > Invalid number of inputs for crystal type")
-            end if 
+            end if
             ! BCC Fully anisotropic g_0 (24 values input)
             read(line, *) elt,tmp_crss
             elset_flag(1:24,i) = tmp_crss(1:24)
           case(32)
-            if (nslips .ne. 32) then 
+            if (nslips .ne. 32) then
               call par_quit("Error  :     > Invalid number of inputs for crystal type")
-            end if 
+            end if
             ! BCT Fully anisotropic g_0 (32 values input)
             read(line, *) elt,tmp_crss
             elset_flag(1:32,i) = tmp_crss(1:32)
@@ -1741,7 +1660,6 @@ contains
     ! Locals:
     ! ierr: Value that confirms if a read() fails.
     ! i/j: Generic loop index.
-    ! s: Status value that read in string is a valid option.
     ! nlines: Read-in value for the number of lines that will be parsed.
     ! nspace/nvals: Storage values used for dividing a line into substrings.
     ! elt: Element id - 1-indexed.
@@ -1749,7 +1667,7 @@ contains
     ! iarray: Substring array for internal read parsing.
     ! line: Input line on current record to be parsed.
 
-    integer :: ierr, i, j, s
+    integer :: ierr, i, j
     integer :: my_phase(elt_sub:elt_sup)
     integer :: nlines, nspace, nvals, elt, nslips
     character(len=32)  :: iarray(16)
@@ -1791,7 +1709,7 @@ contains
     read (iarray(2), *) nslips
 
     ! Error checking for number ofelements
-    if (mesh%num_elts .ne. nlines) then 
+    if (mesh%num_elts .ne. nlines) then
       call par_quit("Error  :     > Number of elements specified not same as number of elements in mesh")
     end if
     ! Set a per-element logical to true.
@@ -1799,8 +1717,6 @@ contains
 
     ! Parse the parameterization and confirm it is a valid option.
 
-    s = 0
-    
     allocate (elset_flag(nslips, nlines))
 
     my_phase = mesh%elt_phase(elt_sub:elt_sup)
@@ -1814,36 +1730,36 @@ contains
       do i = 1, nlines
         read (io, '(a)', iostat=ierr) line
         nspace = count(transfer(line, 'a', len_trim(line)) .eq. " ")
-        allocate(tmp_crss(nspace))        
-        select case (nspace)  
+        allocate(tmp_crss(nspace))
+        select case (nspace)
           case(1)
-            if ( nslips .ne. 12 ) then 
+            if ( nslips .ne. 12 ) then
               call par_quit("Error  :     > Invalid number of inputs for crystal type")
-            end if 
+            end if
             ! Isotropic Cubic g_0 (1 value input)
             read(line, *) elt,tmp_crss(1)
             elset_flag(1:12,i) = tmp_crss(1)
           case(2)
-            if ( nslips .ne. 24 ) then 
+            if ( nslips .ne. 24 ) then
               call par_quit("Error  :     > Invalid number of inputs for crystal type")
-            end if 
+            end if
             ! Isotropic Cubic g_0 including 112 slip systems (2 values input)
             read(line, *) elt,tmp_crss
             elset_flag(1:12,i) = tmp_crss(1)
             elset_flag(13:24,i) = tmp_crss(2)
           case(3)
-            if ( nslips .ne. 18 ) then 
+            if ( nslips .ne. 18 ) then
               call par_quit("Error  :     > Invalid number of inputs for crystal type")
-            end if 
+            end if
             ! HCP Per-family g_0 (3 values inputs)
             read(line, *) elt,tmp_crss
             elset_flag(1:3,i) = tmp_crss(1)
             elset_flag(4:6,i) = tmp_crss(2)
             elset_flag(7:18,i) = tmp_crss(3)
           case(10)
-            if ( nslips .ne. 32 ) then 
+            if ( nslips .ne. 32 ) then
               call par_quit("Error  :     > Invalid number of inputs for crystal type")
-            end if 
+            end if
             ! BCT Per-family g_0 (10 values inputs)
             read(line, *) elt,tmp_crss
             elset_flag(1:2  ,i) = tmp_crss(1)
@@ -1857,30 +1773,30 @@ contains
             elset_flag(21:24,i) = tmp_crss(9)
             elset_flag(25:32,i) = tmp_crss(10)
           case(12)
-            if (nslips .ne. 12 ) then 
+            if (nslips .ne. 12 ) then
               call par_quit("Error  :     > Invalid number of inputs for crystal type")
-            end if 
+            end if
             ! Cubic Anisotropic g_0 (12 values input)
             read(line, *) elt,tmp_crss
             elset_flag(1:12,i) = tmp_crss(1:12)
           case(18)
-            if (nslips .ne. 18) then 
+            if (nslips .ne. 18) then
               call par_quit("Error  :     > Invalid number of inputs for crystal type")
-            end if 
+            end if
             ! HCP Fully anisotropic g_0 (18 values input)
             read(line, *) elt,tmp_crss
             elset_flag(1:18,i) = tmp_crss(1:18)
           case(24)
-            if (nslips .ne. 24) then 
+            if (nslips .ne. 24) then
               call par_quit("Error  :     > Invalid number of inputs for crystal type")
-            end if 
+            end if
             ! BCC Fully anisotropic g_0 (24 values input)
             read(line, *) elt,tmp_crss
             elset_flag(1:24,i) = tmp_crss(1:24)
           case(32)
-            if (nslips .ne. 32) then 
+            if (nslips .ne. 32) then
               call par_quit("Error  :     > Invalid number of inputs for crystal type")
-            end if 
+            end if
             ! BCT Fully anisotropic g_0 (32 values input)
             read(line, *) elt,tmp_crss
             elset_flag(1:32,i) = tmp_crss(1:32)
@@ -2027,7 +1943,7 @@ contains
 
   !===========================================================================
 
-  subroutine read_mesh_init_eltoris(mesh, eltoris_defined, elt_elset, elset_oris, nb_elsets)
+  subroutine read_mesh_init_eltoris(mesh, version, eltoris_defined, elt_elset, elset_oris, nb_elsets)
 
     ! Assign ori to the elements and compute rotation matrices
 
@@ -2039,6 +1955,7 @@ contains
 
     !integer :: io
     type(mesh_type), intent(inout):: mesh
+    character(len=*), intent(in) :: version
     logical :: eltoris_defined
     integer, intent(in):: elt_elset(:)
     real(rk), intent(in) :: elset_oris (:, :)
@@ -2048,6 +1965,7 @@ contains
 
     integer  :: my_phase(elt_sub:elt_sup)
     integer  :: my_elt_elset(elt_sub:elt_sup)
+    integer :: major, minor, patch
 
     real(rk) :: angle(elt_sub:elt_sup)
     real(rk) :: axis(3, elt_sub:elt_sup)
@@ -2194,14 +2112,17 @@ contains
       call quat_to_rotmat(quat, mesh%ori)
     end if
 
-    ! Determine passive (c2s) or active (s2c) from orientation options
+    call ut_string_version (version, major, minor, patch)
+    if (major .lt. 2 .or. (major .eq. 2 .and. minor .le. 2)) then
+      if (mesh%orientation_convention .eq. 'active') then
+        mesh%orientation_convention = 'passive'
+      else if (mesh%orientation_convention .eq. 'passive') then
+        mesh%orientation_convention = 'active'
+      end if
+    end if
 
-    if (mesh%orientation_convention .eq. &
-        & 'passive') then
-      ! Don't do anything - FEPX assumes passive convention!!
-
-    else if (mesh%orientation_convention .eq. &
-        & 'active') then
+    ! If passive (c2s), transposing to active (s2c) for internal use
+    if (mesh%orientation_convention .eq. 'passive') then
       do j = elt_sub, elt_sup
         mesh%ori(:, :, j) = transpose(mesh%ori(:, :, j))
       end do
@@ -2236,7 +2157,7 @@ contains
     integer  :: i, j, m, n
 
     !---------------------------------------------------------------------------
-        
+
     my_phase = mesh%elt_phase(elt_sub:elt_sup)
     my_elt_elset = elt_elset(elt_sub:elt_sup)
 
@@ -2257,7 +2178,7 @@ contains
       end do
 
     else if (eltcrss_defined .eqv. .true.) then
-      ! Assign the crss to each element from elt  
+      ! Assign the crss to each element from elt
       do j = elt_sub, elt_sup
         do n = 1, size(elset_crss,1)
           mesh%crss(n,j,:) = elset_crss(n, j)
@@ -2297,8 +2218,8 @@ contains
     integer  :: j, m, n
 
     !---------------------------------------------------------------------------
-    
-    
+
+
     my_phase = mesh%elt_phase(elt_sub:elt_sup)
     my_elt_elset = elt_elset(elt_sub:elt_sup)
 
@@ -2317,7 +2238,7 @@ contains
       end do
 
     else if (eltsat_str_defined .eqv. .true.) then
-      ! Assign the sat_str to each element from elt  
+      ! Assign the sat_str to each element from elt
       do j = elt_sub, elt_sup
         do n = 1, size(elset_sat_str,1)
           mesh%sat_str(n,j) = elset_sat_str(n, j)
@@ -2329,5 +2250,5 @@ contains
     return
 
   end subroutine read_mesh_init_eltsat_str
-  
+
 end module read_input_msh_mod2

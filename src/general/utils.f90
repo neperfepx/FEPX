@@ -325,4 +325,62 @@ function ut_file_exists (filename) result(file_exists)
 
 end function ut_file_exists
 
+!> This writes the file names of the user-defined output files from the
+! simulation.cfg.
+subroutine ut_string_addtoarray(input_string, string_array)
+
+  !---------------------------------------------------------------------------
+
+  ! Arguments:
+  ! input_string: Character array denoting file name to print.
+
+  character(len=*), intent(in) :: input_string
+  character(len=16), intent(inout), allocatable :: string_array(:)
+
+  character(len=16), allocatable :: temp_array(:)
+  integer :: arraysize, i
+
+  !---------------------------------------------------------------------------
+
+  ! Append the input_string to the present array and reallocate.
+  if (allocated(string_array)) then
+    arraysize = size(string_array)
+    allocate (temp_array(arraysize + 1))
+
+    do i = 1, arraysize
+      temp_array(i) = string_array(i)
+    end do
+
+    temp_array(arraysize + 1) = input_string
+    deallocate (string_array)
+    call move_alloc(temp_array, string_array)
+  else
+    allocate (string_array(1))
+    string_array(1) = input_string
+  end if
+
+end subroutine ut_string_addtoarray
+
+subroutine ut_string_version(version, major, minor, patch)
+
+  !---------------------------------------------------------------------------
+
+  character(len=10), intent(in) :: version
+  integer, intent(out) :: major, minor, patch
+
+  character(len=10) :: temp
+
+  minor = 0
+  patch = 0
+
+  read(version, '(I1, A)') major, temp
+  if (scan(temp, ".") /= 0) then
+    read(temp(2:), '(I1, A)') minor, temp
+    if (scan(temp, ".") /= 0) then
+      read(temp(2:), '(I1)') patch
+    end if
+  end if
+
+end subroutine ut_string_version
+
 end module utils_mod

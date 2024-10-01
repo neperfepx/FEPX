@@ -378,5 +378,43 @@ contains
     irc = -2
 
   end subroutine solve_newton_vp
+  !> Computes the average strength of the crystal slip systems
+  subroutine compute_avg_crss(mesh, crys, crss, crss_avg)
+
+    type(mesh_type) :: mesh
+    type(crys_type) :: crys (:)
+    real(rk), intent(in) :: crss(mesh%maxnumslip, elt_sub:elt_sup)
+    real(rk), intent(inout) :: crss_avg(elt_sub:elt_sup)
+
+    integer, pointer :: indices(:) => null()
+    integer :: islip
+    integer :: n_slip
+    integer :: iphase
+    integer :: num_ind
+
+    !---------------------------------------------------------------------------
+
+    crss_avg = 0.0d0
+
+    ! Goes through the total number of phases in the material
+    do iphase = 1, mesh%num_phases
+      n_slip = crys(iphase)%numslip
+
+      ! Finds the indices corresponding to the current phase the loop is on
+
+      call find_indices(mesh%elt_phase(elt_sub:elt_sup), iphase, indices, num_ind, elt_sub - 1)
+
+      ! Sums up the crystal slip strengths corresponding to the given indices
+      !DEBUG::
+      ! do islip = 1, n_slip
+      crss_avg(indices) = crss_avg(indices) + crss(1, indices)
+      ! end do
+
+      ! Calculates the average of these slip systems
+
+      ! crss_avg(indices) = crss_avg(indices)/n_slip
+      deallocate (indices)
+    end do
+  end subroutine compute_avg_crss
 
 end module solve_evp_vpstress_mod2

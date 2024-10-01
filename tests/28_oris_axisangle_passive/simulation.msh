@@ -2,7 +2,7 @@ $MeshFormat
 2.2 0 8
 $EndMeshFormat
 $MeshVersion
-2.2.1
+2.3
 $EndMeshVersion
 $Nodes
 49
@@ -334,7 +334,7 @@ $PhysicalNames
 3 2 poly2
 $EndPhysicalNames
 $ElsetOrientations
-2 axis-angle:passive
-1   -0.644975177248    0.163170612993    0.746580452322  150.433376578065
-2    0.486015196430    0.805644934720   -0.338711481941   84.445437417148
+2 axis-angle:active
+1    0.644975177248   -0.163170612993   -0.746580452322  150.433376578065
+2   -0.486015196430   -0.805644934720    0.338711481941   84.445437417148
 $EndElsetOrientations

@@ -544,6 +544,6 @@ $ElsetCrySym
 triclinic
 $EndElsetCrySym
 $ElsetOrientations
-1 rodrigues:active
+1 rodrigues:passive
 1    0.919953402851    1.412193625247   -0.358468593221
 $EndElsetOrientations

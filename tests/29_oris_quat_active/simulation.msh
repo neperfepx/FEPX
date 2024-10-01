@@ -2,7 +2,7 @@ $MeshFormat
 2.2 0 8
 $EndMeshFormat
 $MeshVersion
-2.2.1
+2.3
 $EndMeshVersion
 $Nodes
 49
@@ -334,7 +334,7 @@ $PhysicalNames
 3 2 poly2
 $EndPhysicalNames
 $ElsetOrientations
-2 quaternion:active
-1    0.309531071796    0.139290906616   -0.535933091321   -0.773022820202
-2    0.252922791016    0.524601321292    0.476583202761   -0.658552933582
+2 quaternion:passive
+1    0.255164144719   -0.623625047786    0.157769298593    0.721866959658
+2    0.740538189917    0.326609151123    0.541404898794   -0.227618951845
 $EndElsetOrientations

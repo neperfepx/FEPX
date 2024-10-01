@@ -86,10 +86,6 @@ contains
 
     mesh%global_info(:, :) = global_info(:, :)
 
-    if (myid .eq. 0) then
-      call write_dot_sim_file_header(printing, mesh)
-    end if
-
     deallocate (part_info)
     deallocate (global_info)
 

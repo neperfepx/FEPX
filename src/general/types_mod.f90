@@ -96,6 +96,9 @@ module types_mod
       & rotrate_slip_u = 52, &
       & force_u = 60
 
+    character(len=16), allocatable :: node_results(:)
+    character(len=16), allocatable :: elt_results(:)
+
   end type printing_type
 
   type trace
@@ -206,7 +209,7 @@ module types_mod
     character(len=256) :: bc_type(1024)
     character(len=256) :: bc_var(1024)
     character(len=256) :: bc_nset(1024)
-    character(len=2)   :: bc_dir(1024)
+    character(len=50)   :: bc_dir(1024)
     real(rk)           :: bc_vel(1024)
 
     ! should be merged with strain_rate (or velocity) somehow

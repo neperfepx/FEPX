@@ -13,7 +13,6 @@ program FEPX
   use driver_triaxcsr_mod
   use driver_triaxclr_mod
   use driver_uniaxial_control_mod
-  use write_res_mod
   use units_mod
   use parallel_mod
   use gather_scatter_mod

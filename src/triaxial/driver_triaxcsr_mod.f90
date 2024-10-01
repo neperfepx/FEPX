@@ -631,7 +631,6 @@ contains
         if (maxval(abs(macro_eng_strain)) .ge. exec%max_strain) then
           ! mpk - 10/2021: Don't write that we have completed the final
           !   step. We are currently in the middle of a step.
-          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading, istep - 1)
           call par_quit('Info   :     > Maximum eng. strain exceeded.', exec%clock_start)
         end if
 
@@ -640,24 +639,19 @@ contains
         if (curr_eqstrain .ge. exec%max_eqstrain) then
           ! mpk - 10/2021: Don't write that we have completed the final
           !   step. We are currently in the middle of a step.
-          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading, istep - 1)
-
           call par_quit('Info   :     > Maximum eqv. strain exceeded.', exec%clock_start)
         end if
 
         if (is_necking) then
-          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading, istep)
           call par_quit('Error  :     > Specimen is necking.', exec%clock_start)
         end if
 
         if (is_limit_tripped) then
-          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading, istep)
           call par_quit('Error  :     > Maximum time or maximum &
               &increments exceeded.', exec%clock_start)
         end if
 
         if (istep .eq. loading%num_steps) then
-          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading, istep)
           ! Finalize clock values and print to console
 
           if (myid .eq. 0) then

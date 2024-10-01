@@ -2,7 +2,7 @@ $MeshFormat
 2.2 0 8
 $EndMeshFormat
 $MeshVersion
-2.2.1
+2.3
 $EndMeshVersion
 $Nodes
 49
@@ -334,7 +334,7 @@ $PhysicalNames
 3 2 poly2
 $EndPhysicalNames
 $ElsetOrientations
-2 euler-bunge:active
+2 euler-bunge:passive
 1  236.335386748008   80.072535051284  -95.270156451555
 2   41.813165532991   78.438807181793  -75.984842545419
 $EndElsetOrientations

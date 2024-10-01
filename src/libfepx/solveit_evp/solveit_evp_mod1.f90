@@ -142,7 +142,7 @@ contains
 
       ! sig_vec_n_qpt: inout (enters=0 at the first increment, only grain=0 is
       !   updated)
-      
+
       call elt_stif_evp(mesh, crys, exec, results_prev, results, ecoos, evel, &
                        & estiff, etanstiff, eforce, incr, dtime)
 
@@ -193,17 +193,17 @@ contains
 
         call assemble_diagonals("general", loading, mesh, exec, stiff, gdiag)
         cg_iter_out = cg_solver_ebe("general", "dv", gdiag, stiff, delta_vel, resid, loading, exec, mesh)
-      
+
       ! If multi-point constraints, solve the reduced linear system only on primary dofs
       else if ((loading%mpc_status .eqv. .true.) .and. (mesh%num_periodicity .eq. 0)) then
         ! Form the diagonal part of the primary stiffness matrix (Jacobi's preconditioning)
         call assemble_diagonals("MPC", loading, mesh, exec, stiff, gdiag)
         ! Solve the linear system using the congujate gradient method
         cg_iter_out = cg_solver_ebe("MPC", "dv", gdiag, stiff, delta_vel, resid, loading, exec, mesh)
-    
+
       ! If PBC
       else if ((loading%mpc_status .eqv. .false.) .and. (mesh%num_periodicity .gt. 0)) then
-          
+
         call assemble_diagonals("PBC", loading, mesh, exec, stiff, gdiag)
         cg_iter_out = cg_solver_ebe("PBC", "dv", gdiag, stiff, delta_vel, resid, loading, exec, mesh)
 
@@ -393,7 +393,7 @@ contains
     end if
 
     if (status .ne. 0) then
-      call par_quit('Error  :     > Failure to converge.')
+      call par_quit('Error  :     > Failure to converge.',clock_start=exec%clock_start)
     end if
 
     ! Update state (at center of each element), geometry,

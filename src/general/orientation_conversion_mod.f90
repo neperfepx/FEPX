@@ -6,15 +6,10 @@ module orientation_conversion_mod
 
 ! Module containing orientation conversions for input and printing.
 
-! Note: The conversions here assume no convention ("active" or "passive"). The
-! default assumption in FEPX is a "passive" convention. If an "active"
-! convention is chosen by the user, the internal rotation matrix is transposed
-! when converted from its original orientation convention, and again before
-! output to files. FEPX assumes "active" to mean "sample-to-crystal"
-! transformation, and "passive" to mean "crystal-to-sample" transformation.
-
-! All conversions are summarized in a paper by Rowenhorst et. al.:
+! Note: The conversions here assume no convention ("active" or "passive").
+! The conversions are summarized in a paper by Rowenhorst et. al.:
 !     doi:10.1088/0965-0393/23/8/083501, 2015.
+! Or adapted from Neper (https://neper.info)
 
 ! Note: The following subroutines rely on other conversions:
 ! rodrigues_to_rotmat: First converts to axis-angle, then to rotation matrix.

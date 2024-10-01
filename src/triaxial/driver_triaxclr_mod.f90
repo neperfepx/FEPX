@@ -91,7 +91,6 @@ contains
     real(rk) :: curr_eqstrain
     character(len=16) :: field, time_string, dtime_string
 
-    real(rk) :: clock_end
 
     type(results_type) :: results_prev
 
@@ -763,7 +762,7 @@ contains
         if (loading%step_print(istep)) then
 
           call write_res(istep, mesh, crys, results, dtime, printing)
-          
+
           if (printing%print_restart) then
             call write_restart_field(istep, mesh, results)
 
@@ -777,9 +776,6 @@ contains
 
         if (istep .eq. loading%num_steps) then
           ! Job finished successfully
-
-          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading, istep)
-
           call par_quit('Info   : Final step terminated. Simulation&
               & completed successfully.', exec%clock_start)
         end if
@@ -787,16 +783,12 @@ contains
         ! Check that maximum strain has not been exceeded
 
         if (maxval(abs(macro_eng_strain)) .ge. exec%max_strain) then
-          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading, istep)
-
           call par_quit('Error  :     > Maximum eng. strain exceeded.', exec%clock_start)
         end if
 
         ! Check that maximum strain_eq has not been exceeded
 
         if (curr_eqstrain .ge. exec%max_eqstrain) then
-          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading, istep)
-
           call par_quit('Error  :     > Maximum eqv. strain exceeded.', exec%clock_start)
         end if
 
@@ -821,8 +813,6 @@ contains
         if (maxval(abs(macro_eng_strain)) .ge. exec%max_strain) then
           ! mpk - 10/2021: Don't write that we have completed the final
           !   step. We are currently in the middle of a step.
-          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading, istep - 1)
-
           call par_quit('Info   :     > Maximum eng. strain exceeded.', exec%clock_start)
         end if
 
@@ -831,8 +821,6 @@ contains
         if (curr_eqstrain .ge. exec%max_eqstrain) then
           ! mpk - 10/2021: Don't write that we have completed the final
           !   step. We are currently in the middle of a step.
-          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading, istep - 1)
-
           call par_quit('Info   :     > Maximum eqv. strain exceeded.', exec%clock_start)
         end if
       end if

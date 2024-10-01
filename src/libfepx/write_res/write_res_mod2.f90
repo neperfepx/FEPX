@@ -50,9 +50,9 @@ contains
 
     ! Assemble format string
     write (fmt, *) '(', numdim, '(e13.7,1x))'
-    
+
     ! Write to file
-    write (ounit, fmt) (anint (var(i) / output_precision) * output_precision, i=start, end)
+    write (ounit, fmt) (anint(var(i)/output_precision)*output_precision, i=start, end)
 
   end subroutine write_res_vector
 
@@ -76,7 +76,7 @@ contains
     write (fmt, *) '(', numdim, '(e13.7,1x))'
 
     ! Write to file
-    write (ounit, fmt) (anint (var(:, i) / output_precision) * output_precision, i=start, end)
+    write (ounit, fmt) (anint(var(:, i)/output_precision)*output_precision, i=start, end)
 
   end subroutine write_res_array
 
@@ -101,22 +101,22 @@ contains
 
     ! Write to file
     if (numdim .eq. 6) then
-      write (ounit, fmt) ((/anint (var(1, 1, i) / output_precision) * output_precision, &
-                            anint (var(2, 2, i) / output_precision) * output_precision, &
-                            anint (var(3, 3, i) / output_precision) * output_precision, &
-                            anint (var(2, 3, i) / output_precision) * output_precision, &
-                            anint (var(1, 3, i) / output_precision) * output_precision, &
-                            anint (var(1, 2, i) / output_precision) * output_precision/), i=start, end)
+      write (ounit, fmt) ((/anint(var(1, 1, i)/output_precision)*output_precision, &
+                            anint(var(2, 2, i)/output_precision)*output_precision, &
+                            anint(var(3, 3, i)/output_precision)*output_precision, &
+                            anint(var(2, 3, i)/output_precision)*output_precision, &
+                            anint(var(1, 3, i)/output_precision)*output_precision, &
+                            anint(var(1, 2, i)/output_precision)*output_precision/), i=start, end)
     else if (numdim .eq. 9) then
-      write (ounit, fmt) ((/anint (var(1, 1, i) / output_precision) * output_precision, &
-                            anint (var(1, 2, i) / output_precision) * output_precision, &
-                            anint (var(1, 3, i) / output_precision) * output_precision, &
-                            anint (var(2, 1, i) / output_precision) * output_precision, &
-                            anint (var(2, 2, i) / output_precision) * output_precision, &
-                            anint (var(2, 3, i) / output_precision) * output_precision, &
-                            anint (var(3, 1, i) / output_precision) * output_precision, &
-                            anint (var(3, 2, i) / output_precision) * output_precision, &
-                            anint (var(3, 3, i) / output_precision) * output_precision/), i=start, end)
+      write (ounit, fmt) ((/anint(var(1, 1, i)/output_precision)*output_precision, &
+                            anint(var(1, 2, i)/output_precision)*output_precision, &
+                            anint(var(1, 3, i)/output_precision)*output_precision, &
+                            anint(var(2, 1, i)/output_precision)*output_precision, &
+                            anint(var(2, 2, i)/output_precision)*output_precision, &
+                            anint(var(2, 3, i)/output_precision)*output_precision, &
+                            anint(var(3, 1, i)/output_precision)*output_precision, &
+                            anint(var(3, 2, i)/output_precision)*output_precision, &
+                            anint(var(3, 3, i)/output_precision)*output_precision/), i=start, end)
     end if
 
   end subroutine write_res_tensor
@@ -130,7 +130,7 @@ contains
     integer, intent(in) :: start
     integer, intent(in) :: end
     ! Locals:
-    integer :: i, var(numdim, start:end) 
+    integer :: i, var(numdim, start:end)
     character(len=50) :: fmt
 
     !---------------------------------------------------------------------------
@@ -143,93 +143,105 @@ contains
 
   end subroutine write_res_zeros
 
+  !===========================================================================
+
+  subroutine write_dot_sim_file_header(printing, mesh)
+
+    ! Write a hidden .sim file containing required information to facilitate
+    ! automated post-processing via Neper.
+
+    ! This prints the number of nodes, elements, partitions, elements by part,
+    ! nodes by part, number of slip systems, and orientation definition.
+
+    ! Arugments:
+    ! part_array: Gathered array from fepx.f90 that contains partition info.
+
+    type(printing_type), intent(in) :: printing
+    type(mesh_type), intent(in) :: mesh
+
+    write (printing%dot_sim_u, '(a)') '***sim'
+    write (printing%dot_sim_u, '(a)') ' **format'
+    write (printing%dot_sim_u, '(a)') '   1.1'
+    write (printing%dot_sim_u, '(a)') ' **input'
+    if (ut_file_exists("simulation.tess")) then
+      write (printing%dot_sim_u, '(a)') '  *tess'
+      write (printing%dot_sim_u, '(a)') '   simulation.tess'
+    end if
+    if (ut_file_exists("simulation.cfg")) then
+      write (printing%dot_sim_u, '(a)') '  *cfg'
+      write (printing%dot_sim_u, '(a)') '   simulation.cfg'
+    end if
+    if (ut_file_exists("simulation.msh")) then
+      write (printing%dot_sim_u, '(a)') '  *msh'
+      write (printing%dot_sim_u, '(a)') '   simulation.msh'
+    end if
+    if (ut_file_exists("simulation.ori")) then
+      write (printing%dot_sim_u, '(a)') '  *ori'
+      write (printing%dot_sim_u, '(a)') '   simulation.ori'
+    end if
+    if (ut_file_exists("simulation.phase")) then
+      write (printing%dot_sim_u, '(a)') '  *phase'
+      write (printing%dot_sim_u, '(a)') '   simulation.phase'
+    end if
+    if (ut_file_exists("simulation.opt")) then
+      write (printing%dot_sim_u, '(a)') '  *opt'
+      write (printing%dot_sim_u, '(a)') '   simulation.opt'
+    end if
+    if (ut_file_exists("simulation.tesr")) then
+      write (printing%dot_sim_u, '(a)') '  *tesr'
+      write (printing%dot_sim_u, '(a)') '   simulation.tesr'
+    end if
+    write (printing%dot_sim_u, '(a)') ' **general'
+    write (printing%dot_sim_u, '(a,5(i0,1x))') '   ', mesh%num_cell, mesh%num_nodes,&
+        & mesh%num_elts, mesh%num_elsets, num_procs
+    write (printing%dot_sim_u, '(a)') '  *orides'
+    write (printing%dot_sim_u, '(a,a,a,a)') '   ', trim(mesh%orientation_parameterization), ':', trim(mesh%orientation_convention)
+
+  end subroutine write_dot_sim_file_header
+
   ! ============================================================================
 
   !> write_dot_sim_file_output_files: Writes the files requested to be printed
-  subroutine write_dot_sim_file_output_files(printing, curr_step, &
-    & input_string, pflag)
+  subroutine write_dot_sim_file_output_files(printing)
 
-    ! This writes the file names of the user-defined output files from the
-    ! simulation.cfg.
-
-    !---------------------------------------------------------------------------
-
-    ! Arguments:
-    ! input_string: Character array denoting file name to print.
-    ! curr_step: Current step at which we are printing information for.
-    ! pflag: Determine if printing should happen or not
     type(printing_type), intent(in) :: printing
-    character(len=*), intent(in) :: input_string(:)
-    integer, intent(in) :: curr_step
-    logical, intent(in) :: pflag
-    ! Locals:
-    ! i: Looping variable for printing of input_string
+
     integer :: i
 
-    !---------------------------------------------------------------------------
-    ! Only print to the .sim file from the root processor
-    if (myid .eq. 0) then
-      ! If the first step is being printed then print to the .sim file.
-      ! If the "first" step after restarting a simulation, also print.
-      if ((pflag .eqv. .true.) .or. ((printing%restart .eqv. .true.) &
-        & .and. (curr_step .eq. printing%restart_initial_step))) then
-        write (printing%dot_sim_u, '(a)') trim(input_string(1))
-        write (printing%dot_sim_u, '(a)') '  *result'
-        write (printing%dot_sim_u, '(a,i0)') '   ', size(input_string)-1
-        write (printing%dot_sim_u, '(25(a,1x))') '  ',&
-          & (trim(input_string(i)), i=2, size(input_string))
-      end if
-    end if
+    write (printing%dot_sim_u, '(a)') '**entity node'
+    write (printing%dot_sim_u, '(a)') '  *result'
+    write (printing%dot_sim_u, '(a,i0)') '   ', size(printing%node_results)
+    write (printing%dot_sim_u, '(25(a,1x))') '  ', (trim(printing%node_results(i)), i=1, size(printing%node_results))
+
+    write (printing%dot_sim_u, '(a)') '**entity elt'
+    write (printing%dot_sim_u, '(a)') '  *result'
+    write (printing%dot_sim_u, '(a,i0)') '   ', size(printing%elt_results)
+    write (printing%dot_sim_u, '(25(a,1x))') '  ', (trim(printing%elt_results(i)), i=1, size(printing%elt_results))
 
   end subroutine write_dot_sim_file_output_files
 
   !===========================================================================
 
-  subroutine add_to_output_files_list(printing, curr_step, &
-    & input_string, string_array, pflag)
-
-    ! This writes the file names of the user-defined output files from the
-    ! simulation.cfg.
-
-    !---------------------------------------------------------------------------
-
-    ! Arguments:
-    ! input_string: Character array denoting file name to print.
-    ! curr_step: Current step at which we are printing information for.
+  subroutine write_dot_sim_file_complete_steps(printing, step)
+    !
+    ! This writes the completed number of steps from the driver as the current
+    ! simulation is either finishing successfully or terminated early.
 
     type(printing_type), intent(in) :: printing
-    character(len=*), intent(in) :: input_string
-    character(len=16), intent(inout), allocatable :: string_array(:)
-    integer, intent(in) :: curr_step
-    logical, intent(in) :: pflag
+    integer, intent(in) :: step
 
-    character(len=16), allocatable :: temp_array(:)
-    integer :: arraysize, i
+    ! Print the completed number of steps
 
-    !---------------------------------------------------------------------------
+    write (printing%dot_sim_u, '(a)') ' **step'
+    write (printing%dot_sim_u, '(a,i0)') '   ', step
 
-    ! Only print to the .sim file from the root processor
-    if (myid .eq. 0) then
-      ! If the first step is being printed then print to the .sim file.
-      ! If the "first" step after restarting a simulation, also print.
-      if ((pflag .eqv. .true.) .or. ((printing%restart .eqv. .true.) &
-          & .and. (curr_step .eq. printing%restart_initial_step))) then
-        ! Append the input_string to the present array and reallocate.
-        if (allocated(string_array)) then
-          arraysize = size(string_array)
-          allocate (temp_array(arraysize + 1))
+    write (printing%dot_sim_u, '(a)') '***end'
+    ! Close the .sim file before ending the process
 
-          do i = 1, arraysize
-            temp_array(i) = string_array(i)
-          end do
+    close (printing%dot_sim_u)
 
-          temp_array(arraysize + 1) = input_string
-          deallocate (string_array)
-          call move_alloc(temp_array, string_array)
-        end if
-      end if
-    end if
+  end subroutine write_dot_sim_file_complete_steps
 
-  end subroutine add_to_output_files_list
+  !===========================================================================
 
 end module write_res_mod2

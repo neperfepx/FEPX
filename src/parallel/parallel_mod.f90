@@ -249,11 +249,11 @@ contains
     integer :: n(:),m(:)
     ! Locals:
     ! n: The amount of data being sent and recieved (length of array)
-    ! m: The starting index of data being sent and recieved 
+    ! m: The starting index of data being sent and recieved
 
     integer :: len,ierr
     len = size(part(:))
-    
+
     !---------------------------------------------------------------------------
     call mpi_gatherv(part, len,mpi_double_precision, full,n,m &
       & , mpi_double_precision, 0,mpi_comm_world, ierr)
@@ -288,7 +288,7 @@ contains
     !---------------------------------------------------------------------------
     call mpi_gatherv(flat_part, len,mpi_double_precision, flat_full,n,m &
       & , mpi_double_precision, 0,mpi_comm_world, ierr)
-    
+
     full = reshape(flat_full, shape(full))
     return
 
@@ -320,7 +320,7 @@ contains
     !---------------------------------------------------------------------------
     call mpi_gatherv(flat_part, len,mpi_double_precision, flat_full,n,m &
       & , mpi_double_precision, 0,mpi_comm_world, ierr)
-    
+
     full = reshape(flat_full, shape(full))
     return
 
@@ -371,10 +371,11 @@ contains
 
     !---------------------------------------------------------------------------
 
-    if (present(clock_start) .and. clock_start .gt. 0.0d0) then
+    if (present(clock_start)) then
       if (myid .eq. 0) then
         call cpu_time(clock_end)
-        write (*, '(a, f10.3, a)') 'Info   : Elapsed time:', (clock_end - clock_start), ' secs.'
+        write (*, '(a, f10.3, a)') 'Info   : Elapsed time:', (clock_end -&
+          & clock_start), ' secs.'
       end if
     end if
 

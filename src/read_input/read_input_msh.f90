@@ -115,6 +115,7 @@ contains
 
     integer :: iostatus
     integer :: eofstat
+    character(len=10) :: version
     character(len=256) :: line
     character(len=32)  :: iarray(16)
     integer :: status, nlines, i
@@ -170,7 +171,7 @@ contains
 
       case ('$MeshVersion')
         backspace (file_id)
-        call read_mesh_version(file_id)
+        call read_mesh_version(file_id, version)
 
       case ('$Nodes')
         backspace (file_id)
@@ -380,7 +381,7 @@ contains
     !
     allocate (mesh%ori(3, 3, elt_sub:elt_sup))
 
-    call read_mesh_init_eltoris(mesh, eltoris_defined, elt_elset, elset_oris, nb_elsets)
+    call read_mesh_init_eltoris(mesh, version, eltoris_defined, elt_elset, elset_oris, nb_elsets)
 
     return
 

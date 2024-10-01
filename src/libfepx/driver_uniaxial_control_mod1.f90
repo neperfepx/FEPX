@@ -225,20 +225,16 @@ contains
         if (loading_checklimit(exec, time, incr)) then
           loading%step_complete = .true.
           loading%all_steps_complete = .true.
-          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading)
           call par_quit('Error  :     > Maximum time or maximum increments exceeded.', exec%clock_start)
         end if
 
         ! optionally, checking for necking
         if (exec%check_necking .and. loading_isnecking(loading)) then
-          if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading)
           call par_quit('Error  :     > Specimen is necking.', exec%clock_start)
         end if
       end if
       
       if (loading%all_steps_complete) then
-        if (myid .eq. 0 ) call write_dot_sim_file_complete_steps(printing, loading)
-
         call par_quit('Info   : Final step terminated. Simulation completed successfully.', exec%clock_start)
       end if
 
