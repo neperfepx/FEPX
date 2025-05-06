@@ -5,6 +5,11 @@ Applications
 
 Here is a tentative list of the works (journal papers and books) using FEPX. If you think your work should be listed here, please `contact us <mkasemer@eng.ua.edu>`_.
 
+2025
+----
+
+- Z Gao, C Zhu, Y Shu, C Wang, Y Chen and S Wang, *Pgcnn: an interpretable graph convolutional neural network for predicting the mechanical properties of Ti-6Al-4V alloy*, **Applied Intelligence**, https://doi.org/10.1007/s10489-025-06401-9.
+
 2023
 ----
 
