@@ -1,0 +1,10 @@
+src
+build
+.DS_Store
+*.orig
+*.swp
+*~
+__pycache__
+/doc/
+/VERSIONS
+/_static/custom.css

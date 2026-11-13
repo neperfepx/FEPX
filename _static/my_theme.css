@@ -1,0 +1,190 @@
+/* Light mode only: also opts out of the forced dark mode of browsers */
+html {
+  color-scheme: only light !important;
+}
+
+.bd-page-width {
+  max-width: 100rem;
+}
+
+/* Let the content use the full page width, as the header does */
+.bd-main .bd-content .bd-article-container {
+  max-width: none;
+}
+
+@media (min-width: 960px) {
+  .bd-sidebar-primary {
+    max-width: 20rem;
+  }
+}
+
+/* Landing-page image: smaller, and without the white strip at the top of the file */
+img.fepx-hero {
+  display: block;
+  width: min(100%, 717px);
+  margin-top: 2rem;
+  margin-inline: auto;
+  aspect-ratio: 1800 / 1200;
+  object-fit: cover;
+  object-position: bottom;
+}
+
+.fepx-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.fepx-buttons p {
+  margin: 0;
+}
+
+/* Landing-page cards: square images */
+img.fepx-card-img {
+  width: 100%;
+  max-width: 260px;
+  align-self: center;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+
+/* Section titles always start below left-aligned figures */
+.bd-article :is(h2, h3) {
+  clear: both;
+}
+
+/* Reference papers: thumbnail on the left, citation on the right */
+.fepx-paper {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.fepx-paper > a {
+  flex: 0 0 clamp(90px, 12vw, 140px);
+}
+
+.fepx-paper > a img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.fepx-paper-text {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.fepx-paper-text p {
+  margin-bottom: 0.5rem;
+}
+
+/* Gallery: images of various shapes in tiles of the same size */
+img.fepx-gallery-img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+}
+
+/* Gallery: center incomplete rows (an image alone on its line) */
+.fepx-gallery-row {
+  justify-content: center;
+}
+
+/* Gallery captions: not figures, so that they do not take figure numbers from the manual */
+.fepx-gallery-caption p {
+  margin-top: 0.5rem;
+  text-align: center;
+  color: var(--pst-color-text-muted);
+  font-size: 0.9rem;
+}
+
+/* What's new: single figures */
+img.fepx-whatsnew-img {
+  width: 100%;
+  max-height: 340px;
+  object-fit: contain;
+}
+
+/* What's new highlights with an illustration: title and description in the
+   left column, illustration in the right column (on wide screens) */
+#highlights .sd-container-fluid {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+#highlights .sd-row {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+#highlights .sd-col {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+@media (min-width: 768px) {
+  #highlights > section:has(> .sd-container-fluid) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr;
+    column-gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  #highlights > section:has(> .sd-container-fluid) > .sd-container-fluid,
+  #highlights > section:has(> .sd-container-fluid) > .sd-container-fluid > .sd-row {
+    display: contents;
+  }
+
+  #highlights > section:has(> .sd-container-fluid) > h3 {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  #highlights > section:has(> .sd-container-fluid) .sd-col {
+    width: auto;
+    max-width: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  #highlights > section:has(> .sd-container-fluid) .sd-col:first-child {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  #highlights > section:has(> .sd-container-fluid) .sd-col:last-child {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+}
+
+/* Keyword links: plain monospace, instead of bold boxed pills */
+code.xref.literal,
+a > code.literal {
+  padding: 0;
+  border: none;
+  background: none;
+  font-weight: normal;
+}
+
+:is(h1, h2, h3, h4, h5, h6) code.xref.literal {
+  font-weight: inherit;
+}
+
+a:has(> code.xref) {
+  text-decoration: none;
+}
+
+a:has(> code.xref):hover {
+  text-decoration: underline;
+}
+
+.fepx-version {
+  align-self: center;
+  color: var(--pst-color-text-muted);
+  font-size: 0.8rem;
+}
