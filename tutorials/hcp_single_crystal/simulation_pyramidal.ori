@@ -1,0 +1,5 @@
+$ElsetOrientations
+2 euler-bunge:passive
+1 0.0 0.0 0.0
+2 0.0 0.0 0.0
+$EndElsetOrientations

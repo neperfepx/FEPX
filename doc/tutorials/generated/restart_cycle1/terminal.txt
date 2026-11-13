@@ -1,0 +1,98 @@
+========================    F   E   P   X    ===========================
+Info   : A finite element software package for polycrystal plasticity.
+Info   : Version 3.0.0-dev (git 755da754, 11-06-2026)
+Info   : Built with: GCC 15.2.0|Open MPI 5.0.10|HDF5 1.14.6
+Info   : Running on 4 ranks.
+Info   : <https://fepx.info>
+Info   : Copyright (C) 1996-2026, and MIT licensed, by the FEPX authors.
+Info   : ---------------------------------------------------------------
+Info   : Loading simulation...
+Info   :   [i] Parsing file `simulation.cfg'...
+Info   :   [i] Parsed file `simulation.cfg'.
+Info   :   [i] Parsing file `simulation.msh'...
+Info   :   [i] Parsed file `simulation.msh'.
+Info   :   - Material parameters:
+Info   :     > Number of phases: 1
+Info   :     > Phase 1: fcc, crystal_plasticity
+Info   :       . c11:                       2.0460E+05 MPa
+Info   :       . c12:                       1.3770E+05 MPa
+Info   :       . c44:                       1.2620E+05 MPa
+Info   :       . m:                         2.0000E-02
+Info   :       . gammadot_0:                1.0000E+00 1/s
+Info   :       . hardening:                 saturation_isotropic
+Info   :       . tau_0:                     1.6000E+02 MPa
+Info   :       . h_0:                       3.7500E+02 MPa
+Info   :       . tau_s:                     1.0000E+03 MPa
+Info   :       . n:                         1.0000E+00
+Info   :       . saturation_evolution:      off (def.)
+Info   :       . cyclic_hardening:          on
+Info   :       . cyclic_a:                  5.0000E-02
+Info   :       . cyclic_c:                  3.5000E+00
+Info   :       . precipitate_strengthening: off (def.)
+Info   :   - Loading: boundary_conditions triaxial, 2 steps
+Info   :     > Triaxial load control: elastic estimate E = 2.2545E+05
+Info   :       MPa, nu = 2.6516E-01
+Info   :     > Triaxial load control: initial face velocities
+Info   :       -2.6516E-05 -2.6516E-05 1.0000E-04 mm/s
+Info   :     > Step 1: target_load 33 3.0000E+02 N from t = 0.0000E+00
+Info   :       s, increments 2.5000E-01 to 2.5000E+00 s
+Info   :       . Component 11: target_load 0.0000E+00 N
+Info   :         (load-controlled)
+Info   :       . Component 22: target_load 0.0000E+00 N
+Info   :         (load-controlled)
+Info   :   - Options other than the defaults: (none)
+Info   :   - Output: defrate_pl_eq slip sliprate coo forces restart
+Info   :     stress strain (format ascii)
+Info   :   - Mesh parameters:
+Info   :     > Node number: 8737
+Info   :     > Elt  number: 5641 (10-node tetrahedra)
+Info   :     > Elsets: 50; partitions: 4
+Info   :   - Partitioning: 4 ranks
+Info   :     > Elements per rank: 1410 to 1411
+Info   :     > Ghost nodes per rank: 224 to 305 (1047 in total)
+Info   :     > Neighbors per rank: 3 to 3
+Info   :   [o] Writing results to `simulation.sim'...
+Info   : Initializing simulation...
+Info   :   - Elastic step of 1.0000E-01 s (step 1)
+Info   :     > Iteration 1 (SA): R = 9.6495E-02 (257 CG iterations)
+Info   :     > Iteration 2 (SA): R = 1.1844E-06 (247 CG iterations)
+Info   :     > Converged in 2 iterations (1.741 s)
+Info   : Running step 1...
+Info   :   - Increment 1: t = 2.5000E+00 s, dt = 2.4000E+00 s
+Info   :     > Iteration 1 (SA): R = 4.0746E-05 (245 CG iterations)
+Info   :     > Iteration 2 (NR): R = 1.6916E-08 (246 CG iterations)
+Info   :     > Converged in 2 iterations (1.784 s)
+Info   :     > Load iteration 1: face velocities -2.65156E-05
+Info   :       -2.65156E-05 1.00000E-04 mm/s; 11: 4.513590E+00 (to reach
+Info   :       0.000000E+00) N; 22: 3.887811E+00 (to reach 0.000000E+00)
+Info   :       N;
+Info   :     > Iteration 1 (SA): R = 6.3389E-05 (244 CG iterations)
+Info   :     > Iteration 2 (NR): R = 1.8784E-08 (236 CG iterations)
+Info   :     > Converged in 2 iterations (1.745 s)
+Info   :     > Iteration 1 (SA): R = 6.7969E-05 (253 CG iterations)
+Info   :     > Iteration 2 (NR): R = 1.8511E-08 (245 CG iterations)
+Info   :     > Converged in 2 iterations (1.773 s)
+Info   :     > Iteration 1 (SA): R = 3.5878E-03 (255 CG iterations)
+Info   :     > Iteration 2 (NR): R = 1.1483E-06 (243 CG iterations)
+Info   :     > Converged in 2 iterations (1.751 s)
+Info   :     > Load iteration 2: face velocities -3.20926E-05
+Info   :       -3.05013E-05 1.00000E-04 mm/s; 11: -1.159917E-04 (to
+Info   :       reach 0.000000E+00) N; 22: -7.828203E-05 (to reach
+Info   :       0.000000E+00) N;
+  [...]
+Info   : Final step terminated. Simulation completed successfully.
+Info   :   [o] Wrote results to `simulation.sim'.
+Info   :   - Increments: 17
+Info   :   - Global iterations: 108 (58 NR)
+Info   :   - CG iterations: 27437
+Info   :   - Warnings issued: 17
+Info   :   - Wall time per phase:
+Info   :     > Input and setup:                      0.114 s
+Info   :     > Initialization:                       1.751 s
+Info   :     > Increments:                          95.111 s
+Info   :       . Element and material work:         67.582 s
+Info   :       . CG:                                26.912 s
+Info   :       . Other:                              0.617 s
+Info   :     > Output:                               2.672 s
+Info   : Elapsed time:                              99.648 s
+========================================================================

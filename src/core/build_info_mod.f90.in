@@ -1,0 +1,48 @@
+! This file is part of the FEPX software package.
+! Copyright (C) 1996-2026, DPLab, ACME Lab, CNRS.
+! See the COPYING file in the top-level directory.
+
+!> Build information of FEPX: the version and the git commit built (step 9.7, ROADMAP D94).
+!>
+!> Source : FEPX. Contains no numerical method. GENERATED at every build from
+!>          src/core/build_info_mod.f90.in by src/cmake/BuildInfo.cmake (do not edit the generated
+!>          file in the build tree); the version is the project version with its suffix
+!>          (CMakeLists.txt), the hash and the date those of the commit built (Q59).
+!>
+!> Public entities:
+!>   build_version   character  the version, e.g. "3.0.0-dev"
+!>   build_git_hash  character  short hash of the commit built, with "-dirty" when tracked files
+!>                              had uncommitted changes; empty outside a git repository
+!>   build_git_date  character  date of that commit, YYYY-MM-DD; empty outside git
+!>   build_version_text  the version line of the banner and of fepx --version
+module build_info_mod
+
+  implicit none
+
+  private
+
+  public :: build_version, build_git_hash, build_git_date, build_version_text
+
+  character(len=*), parameter :: build_version = '@FEPX_BUILD_VERSION@'
+  character(len=*), parameter :: build_git_hash = '@FEPX_BUILD_GIT_HASH@'
+  character(len=*), parameter :: build_git_date = '@FEPX_BUILD_GIT_DATE@'
+
+contains
+
+  !> The version with the commit built, "3.0.1-dev (git 465464d2, 2026-10-26)", or the version
+  !> alone for a release ("3.0.0") or outside a git repository.
+  !>
+  !> Result:
+  !>   text  character(:), allocatable  the version text
+  function build_version_text() result(text)
+
+    character(len=:), allocatable :: text
+
+    ! The version, then the hash and the date when known.
+    text = build_version
+    if (len(build_git_hash) > 0) text = text // ' (git ' // build_git_hash // ', ' // &
+      & build_git_date // ')'
+
+  end function build_version_text
+
+end module build_info_mod

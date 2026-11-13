@@ -1,0 +1,1 @@
+$ neper -S simulation.sim -resmesh stress,strain

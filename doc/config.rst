@@ -3,107 +3,71 @@
 Configuration File (:file:`simulation.cfg`)
 ===========================================
 
-A simulation input typically consists of two files with pre-defined names: the mesh file, :file:`simulation.msh`, and the configuration file, :file:`simulation.cfg`, which are read by the program at run time.  The mesh file describes the polycrystal as a finite element mesh, where the grains are defined by element sets, with additional fields to record polycrystal-related information, such as (optionally) phases, crystal orientations, or simulation-related information, such as node sets and mesh partitions.
-The configuration file completes the definition of the polycrystal by the specification of the material model and the corresponding parameters, and defines the details of the simulation (boundary conditions, loading history, output, etc).
-The mesh file is typically provided by Neper and does not need to be edited, and information on its format can be found in :ref:`mesh_file`.  Conversely, the configuration file is specific to the program and is to be written by the user.
-Of course, the mesh file and the and configuration file are closely related and should be consistent with each other.
+A simulation input consists of two files with fixed names: the mesh file,
+:file:`simulation.msh`, and the configuration file, :file:`simulation.cfg`. The mesh file
+describes the polycrystal as a finite element mesh, where the grains are element sets, with
+additional data such as phases, crystal orientations, node sets, face sets and mesh partitions.
+It is normally written by Neper and not edited (see :ref:`mesh_file`). The configuration file
+completes the definition of the polycrystal with the material model and its parameters, and
+defines the simulation (boundary conditions, loading history, solver parameters, output). It is
+written by the user. The two files must be consistent with each other (number of phases, node
+and face set names, partitions).
 
-General Structure
------------------
+Syntax
+------
 
-The configuration file (:file:`simulation.cfg`) is structured in several, successive blocks that define different aspects of the simulation.  Each of these blocks is headed by a line starting by :data:`#`, which provides a short description of the block.  The structure for the :file:`simulation.cfg` file is as follows::
+The file is a sequence of lines of the form::
 
-  # Material Description
+    <keyword> <value1> <value2> ...
 
-      { parameter definition }
+- One keyword per line, followed by its values, separated by blanks (spaces or tabs).
+- ``#`` starts a comment, which runs to the end of the line; ``## Section`` headers are
+  therefore comments. Blank lines are ignored. Indentation is free.
+- Keywords are lower case. Word values are compared without regard to case (``fcc`` and
+  ``FCC`` are the same).
+- Lists are separated by blanks, e.g. ``slip_families {110}<111> {112}<111>``.
+- Keywords may be given in any order, except that a per-phase keyword belongs to the block
+  opened by the last ``phase <i>`` line (see :ref:`material_behavior`).
+- Per-step rows give one value per step, and ``-`` for "not used in this step" (see
+  :ref:`loading`).
 
-  # Boundary Conditions / Deformation History
+A typical file has three parts (an elastic polycrystal pulled in two steps):
 
-      { parameter definition }
+.. literalinclude:: ../tests/regression/cases/elastic_poly_fcc/simulation.cfg
+   :start-at: ## Material
 
-  # Output
+Every keyword, with its values, unit and default, is listed in
+:ref:`keyword_reference`.
 
-      { parameter definition }
+Validation
+----------
 
-  # Special commands
+FEPX checks the whole file before a simulation starts. Every problem is a fatal error that
+gives the file name and line (``simulation.cfg:12: ...``) and names the keywords involved;
+FEPX then stops with a non-zero exit status. In particular:
 
-     { commands }
+- **Syntax:** an unknown keyword; a keyword reserved for a later version (``... is not
+  available in this version of FEPX``); a keyword
+  given twice (except the per-component rows, one per keyword and component, and the
+  repeatable ``print`` and ``set_bc`` lines); a wrong number of values; a value of the wrong
+  type, out of range or not among the allowed words.
 
-:data:`{ parameter definition }` represents a general block of text that follows the following syntax::
+- **Structure:** a per-phase keyword outside a phase block; a phase index outside
+  1..\ ``number_of_phases``, or a phase defined twice or not at all; elastic constants that do
+  not match the crystal type, or that are not positive definite.
 
-      <key_phrase1> <value1>
-      <key_phrase2> <value2>
-      ...
+- **Steps:** a per-step row without exactly ``number_of_steps`` values; a step without its
+  target or rate; a rate that moves away from its target; not exactly one of
+  ``number_of_incrs``, ``dtime`` and ``dstrain`` in a step.
 
+- **Boundary conditions:** ``set_bc`` lines with a preset; rate rows with ``general``; a
+  uniaxial preset with rows on several components; a node set that the mesh does not have; a
+  degree of freedom given two velocities; a ``set_mpc`` without ``vel``, a zero coefficient, a
+  node set and direction given two MPCs, MPCs with ``triaxial`` or with load control, a node
+  that two different MPCs make a secondary, a cycle of MPCs, velocity conditions that an MPC
+  group cannot satisfy.
 
-:data:`\<key_phrase\> \<value\>` is the input structure of the file, where :data:`<key_phrase>` is either a simulation parameter or a command and :data:`<value>` are one or several numerical or literal values.  A parameter takes only one value, while a command can require one or several values. The possible inputs will be defined in the following sections.
+- **Output:** an unknown variable, or one given twice.
 
-:data:`{ commands }` represents *special commands* that go beyond the definition of a standard simulation, by allowing to override mesh attributes (see :ref:`overriding`) or restarting a simulation (see :ref:`restart`).
-
-In the following, brackets (:data:`[` / :data:`]`) will be used to denote optional inputs (they are *not* expected in the :file:`simulation.cfg` file and will generate parsing errors)::
-
-      <required_key_phrase> <value1>
-      [ <optional_key_phrase> <value> ]
-     ...
-
-Any piece of text that is preceded by a :data:`#` is considered as a comment and is ignored (which also makes block headers optional).
-A single line in the file should only ever pertain to a single :data:`<key_phrase>`/:data:`<value>` pairing.  All strings are interpreted literally and should be lowercase except where otherwise stated.
-Parameters within a block may generally be specified in any order; however, the material parameters and deformation history must follow specific orders, and it is recommended that the overall structure of the :ref:`config_file` follows the example structure above.  Spaces and indentations may be freely used for file formatting and do not affect parsing.
-
-.. _consistency:
-
-.. note::
-
-  The following points are important to ensure the consistency between the :ref:`mesh_file`, the :ref:`config_file` and the running conditions (MPI):
-
-    - The physical dimension of the mesh: the loading definition may be sensitive to this dimension
-    - The number of phases: a material behavior must be defined for each phase
-    - The definition of the node sets: the boundary conditions must be applied to existing node sets
-    - The number of partitions of the mesh: it must match the number of computation units. A mesh can be "re-partitionned" by Neper at any time using:
-
-      .. code-block:: console
-
-        neper -M -loadmesh simulation.msh -part <num_partitions>
-
-Special Commands
-----------------
-
-.. _overriding:
-
-Polycrystal Overwriting
-^^^^^^^^^^^^^^^^^^^^^^^
-
-Optionally, crystallographic phase and orientations different from the ones defined in the :ref:`mesh_file` can be defined in external files by adding appropriate commands to the configuration file.
-
-To read in orientations from an :ref:`ori_file`, the following command may be used::
-
-    read_ori_from_file
-
-To read in grain/phase assignments from a :ref:`phase_file`, the following command may be used::
-
-    read_phase_from_file
-
-
-Config Overwriting
-^^^^^^^^^^^^^^^^^^^^^^^
-
-To read in hardening parameters from an :ref:`opt_file`, the following command may be used::
-
-    read_from_opt_file
-
-
-.. _restart:
-
-Simulation Restart
-^^^^^^^^^^^^^^^^^^
-
-A simulation may be restarted only if the restart files were printed as simulation output on the previous run (see :ref:`advanced_results`).  Upon restart, the restart files must be included in the simulation directory along with all simulation inputs (the :ref:`mesh_file`, the :ref:`config_file`, and any other files, such as an :ref:`ori_file` or :ref:`phase_file`).
-
-A simulation may be restarted by adding the following line to the :file:`simulation.cfg` file::
-
-  restart on
-
-When restarting a simulation, the prescribed :ref:`deformation_history` should include only additional steps, as the restarted simulation will not consider steps that were completed in the previous simulation.  Consequently, step and increment indices, as well as the simulation time, are all reset to 0.
-
-A simulation restart must be performed with the same number of cores that were used to run the original simulation.
-When a simulation restarts, it will attempt to find the simulation restart files with the highest step index, :data:`<N>`. It will write output variable data to a new set of files, :file:`post.<var>.rst<N+1>.core*`, where :data:`<var>` is the requested output variable name and :data:`rst<N+1>` is the restart label applied to all new output variable files. Likewise, if restart files are again printed, their index will increase to :data:`<N+2>` (the previous restart's files will not be overwritten).
+The commands that read the orientations, phases and per-element values from separate files, and
+the restart of a simulation, are described in :ref:`special_commands`.

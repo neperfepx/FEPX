@@ -1,0 +1,97 @@
+========================    F   E   P   X    ===========================
+Info   : A finite element software package for polycrystal plasticity.
+Info   : Version 3.0.0-dev (git 755da754, 11-06-2026)
+Info   : Built with: GCC 15.2.0|Open MPI 5.0.10|HDF5 1.14.6
+Info   : Running on 4 ranks.
+Info   : <https://fepx.info>
+Info   : Copyright (C) 1996-2026, and MIT licensed, by the FEPX authors.
+Info   : ---------------------------------------------------------------
+Info   : Loading simulation...
+Info   :   [i] Parsing file `simulation.cfg'...
+Info   :   [i] Parsed file `simulation.cfg'.
+Info   :   [i] Parsing file `simulation.msh'...
+Info   :   [i] Parsed file `simulation.msh'.
+Info   :   [i] Parsing file `simulation.ori'...
+Info   :   - $ElsetOrientations from `simulation.ori' replaces the one
+Info   :     from `simulation.msh'.
+Info   :   - $ElementOrientations from `simulation.ori' replaces the one
+Info   :     from `simulation.msh'.
+Info   :   [i] Parsed file `simulation.ori'.
+Info   :   [i] Parsing file `simulation.phase'...
+Info   :   - $Groups from `simulation.phase' replaces the one from
+Info   :     `simulation.msh'.
+Info   :   [i] Parsed file `simulation.phase'.
+Info   :   - Material parameters:
+Info   :     > Number of phases: 2
+Info   :     > Phase 1: fcc, crystal_plasticity
+Info   :       . c11:                       2.0460E+05 MPa
+Info   :       . c12:                       1.3770E+05 MPa
+Info   :       . c44:                       1.2620E+05 MPa
+Info   :       . m:                         2.0000E-02
+Info   :       . gammadot_0:                1.0000E+00 1/s
+Info   :       . hardening:                 saturation_isotropic
+Info   :       . tau_0:                     2.0000E+02 MPa
+Info   :       . h_0:                       3.9190E+02 MPa
+Info   :       . tau_s:                     3.3500E+02 MPa
+Info   :       . n:                         1.0000E+00
+Info   :       . saturation_evolution:      off (def.)
+Info   :       . cyclic_hardening:          off (def.)
+Info   :       . precipitate_strengthening: off (def.)
+Info   :     > Phase 2: bcc, crystal_plasticity
+Info   :       . c11:                       2.3690E+05 MPa
+Info   :       . c12:                       1.4060E+05 MPa
+Info   :       . c44:                       1.1600E+05 MPa
+Info   :       . m:                         2.0000E-02
+Info   :       . gammadot_0:                1.0000E+00 1/s
+Info   :       . hardening:                 saturation_isotropic
+Info   :       . tau_0:                     2.0000E+02 MPa
+Info   :       . h_0:                       3.9190E+02 MPa
+Info   :       . tau_s:                     3.3500E+02 MPa
+Info   :       . n:                         1.0000E+00
+Info   :       . saturation_evolution:      off (def.)
+Info   :       . cyclic_hardening:          off (def.)
+Info   :       . precipitate_strengthening: off (def.)
+Info   :   - Loading: boundary_conditions uniaxial_minimal, 2 steps
+Info   :     > Step 1: target_load 33 4.2500E+02 N from t = 0.0000E+00
+Info   :       s, increments 1.0000E-02 to 1.0000E-01 s
+Info   :   - Options other than the defaults:
+Info   :     > read_ori_from_file
+Info   :     > read_phase_from_file
+Info   :   - Output: forces ori coo defrate_eq work stress strain
+Info   :     (format ascii)
+Info   :   - Mesh parameters:
+Info   :     > Node number: 5931
+Info   :     > Elt  number: 3835 (10-node tetrahedra)
+Info   :     > Elsets: 50; partitions: 4
+Info   :   - Partitioning: 4 ranks
+Info   :     > Elements per rank: 958 to 959
+Info   :     > Ghost nodes per rank: 213 to 297 (992 in total)
+Info   :     > Neighbors per rank: 3 to 3
+Info   :   [o] Writing results to `simulation.sim'...
+Info   : Initializing simulation...
+Info   :   - Elastic step of 1.1581E-03 s (step 1)
+Info   :     > Iteration 1 (SA): R = 2.6701E+00 (612 CG iterations)
+Info   :     > Iteration 2 (SA): R = 1.9275E-05 (604 CG iterations)
+Info   :     > Converged in 2 iterations (1.531 s)
+Info   : Running step 1...
+Info   :   - Increment 1: t = 1.0000E-01 s, dt = 9.8842E-02 s
+Info   :     > Iteration 1 (SA): R = 1.1607E-03 (620 CG iterations)
+Info   :     > Iteration 2 (NR): R = 4.1161E-06 (615 CG iterations)
+Info   :     > Converged in 2 iterations (1.587 s)
+  [...]
+Info   : Final step terminated. Simulation completed successfully.
+Info   :   [o] Wrote results to `simulation.sim'.
+Info   :   - Increments: 10
+Info   :   - Global iterations: 43 (19 NR)
+Info   :   - CG iterations: 27805
+Info   :   - Warnings issued: 0
+Info   :   - Wall time per phase:
+Info   :     > Input and setup:                      0.115 s
+Info   :     > Initialization:                       1.543 s
+Info   :     > Increments:                          28.670 s
+Info   :       . Element and material work:         17.506 s
+Info   :       . CG:                                11.025 s
+Info   :       . Other:                              0.140 s
+Info   :     > Output:                               0.560 s
+Info   : Elapsed time:                              30.888 s
+========================================================================

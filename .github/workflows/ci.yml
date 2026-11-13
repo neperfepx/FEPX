@@ -1,0 +1,155 @@
+# Continuous integration: build and test FEPX with gfortran and two MPI implementations,
+# in the Checked build type (-O2 with Debug's run-time checks, ROADMAP D88) and Release, with
+# compiler warnings treated as errors (ROADMAP step 0.1, D6). Intel ifx is not tested yet
+# (ROADMAP D6). The tests of one tier (CTest label, step 9.6, D88): quick (default) or full;
+# the tutorial cases run locally only (dev/tools/ci_local.sh).
+
+name: CI
+
+# Manual dispatch only (user, 2026-10-10, ROADMAP D52: the GitHub Actions allowance is used up;
+# the same jobs run locally with dev/tools/ci_local.sh). To run on every push again, restore:
+#   push:
+#     branches: [main]
+#   pull_request:
+on:
+  workflow_dispatch:
+    inputs:
+      tier:
+        description: "Test tier (CTest label): quick or full"
+        type: choice
+        options: [quick, full]
+        default: quick
+
+jobs:
+  build-test:
+    name: gfortran + ${{ matrix.mpi }} (${{ matrix.build_type }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: ${{ inputs.tier == 'full' && 180 || 30 }}
+    env:
+      # MPICH version built from source for the mpich jobs (.github/scripts/build-mpich.sh:
+      # Ubuntu 24.04's package starts every rank as a singleton).
+      MPICH_VERSION: 4.2.3
+    strategy:
+      fail-fast: false
+      matrix:
+        mpi: [openmpi, mpich]
+        build_type: [Checked, Release]
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      # Packages are installed by .github/scripts/apt-install.sh (mirror handling, retries,
+      # timeouts); the downloaded .deb files are cached per MPI implementation, so most runs
+      # download nothing. The cache key changes when the package list or the script changes.
+      - name: Restore package cache
+        id: apt-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/apt-archives
+          key: apt-${{ runner.os }}-${{ matrix.mpi }}-${{ hashFiles('.github/workflows/ci.yml', '.github/scripts/apt-install.sh') }}
+          restore-keys: apt-${{ runner.os }}-${{ matrix.mpi }}-
+
+      - name: Install compiler and MPI
+        timeout-minutes: 10
+        run: |
+          if [ "${{ matrix.mpi }}" = "openmpi" ]; then
+            .github/scripts/apt-install.sh ~/apt-archives gfortran libopenmpi-dev openmpi-bin python3-numpy libhdf5-dev hdf5-tools
+          else
+            .github/scripts/apt-install.sh ~/apt-archives gfortran python3-numpy
+          fi
+          gfortran --version
+          cmake --version
+
+      # Saved right after the install (not at the end of the job), so that a failing test does
+      # not prevent saving. Checked and Release race to save the same key; the loser only warns.
+      - name: Save package cache
+        if: steps.apt-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/apt-archives
+          key: ${{ steps.apt-cache.outputs.cache-primary-key }}
+
+      # MPICH from source (mpich jobs): restored from the cache, or built (about 10 minutes) and
+      # saved. The key changes with the version and the build script.
+      - name: Restore MPICH
+        if: matrix.mpi == 'mpich'
+        id: mpich-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/mpich
+          key: mpich-${{ runner.os }}-${{ env.MPICH_VERSION }}-${{ hashFiles('.github/scripts/build-mpich.sh') }}
+
+      - name: Build MPICH
+        if: matrix.mpi == 'mpich' && steps.mpich-cache.outputs.cache-hit != 'true'
+        timeout-minutes: 25
+        run: .github/scripts/build-mpich.sh "$MPICH_VERSION" "$HOME/mpich"
+
+      - name: Save MPICH
+        if: matrix.mpi == 'mpich' && steps.mpich-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/mpich
+          key: ${{ steps.mpich-cache.outputs.cache-primary-key }}
+
+      - name: Use MPICH
+        if: matrix.mpi == 'mpich'
+        run: |
+          echo "$HOME/mpich/bin" >> "$GITHUB_PATH"
+          echo "MPI_HOME=$HOME/mpich" >> "$GITHUB_ENV"
+
+      # The HDF5 output (step 9.1) in the Open MPI jobs, not in the MPICH jobs (as dev/tools/ci_local.sh).
+      - name: Configure
+        run: >
+          cmake -S src -B build
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DFEPX_WERROR=ON
+          -DFEPX_ENABLE_HDF5=${{ matrix.mpi == 'openmpi' && 'ON' || 'OFF' }}
+
+      - name: Build
+        run: cmake --build build -j
+
+      # Which launcher and MPI library the tests use (test_parallel checks that a job of N
+      # ranks really has N ranks).
+      - name: MPI launcher
+        run: |
+          grep -E '^MPIEXEC_EXECUTABLE' build/CMakeCache.txt
+          ldd build/tests/test_parallel | grep -i -E 'mpi|pmi' || true
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure --timeout 600 -j 4 -L "^${{ inputs.tier }}$"
+
+  # Build the manual (doc, ROADMAP task M.1) with Sphinx, warnings as errors.
+  manual:
+    name: manual (Sphinx)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      # Same package handling and caching as the build-test job.
+      - name: Restore package cache
+        id: apt-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/apt-archives
+          key: apt-${{ runner.os }}-manual-${{ hashFiles('.github/workflows/ci.yml', '.github/scripts/apt-install.sh') }}
+          restore-keys: apt-${{ runner.os }}-manual-
+
+      - name: Install Sphinx
+        timeout-minutes: 10
+        run: |
+          .github/scripts/apt-install.sh ~/apt-archives python3-sphinx python3-pydata-sphinx-theme
+          sphinx-build --version
+
+      - name: Save package cache
+        if: steps.apt-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/apt-archives
+          key: ${{ steps.apt-cache.outputs.cache-primary-key }}
+
+      - name: Build
+        run: sphinx-build -W --keep-going -b html doc manual-html

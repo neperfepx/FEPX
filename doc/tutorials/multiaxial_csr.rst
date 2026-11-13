@@ -1,78 +1,112 @@
-.. _multiaxial_csr:
+.. _tutorial_multiaxial_csr:
 
-[LEGACY] Multiaxial Control with Constant Strain Rate
-=====================================================
+Multiaxial Control at a Constant Strain Rate
+============================================
 
-This example (:file:`tutorials/triaxSLR`) covers the biaxial deformation of an HCP polycrystal at a constant strain rate. Loads are applied normal to the surface, maintaining proportional macroscopic load ratios of :math:`-1`::math:`0`::math:`1` for the :math:`x`::math:`y`::math:`z` directions, respectively. Load tolerance options are prescribed and latent hardening is enabled, as well as saturation strength evolution. The primary loading direction is set to be in the :math:`x` direction, and the strain rate is doubled on the second step. Elemental values for the equivalent plastic strain and plastic work are output, along with the nodal coordinates and surface-integrated forces. Material parameters are those for the :math:`\alpha` phase of Ti-6Al-4V and are provided in the below tables. The latent parameters are input values to the hardening interaction matrix [CARSON17]_. Illustrations of the results are provided in the below figures.
+.. note:: Read first: :ref:`tutorial_simple`.
 
-.. list-table:: Single crystal elastic constants.
-    :widths: 25 25 25 25 25 25
-    :align: center
-    :header-rows: 1
+A polycrystal of 50 grains in the unit cube is used:
 
-    * - Phase
-      - Type
-      - :math:`C_{11}` [MPa]
-      - :math:`C_{12}` [MPa]
-      - :math:`C_{13}` [MPa]
-      - :math:`C_{44}` [MPa]
-    * - :math:`\alpha`
-      - HCP
-      - :math:`169.66 \times 10^3`
-      - :math:`88.66 \times 10^3`
-      - :math:`61.66 \times 10^3`
-      - :math:`42.50 \times 10^3`
+.. figure:: generated/multiaxial_csr/mesh.png
+   :align: center
+   :width: 50%
 
-.. list-table:: Plasticity parameters.
-    :widths: 10 10 10 10 10 10 10 10 10
-    :align: center
-    :header-rows: 1
+   The mesh, colored by grain.
 
-    * - Phase
-      - :math:`m` [-]
-      - :math:`\dot{\gamma_{0}}` [1/s]
-      - :math:`h_{0}` [MPa]
-      - :math:`g_{s0}` [MPa]
-      - :math:`m^\prime` [-]
-      - :math:`\dot{\gamma_{s}}` [1/s]
-      - :math:`n` [-]
-      - :math:`c/a` [-]
-    * - :math:`\alpha`
-      - 0.01
-      - 1.0
-      - 190.0
-      - 530.0
-      - 1.1
-      - 1.0
-      - 1.0
-      - 1.587
+The material is the :math:`\alpha` phase (hcp) of Ti-6Al-4V, with anisotropic hardening and a
+saturation strength that evolves with the slip rate:
 
-.. list-table:: Initial slip system strengths and hardening parameters.
-    :widths: 10 10 10 10 10 10
-    :align: center
-    :header-rows: 1
+.. include:: material_ti.inc
 
-    * - Phase
-      - :math:`g_0` (basal) [MPa]
-      - :math:`g_0` (prismatic) [MPa]
-      - :math:`g_0` (pyramidal) [MPa]
-      - :math:`h_{diag}` [-]
-      - :math:`h_{1}-h_{7}` [-]
-    * - :math:`\alpha`
-      - 390.0
-      - 468.0
-      - 663.0
-      - 1.0
-      - 1.4
+.. list-table:: Plasticity parameters (``saturation_anisotropic`` hardening, ``saturation_evolution on``).
+   :header-rows: 1
+   :align: center
 
-.. figure :: multiaxial_csr/2_all.png
-    :width: 75%
-    :align: center
+   * - :math:`m` [-]
+     - :math:`\dot{\gamma}_0` [1/s]
+     - :math:`h_0` [MPa]
+     - :math:`\tau_{s}` [MPa]
+     - :math:`m'` [-]
+     - :math:`\dot{\gamma}_{s0}` [1/s]
+     - :math:`n` [-]
+   * - 0.01
+     - 1.0
+     - 190.0
+     - 700.0
+     - 1.1
+     - 1.0
+     - 1.0
 
-    Deformed sample at the end of the second load step (deformation field is exaggerated 10x for illustrative purposes), colored by (left) plastic work (:math:`W^{p}`) and (right) equivalent plastic strain (:math:`\bar\epsilon^{P}`). Note that, unlike the deformed sample in :ref:`uniaxial_ex`, a multiaxial simulation will maintain the orthogonal, planar surfaces throughout the simulation.
+.. list-table:: Initial slip strengths of the three slip families and interaction coefficients.
+   :header-rows: 1
+   :align: center
 
-.. figure :: multiaxial_csr/2_normalstraintime.png
-    :width: 70%
-    :align: center
+   * - :math:`\tau_0` basal [MPa]
+     - :math:`\tau_0` prismatic [MPa]
+     - :math:`\tau_0` pyramidal :math:`\langle c+a \rangle` [MPa]
+     - diagonal [-]
+     - co-planar [-]
+   * - 390.0
+     - 468.0
+     - 663.0
+     - 1.0
+     - 1.4
 
-    Evolution of the macroscopic normal strains. Note the strain rate increase corresponding to the strain-rate jump defined for step 2.
+The interaction matrix is written row by row (``interaction_matrix``): 1 on the diagonal, 1.4
+between the basal systems and within each pair of co-planar pyramidal systems, 0 elsewhere.
+
+The polycrystal is loaded biaxially with triaxial control (``boundary_conditions triaxial``, see
+:ref:`deformation_history`): component 11 is driven at a constant strain rate
+(``control_component 11``), and the loads on 22 and 33 are controlled so that the loads keep the
+ratios -1 : 0 : 1 along the load path, to the loads (-300, 0, 300) N in step 1 and (-600, 0, 600)
+N in step 2. The strain rate doubles in step 2. The nodal coordinates, the equivalent plastic
+strain, the plastic work, the stresses and strains, and the face forces are written.
+
+Input Files
+-----------
+
+- :download:`simulation.cfg <../../tutorials/multiaxial_csr/simulation.cfg>`
+- :download:`simulation.msh <../../tests/regression/cases/meshes/tutorial_triax.msh>`
+
+.. literalinclude:: ../../tutorials/multiaxial_csr/simulation.cfg
+
+Execution
+---------
+
+.. code-block:: console
+
+  $ mpirun -np 4 fepx
+
+.. literalinclude:: generated/multiaxial_csr/terminal.txt
+   :language: none
+
+.. literalinclude:: generated/multiaxial_csr/tree.txt
+   :language: none
+
+Simulation Results
+------------------
+
+.. figure:: generated/multiaxial_csr/curves.png
+   :align: center
+
+   (left) Volume-averaged normal stresses against the normal strains at the ends of the steps;
+   (right) normal stresses of faces :file:`x1`, :file:`y1` and :file:`z1` (force over current
+   area) at every increment: the stress 11 rises twice as fast in step 2.
+
+.. figure:: generated/multiaxial_csr/work_pl.png
+   :align: center
+   :width: 60%
+
+   Plastic work at the end of step 2 (displacements magnified 10 times). Unlike in a uniaxial
+   simulation, the faces stay plane under triaxial control.
+
+.. figure:: generated/multiaxial_csr/strain_pl_eq.png
+   :align: center
+   :width: 60%
+
+   Equivalent plastic strain at the end of step 2 (displacements magnified 10 times).
+
+The commands:
+
+.. literalinclude:: generated/multiaxial_csr/commands.txt
+   :language: console

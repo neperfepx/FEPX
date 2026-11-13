@@ -1,0 +1,80 @@
+========================    F   E   P   X    ===========================
+Info   : A finite element software package for polycrystal plasticity.
+Info   : Version 3.0.0-dev (git 755da754, 11-06-2026)
+Info   : Built with: GCC 15.2.0|Open MPI 5.0.10|HDF5 1.14.6
+Info   : Running on 4 ranks.
+Info   : <https://fepx.info>
+Info   : Copyright (C) 1996-2026, and MIT licensed, by the FEPX authors.
+Info   : ---------------------------------------------------------------
+Info   : Loading simulation...
+Info   :   [i] Parsing file `simulation.cfg'...
+Warning:   - simulation.cfg:33: print forces is ignored with
+Warning:     boundary_conditions periodic (no face forces file; the
+Warning:     macroscopic stress is written to results/macro).
+Info   :   [i] Parsed file `simulation.cfg'.
+Info   :   [i] Parsing file `simulation.msh'...
+Info   :   [i] Parsed file `simulation.msh'.
+Info   :   - Material parameters:
+Info   :     > Number of phases: 1
+Info   :     > Phase 1: bcc, crystal_plasticity
+Info   :       . c11:                       2.3690E+05 MPa
+Info   :       . c12:                       1.4060E+05 MPa
+Info   :       . c44:                       1.1600E+05 MPa
+Info   :       . m:                         2.0000E-02
+Info   :       . gammadot_0:                1.0000E+00 1/s
+Info   :       . hardening:                 saturation_isotropic
+Info   :       . tau_0:                     2.0000E+02 MPa
+Info   :       . h_0:                       3.9190E+02 MPa
+Info   :       . tau_s:                     3.3500E+02 MPa
+Info   :       . n:                         1.0000E+00
+Info   :       . saturation_evolution:      off (def.)
+Info   :       . cyclic_hardening:          off (def.)
+Info   :       . precipitate_strengthening: off (def.)
+Info   :   - Loading: boundary_conditions periodic, 1 step
+Info   :     > Periodic conditions: lengths  1.0000E+00,  1.0000E+00,
+Info   :       1.0000E+00 mm; drive pairs (secondary, primary) x (210,
+Info   :       27), y (115, 71), z (88, 2)
+Info   :     > Periodic conditions: 6249 constrained dofs, 5721
+Info   :       independent dofs referenced
+Info   :     > Step 1: t = 0.0000E+00 -> 3.0000E-01 s, 3 increments
+Info   :       . Strain 33: 0.0000E+00 -> -3.0000E-03 at -1.0000E-02/s
+Info   :   - Options other than the defaults: (none)
+Info   :   - Output: coo disp forces strain strain_eq strain_el
+Info   :     strain_el_eq strain_pl strain_pl_eq stress stress_eq work
+Info   :     work_pl ori slip sliprate crss (format ascii)
+Info   :   - Mesh parameters:
+Info   :     > Node number: 9143
+Info   :     > Elt  number: 5311 (10-node tetrahedra)
+Info   :     > Elsets: 40; partitions: 4
+Info   :   - Partitioning: 4 ranks
+Info   :     > Elements per rank: 1327 to 1328
+Info   :     > Ghost nodes per rank: 223 to 748 (2108 in total)
+Info   :     > Neighbors per rank: 3 to 3
+Info   :   [o] Writing results to `simulation.sim'...
+Info   : Initializing simulation...
+Info   :   - Elastic step of 1.1581E-03 s (step 1)
+Info   :     > Iteration 1 (SA): R = 7.1117E-01 (397 CG iterations)
+Info   :     > Iteration 2 (SA): R = 9.1957E-05 (347 CG iterations)
+Info   :     > Converged in 2 iterations (1.709 s)
+Info   : Running step 1...
+Info   :   - Increment 1: t = 1.0000E-01 s, dt = 9.8842E-02 s
+Info   :     > Iteration 1 (SA): R = 6.1021E-04 (397 CG iterations)
+Info   :     > Iteration 2 (NR): R = 3.2874E-07 (405 CG iterations)
+Info   :     > Converged in 2 iterations (1.975 s)
+  [...]
+Info   : Final step terminated. Simulation completed successfully.
+Info   :   [o] Wrote results to `simulation.sim'.
+Info   :   - Increments: 3
+Info   :   - Global iterations: 15 (6 NR)
+Info   :   - CG iterations: 6942
+Info   :   - Warnings issued: 1
+Info   :   - Wall time per phase:
+Info   :     > Input and setup:                      0.120 s
+Info   :     > Initialization:                       1.720 s
+Info   :     > Increments:                          17.343 s
+Info   :       . Element and material work:         10.731 s
+Info   :       . CG:                                 6.549 s
+Info   :       . Other:                              0.062 s
+Info   :     > Output:                               1.212 s
+Info   : Elapsed time:                              20.394 s
+========================================================================

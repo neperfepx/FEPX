@@ -1,0 +1,9 @@
+# Source archives (git archive; step 9.8, ROADMAP D101).
+# The commit archived (its hash and date), read by src/cmake/BuildInfo.cmake in a tarball build.
+src/cmake/git_archive_info.txt export-subst
+# Left out of the archives: the development files (dev/: notes, records, tools and benchmarks),
+# which stay internal (ROADMAP D91) and are not released (on devel only, not on main), and the
+# instructions for Claude Code. (The regression reference data are left out of the source tarball
+# by the target dist and archived alone by dist_testdata, src/cmake/Dist.cmake.)
+CLAUDE.md export-ignore
+dev/ export-ignore

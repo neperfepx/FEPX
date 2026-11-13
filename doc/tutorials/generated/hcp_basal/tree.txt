@@ -1,0 +1,51 @@
+simulation.sim
+|-- inputs
+|   |-- simulation.cfg
+|   |-- simulation.msh
+|   `-- simulation.ori
+`-- results
+    |-- elts
+    |   |-- slip
+    |   |   |-- slip.step0
+    |   |   |-- slip.step1
+    |   |   |-- ...
+    |   |   `-- slip.step8
+    |   |-- sliprate
+    |   |   |-- sliprate.step0
+    |   |   |-- sliprate.step1
+    |   |   |-- ...
+    |   |   `-- sliprate.step8
+    |   |-- strain
+    |   |   |-- strain.step0
+    |   |   |-- strain.step1
+    |   |   |-- ...
+    |   |   `-- strain.step8
+    |   `-- stress
+    |       |-- stress.step0
+    |       |-- stress.step1
+    |       |-- ...
+    |       `-- stress.step8
+    |-- forces
+    |   |-- x0
+    |   |-- x1
+    |   |-- y0
+    |   |-- y1
+    |   |-- z0
+    |   `-- z1
+    |-- mesh
+    |   |-- strain
+    |   |   |-- strain.step0
+    |   |   |-- strain.step1
+    |   |   |-- ...
+    |   |   `-- strain.step8
+    |   `-- stress
+    |       |-- stress.step0
+    |       |-- stress.step1
+    |       |-- ...
+    |       `-- stress.step8
+    `-- nodes
+        `-- coo
+            |-- coo.step0
+            |-- coo.step1
+            |-- ...
+            `-- coo.step8

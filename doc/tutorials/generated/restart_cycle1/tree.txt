@@ -1,0 +1,52 @@
+simulation.sim
+|-- inputs
+|   |-- simulation.cfg
+|   `-- simulation.msh
+|-- restart
+|   |-- restart.rank0
+|   |-- restart.rank1
+|   |-- restart.rank2
+|   `-- restart.rank3
+`-- results
+    |-- elts
+    |   |-- defrate_pl_eq
+    |   |   |-- defrate_pl_eq.step0
+    |   |   |-- defrate_pl_eq.step1
+    |   |   `-- defrate_pl_eq.step2
+    |   |-- slip
+    |   |   |-- slip.step0
+    |   |   |-- slip.step1
+    |   |   `-- slip.step2
+    |   |-- sliprate
+    |   |   |-- sliprate.step0
+    |   |   |-- sliprate.step1
+    |   |   `-- sliprate.step2
+    |   |-- strain
+    |   |   |-- strain.step0
+    |   |   |-- strain.step1
+    |   |   `-- strain.step2
+    |   `-- stress
+    |       |-- stress.step0
+    |       |-- stress.step1
+    |       `-- stress.step2
+    |-- forces
+    |   |-- x0
+    |   |-- x1
+    |   |-- y0
+    |   |-- y1
+    |   |-- z0
+    |   `-- z1
+    |-- mesh
+    |   |-- strain
+    |   |   |-- strain.step0
+    |   |   |-- strain.step1
+    |   |   `-- strain.step2
+    |   `-- stress
+    |       |-- stress.step0
+    |       |-- stress.step1
+    |       `-- stress.step2
+    `-- nodes
+        `-- coo
+            |-- coo.step0
+            |-- coo.step1
+            `-- coo.step2

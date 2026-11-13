@@ -1,0 +1,40 @@
+simulation.sim
+|-- inputs
+|   |-- simulation.cfg
+|   `-- simulation.msh
+`-- results
+    |-- elts
+    |   |-- strain
+    |   |   |-- strain.step0
+    |   |   |-- strain.step1
+    |   |   |-- strain.step2
+    |   |   `-- strain.step3
+    |   `-- stress
+    |       |-- stress.step0
+    |       |-- stress.step1
+    |       |-- stress.step2
+    |       `-- stress.step3
+    |-- forces
+    |   |-- x0
+    |   |-- x1
+    |   |-- y0
+    |   |-- y1
+    |   |-- z0
+    |   `-- z1
+    |-- mesh
+    |   |-- strain
+    |   |   |-- strain.step0
+    |   |   |-- strain.step1
+    |   |   |-- strain.step2
+    |   |   `-- strain.step3
+    |   `-- stress
+    |       |-- stress.step0
+    |       |-- stress.step1
+    |       |-- stress.step2
+    |       `-- stress.step3
+    `-- nodes
+        `-- coo
+            |-- coo.step0
+            |-- coo.step1
+            |-- coo.step2
+            `-- coo.step3

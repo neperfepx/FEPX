@@ -60,42 +60,42 @@ One of the specifications of FEpX was to provide an expansible code framework to
 References
 ----------
 
-.. [BARTON99] N. R. Barton, P. R. Dawson, and M. P. Miller. Yield strength asymmetry predictions from polycrystal plasticity. *Journal of Engineering Materials and Technology*, 121:230-239, 1999.
+.. [BARTON99] N\. R. Barton, P. R. Dawson, and M. P. Miller. Yield strength asymmetry predictions from polycrystal plasticity. *Journal of Engineering Materials and Technology*, 121:230-239, 1999.
 
-.. [BEAUDOIN93] A. J. Beaudoin, K. K. Mathur, P. R. Dawson, and G.C. Johnson. Three-dimensional deformation process simulation with explicit use of polycrystalline plasticity models. *International Journal of Plasticity*, 9:833-860, 1993.
+.. [BEAUDOIN93] A\. J. Beaudoin, K. K. Mathur, P. R. Dawson, and G.C. Johnson. Three-dimensional deformation process simulation with explicit use of polycrystalline plasticity models. *International Journal of Plasticity*, 9:833-860, 1993.
 
-.. [BEAUDOIN94] A. J. Beaudoin, P. R. Dawson, K. K. Mathur, U. F. Kocks, and D. A. Korzekwa. Application of polycrystal plasticity to sheet forming. *Computer Methods in Applied Mechanics and Engineering*, 117:49-70, 1994.
+.. [BEAUDOIN94] A\. J. Beaudoin, P. R. Dawson, K. K. Mathur, U. F. Kocks, and D. A. Korzekwa. Application of polycrystal plasticity to sheet forming. *Computer Methods in Applied Mechanics and Engineering*, 117:49-70, 1994.
 
-.. [BEAUDOIN95] A. J. Beaudoin, P. R. Dawson, K. K. Mathur, and U. F. Kocks. A hybrid finite element formulation for polycrystal plasticity with consideration of macrostructural and microstructural linking. *International Journal of Plasticity*, 11:501-521, 1995.
+.. [BEAUDOIN95] A\. J. Beaudoin, P. R. Dawson, K. K. Mathur, and U. F. Kocks. A hybrid finite element formulation for polycrystal plasticity with consideration of macrostructural and microstructural linking. *International Journal of Plasticity*, 11:501-521, 1995.
 
-.. [CARSON19] R. A. Carson and P. R. Dawson. Formulation and Characterization of a Continuous Crystal Lattice Orientation Finite Element Method (LOFEM) and its Application to Dislocation Fields. *Journal of the Physics and Mechanics of Solids*, 126:1-26, 2019.
+.. [CARSON19] R\. A. Carson and P. R. Dawson. Formulation and Characterization of a Continuous Crystal Lattice Orientation Finite Element Method (LOFEM) and its Application to Dislocation Fields. *Journal of the Physics and Mechanics of Solids*, 126:1-26, 2019.
 
-.. [DAWSON98] P. R. Dawson and E. B. Marin. Computational mechanics for metal deformation processes using polycrystal plasticity. In Erik van der Giessen and Theodore Y. Wu, editors, *Advances in Applied Mechanics*, 34:78-169. Academic Press, 1998.
+.. [DAWSON98] P\. R. Dawson and E. B. Marin. Computational mechanics for metal deformation processes using polycrystal plasticity. In Erik van der Giessen and Theodore Y. Wu, editors, *Advances in Applied Mechanics*, 34:78-169. Academic Press, 1998.
 
-.. [DAWSON00] P. R. Dawson and H.-R. Wenk. Texturing the upper mantle during convection. *Philosophical Magazine A*, 80(3):573-598, 2000.
+.. [DAWSON00] P\. R. Dawson and H.-R. Wenk. Texturing the upper mantle during convection. *Philosophical Magazine A*, 80(3):573-598, 2000.
 
-.. [DAWSON15] P. R. Dawson and D. E. Boyce. FEpX – Finite Element Polycrystals: Theory, finite element formulation, numerical implementation and illustrative examples. *arXiv:1504.03296 [cond-mat.mtrl-sci]*, 2015.
+.. [DAWSON15] P\. R. Dawson and D. E. Boyce. FEpX – Finite Element Polycrystals: Theory, finite element formulation, numerical implementation and illustrative examples. *arXiv:1504.03296 [cond-mat.mtrl-sci]*, 2015.
 
-.. [EGGERT88] G. M. Eggert and P. R. Dawson. A viscoplastic formulation with elasticity for transient metal forming. *Computer Methods in Applied Mechanics and Engineering*, 70:165-190, 1988.
+.. [EGGERT88] G\. M. Eggert and P. R. Dawson. A viscoplastic formulation with elasticity for transient metal forming. *Computer Methods in Applied Mechanics and Engineering*, 70:165-190, 1988.
 
-.. [GERKEN08] J. M. Gerken and P. R. Dawson. A finite element formulation to solve a non-local constitutive model with stresses and strains due to slip gradients. *Computer Methods in Applied Mechanics and Engineering*, 197:1343-1361, 2008.
+.. [GERKEN08] J\. M. Gerken and P. R. Dawson. A finite element formulation to solve a non-local constitutive model with stresses and strains due to slip gradients. *Computer Methods in Applied Mechanics and Engineering*, 197:1343-1361, 2008.
 
-.. [KASEMER20] M. P. Kasemer and P. R. Dawson. A finite element methodology to incorporate kinematic activation of discrete deformation twins in a crystal plasticity framework. *Computer Methods in Applied Mechanics and Engineering*, 358:112653, 2020.
+.. [KASEMER20] M\. P. Kasemer and P. R. Dawson. A finite element methodology to incorporate kinematic activation of discrete deformation twins in a crystal plasticity framework. *Computer Methods in Applied Mechanics and Engineering*, 358:112653, 2020.
 
-.. [KUMAR95] A. Kumar and P. R. Dawson. Polycrystal plasticity modeling of bulk forming with finite elements over orientation space. *Computational Mechanics*, 17:10-25, 1995.
+.. [KUMAR95] A\. Kumar and P. R. Dawson. Polycrystal plasticity modeling of bulk forming with finite elements over orientation space. *Computational Mechanics*, 17:10-25, 1995.
 
-.. [MARIN98a] E. B. Marin and P. R. Dawson. On modeling the elasto-viscoplastic response of metals using polycrystal plasticity. *Computer Methods in Applied Mechanics and Engineering*, 165:1-21, 1998.
+.. [MARIN98a] E\. B. Marin and P. R. Dawson. On modeling the elasto-viscoplastic response of metals using polycrystal plasticity. *Computer Methods in Applied Mechanics and Engineering*, 165:1-21, 1998.
 
-.. [MARIN98b] E. B. Marin and P. R. Dawson. Elastoplastic finite element analysis of metal deformations using polycrystal constitutive models. *Computer Methods in Applied Mechanics and Engineering*, 165:23-41, 1998.
+.. [MARIN98b] E\. B. Marin and P. R. Dawson. Elastoplastic finite element analysis of metal deformations using polycrystal constitutive models. *Computer Methods in Applied Mechanics and Engineering*, 165:23-41, 1998.
 
-.. [MATHUR89] K. K. Mathur and P. R. Dawson. On modeling the development of crystallographic texture in bulk forming processes. *International Journal of Plasticity*, 5:67-94, 1989.
+.. [MATHUR89] K\. K. Mathur and P. R. Dawson. On modeling the development of crystallographic texture in bulk forming processes. *International Journal of Plasticity*, 5:67-94, 1989.
 
-.. [MATHUR90] K. K. Mathur and P. R. Dawson. Texture development during wire drawing. *Journal of Engineering Materials and Technology*, 112(3):292-297, 1990.
+.. [MATHUR90] K\. K. Mathur and P. R. Dawson. Texture development during wire drawing. *Journal of Engineering Materials and Technology*, 112(3):292-297, 1990.
 
-.. [MATHUR95] K. K. Mathur. Parallel algorithms for large scale simulations in materials processing. In S. F. Shen and P. R. Dawson, editors, *Simulation of Materials Processing: Theory, Methods and Applications – NUMIFORM 95*, 109-114. A. A. Balkema, 1995.
+.. [MATHUR95] K\. K. Mathur. Parallel algorithms for large scale simulations in materials processing. In S. F. Shen and P. R. Dawson, editors, *Simulation of Materials Processing: Theory, Methods and Applications – NUMIFORM 95*, 109-114. A. A. Balkema, 1995.
 
-.. [MIKA99] D. P. Mika and P. R. Dawson. Polycrystal Plasticity Modeling of Intracrystalline Boundary Textures. *Acta Materialia*, 47(4):1355-1369, 1999.
+.. [MIKA99] D\. P. Mika and P. R. Dawson. Polycrystal Plasticity Modeling of Intracrystalline Boundary Textures. *Acta Materialia*, 47(4):1355-1369, 1999.
 
-.. [QUEY11] R. Quey, P. R. Dawson, and F. Barbe. Large-scale 3-D random polycrystals for the finite element method: generation meshing and remeshing. *Computer Methods in Applied Mechanics and Engineering*, 200:1729-1745, 2011.
+.. [QUEY11] R\. Quey, P. R. Dawson, and F. Barbe. Large-scale 3-D random polycrystals for the finite element method: generation meshing and remeshing. *Computer Methods in Applied Mechanics and Engineering*, 200:1729-1745, 2011.
 
-.. [RITZ09] H. Ritz and P. R. Dawson. Sensitivity to grain discretization of the simulated crystal stress distributions in fcc polycrystals. *Modeling and Simulation in Materials Science and Engineering*, 17:1-21, 2009.
+.. [RITZ09] H\. Ritz and P. R. Dawson. Sensitivity to grain discretization of the simulated crystal stress distributions in fcc polycrystals. *Modeling and Simulation in Materials Science and Engineering*, 17:1-21, 2009.

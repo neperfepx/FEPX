@@ -1,0 +1,158 @@
+========================    F   E   P   X    ===========================
+Info   : A finite element software package for polycrystal plasticity.
+Info   : Version 3.0.0-dev (git 755da754, 11-06-2026)
+Info   : Built with: GCC 15.2.0|Open MPI 5.0.10|HDF5 1.14.6
+Info   : Running on 4 ranks.
+Info   : <https://fepx.info>
+Info   : Copyright (C) 1996-2026, and MIT licensed, by the FEPX authors.
+Info   : ---------------------------------------------------------------
+Info   : Loading simulation...
+Info   :   [i] Parsing file `simulation.cfg'...
+Info   :   [i] Parsed file `simulation.cfg'.
+Info   :   [i] Parsing file `simulation.msh'...
+Info   :   [i] Parsed file `simulation.msh'.
+Info   :   - Material parameters:
+Info   :     > Number of phases: 1
+Info   :     > Phase 1: hcp, crystal_plasticity
+Info   :       . c11:                       1.6966E+05 MPa
+Info   :       . c12:                       8.8660E+04 MPa
+Info   :       . c13:                       6.1660E+04 MPa
+Info   :       . c33:                       1.9666E+05 MPa
+Info   :       . c44:                       4.2500E+04 MPa
+Info   :       . c_over_a:                  1.5870E+00
+Info   :       . m:                         1.0000E-02 1.0000E-02
+Info   :                                    1.0000E-02
+Info   :       . gammadot_0:                1.0000E+00 1.0000E+00
+Info   :                                    1.0000E+00 1/s
+Info   :       . hardening:                 saturation_anisotropic
+Info   :       . tau_0:                     3.9000E+02 4.6800E+02
+Info   :                                    6.6300E+02 MPa
+Info   :       . h_0:                       1.9000E+02 MPa
+Info   :       . tau_s:                     7.0000E+02 MPa
+Info   :       . n:                         1.0000E+00
+Info   :       . interaction_matrix:        1.0 1.4 1.4 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0
+Info   :       . interaction_matrix:        1.4 1.0 1.4 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0
+Info   :       . interaction_matrix:        1.4 1.4 1.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0
+Info   :       . interaction_matrix:        0.0 0.0 0.0 1.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0
+Info   :       . interaction_matrix:        0.0 0.0 0.0 0.0 1.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0
+Info   :       . interaction_matrix:        0.0 0.0 0.0 0.0 0.0 1.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0
+Info   :       . interaction_matrix:        0.0 0.0 0.0 0.0 0.0 0.0 1.0
+Info   :                                    1.4 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0
+Info   :       . interaction_matrix:        0.0 0.0 0.0 0.0 0.0 0.0 1.4
+Info   :                                    1.0 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0
+Info   :       . interaction_matrix:        0.0 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 1.0 1.4 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0
+Info   :       . interaction_matrix:        0.0 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 1.4 1.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0
+Info   :       . interaction_matrix:        0.0 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 1.0 1.4 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0
+Info   :       . interaction_matrix:        0.0 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 1.4 1.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0
+Info   :       . interaction_matrix:        0.0 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0 0.0 1.0 1.4
+Info   :                                    0.0 0.0 0.0 0.0
+Info   :       . interaction_matrix:        0.0 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0 0.0 1.4 1.0
+Info   :                                    0.0 0.0 0.0 0.0
+Info   :       . interaction_matrix:        0.0 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    1.0 1.4 0.0 0.0
+Info   :       . interaction_matrix:        0.0 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    1.4 1.0 0.0 0.0
+Info   :       . interaction_matrix:        0.0 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 1.0 1.4
+Info   :       . interaction_matrix:        0.0 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 0.0 0.0 0.0 0.0 0.0
+Info   :                                    0.0 0.0 1.4 1.0
+Info   :       . saturation_evolution:      on
+Info   :       . gammadot_s0:               1.0000E+00 1/s
+Info   :       . m_prime:                   1.1000E+00
+Info   :       . cyclic_hardening:          off (def.)
+Info   :       . precipitate_strengthening: off (def.)
+Info   :   - Loading: boundary_conditions triaxial, 2 steps
+Info   :     > Triaxial load control: elastic estimate E = 1.2226E+05
+Info   :       MPa, nu = 3.0896E-01
+Info   :     > Triaxial load control: initial face velocities
+Info   :       -1.0000E-04 -8.9447E-21 1.0000E-04 mm/s
+Info   :     > Step 1: target_load 11 -3.0000E+02 N from t = 0.0000E+00
+Info   :       s, increments 2.5000E-01 to 5.0000E+00 s
+Info   :       . Component 22: target_load 0.0000E+00 N
+Info   :         (load-controlled)
+Info   :       . Component 33: target_load 3.0000E+02 N
+Info   :         (load-controlled)
+Info   :   - Options other than the defaults: (none)
+Info   :   - Output: coo strain_pl_eq work_pl forces stress strain
+Info   :     (format ascii)
+Info   :   - Mesh parameters:
+Info   :     > Node number: 8737
+Info   :     > Elt  number: 5641 (10-node tetrahedra)
+Info   :     > Elsets: 50; partitions: 4
+Info   :   - Partitioning: 4 ranks
+Info   :     > Elements per rank: 1410 to 1411
+Info   :     > Ghost nodes per rank: 224 to 305 (1047 in total)
+Info   :     > Neighbors per rank: 3 to 3
+Info   :   [o] Writing results to `simulation.sim'...
+Info   : Initializing simulation...
+Info   :   - Elastic step of 3.6565E-01 s (step 1)
+Info   :     > Iteration 1 (SA): R = 3.7218E-02 (241 CG iterations)
+Info   :     > Iteration 2 (SA): R = 2.1317E-06 (236 CG iterations)
+Info   :     > Converged in 2 iterations (1.841 s)
+Info   : Running step 1...
+Info   :   - Increment 1: t = 5.0000E+00 s, dt = 4.6344E+00 s
+Info   :     > Iteration 1 (SA): R = 3.6324E-05 (229 CG iterations)
+Info   :     > Iteration 2 (NR): R = 3.5571E-08 (241 CG iterations)
+Info   :     > Converged in 2 iterations (1.997 s)
+Info   :     > Load iteration 1: face velocities -1.00000E-04
+Info   :       -8.94471E-21 1.00000E-04 mm/s; 22: -1.033575E+00 (to
+Info   :       reach 0.000000E+00) N; 33: 4.880418E+01 (to reach
+Info   :       4.780898E+01) N;
+Info   :     > Iteration 1 (SA): R = 1.5681E-05 (234 CG iterations)
+Info   :     > Iteration 2 (NR): R = 1.2751E-08 (234 CG iterations)
+Info   :     > Converged in 2 iterations (1.983 s)
+Info   :     > Iteration 1 (SA): R = 2.1549E-05 (245 CG iterations)
+Info   :     > Iteration 2 (NR): R = 1.6939E-08 (234 CG iterations)
+Info   :     > Converged in 2 iterations (1.992 s)
+Info   :     > Iteration 1 (SA): R = 8.0796E-04 (245 CG iterations)
+Info   :     > Iteration 2 (NR): R = 6.4962E-07 (231 CG iterations)
+Info   :     > Converged in 2 iterations (2.018 s)
+Info   :     > Load iteration 2: face velocities -1.00000E-04
+Info   :       2.46311E-06 9.75604E-05 mm/s; 22: -4.097741E-05 (to reach
+Info   :       0.000000E+00) N; 33: 4.774465E+01 (to reach 4.774471E+01)
+Info   :       N;
+  [...]
+Info   : Final step terminated. Simulation completed successfully.
+Info   :   [o] Wrote results to `simulation.sim'.
+Info   :   - Increments: 13
+Info   :   - Global iterations: 118 (61 NR)
+Info   :   - CG iterations: 29752
+Info   :   - Warnings issued: 0
+Info   :   - Wall time per phase:
+Info   :     > Input and setup:                      0.113 s
+Info   :     > Initialization:                       1.853 s
+Info   :     > Increments:                         109.972 s
+Info   :       . Element and material work:         82.737 s
+Info   :       . CG:                                26.512 s
+Info   :       . Other:                              0.722 s
+Info   :     > Output:                               0.474 s
+Info   : Elapsed time:                             112.412 s
+========================================================================

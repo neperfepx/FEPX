@@ -1,0 +1,3 @@
+$ neper -S simulation.sim -resmesh stress,strain
+$ python3 tutorial_pages.py plot hcp . ../hcp_basal/simulation.sim \
+    ../hcp_prismatic/simulation.sim simulation.sim

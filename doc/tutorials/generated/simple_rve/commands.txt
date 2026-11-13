@@ -1,0 +1,3 @@
+$ neper -S simulation.sim -resmesh stress,strain
+$ python3 tutorial_pages.py plot simple_rve . ../simple_simulation/simulation.sim \
+    simulation.sim ../simple_rve_grip/simulation.sim

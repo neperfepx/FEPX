@@ -1,0 +1,2 @@
+step 1: mean stress 33 over the elements   335.74 MPa, over the grains   335.15 MPa
+step 2: mean stress 33 over the elements   346.09 MPa, over the grains   345.87 MPa

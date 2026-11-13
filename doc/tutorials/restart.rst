@@ -1,68 +1,128 @@
-.. _restart_tutorial:
+.. _tutorial_restart:
 
-[LEGACY] Restarting a Simulation with Appended Load Steps
----------------------------------------------------------
+Restarting a Simulation
+=======================
 
-An example use case for the restart capabilities are to append additional loading steps to a completed simulation. This example covers the cyclic triaxial deformation of an FCC polycrystal at a constant strain rate. Each restart simulation adds an addition load-unload cycle. Loads are applied normal to the surface, maintaining proportional macroscopic load ratios of :math:`0`::math:`0`::math:`1` for the :math:`x`::math:`y`::math:`z` directions, respectively. Load tolerance options are prescribed and cyclic hardening is activated. The primary loading direction is set to be in the :math:`z` direction. Elemental equivalent plastic deformation rate, slip system shears, slip system shear rates, nodal coordinates, and restart files are output. Restart files are only printed on the first cycle. Material parameters are those for a AL6XN steel and are provided in the tables below. Illustrations of the results are provided in the figures below.
+.. note:: Read first: :ref:`tutorial_multiaxial_csr`.
 
-The included shell script will run the initial simulation in :file:`tutorials/restart/cycle1` which runs 2 load steps (a single load-unload cycle) and prints the files necessary to restart the simulation from the final state (using print option :data:`print restart`). After successful completion of the first cycle, the mesh file and restart files are copied into the secondary directory (:file:`tutorials/restart/cycle2`) and the simulation is performed again for another 2 load steps (a second load-unload cycle). The configuration file for the second cycle (:file:`simulation_cycle2.config`) contains the following input to allow for simulating additional load steps to those already completed:
+A completed simulation can be continued with more loading steps (see :ref:`restart`). In this
+tutorial, an fcc polycrystal of 50 grains (the mesh of :ref:`tutorial_multiaxial_csr`) is
+loaded in two cycles, run one after the other:
 
-::
+.. figure:: generated/restart_cycle1/mesh.png
+   :align: center
+   :width: 50%
 
-    restart on
+   The mesh, colored by grain.
 
-along with the additional load steps (as described in the :ref:`Deformation History <deformation_history>` section). The restarted simulation will continue with the load steps as defined in :file:`simulation_cycle2.config`. Restart control information will print to the console upon the execution of the second cycle to briefly assess the state of the sample when the simulation is restarted. Material parameters are defined as:
+The material is an AL6XN steel, with cyclic hardening:
 
-.. list-table:: Single crystal elastic constants.
-    :widths: 25 25 25 25 25
-    :align: center
-    :header-rows: 1
+.. list-table:: Single-crystal elastic constants and plasticity parameters.
+   :header-rows: 1
+   :align: center
 
-    * - Phase
-      - Type
-      - :math:`C_{11}` [MPa]
-      - :math:`C_{12}` [MPa]
-      - :math:`C_{44}` [MPa]
-    * - :math:`\gamma`
-      - FCC
-      - :math:`204.6 \times 10^3`
-      - :math:`137.7 \times 10^3`
-      - :math:`126.2 \times 10^3`
+   * - :math:`c_{11}` [MPa]
+     - :math:`c_{12}` [MPa]
+     - :math:`c_{44}` [MPa]
+     - :math:`m` [-]
+     - :math:`\dot{\gamma}_0` [1/s]
+     - :math:`\tau_0` [MPa]
+     - :math:`h_0` [MPa]
+     - :math:`\tau_s` [MPa]
+     - :math:`n` [-]
+   * - :math:`204.6 \times 10^3`
+     - :math:`137.7 \times 10^3`
+     - :math:`126.2 \times 10^3`
+     - 0.02
+     - 1.0
+     - 160.0
+     - 375.0
+     - 1000.0
+     - 1.0
 
-.. list-table:: Initial slip system strengths and other plasticity parameters.
-    :widths: 10 10 10 10 10 10 10
-    :align: center
-    :header-rows: 1
+.. list-table:: Cyclic hardening parameters (``cyclic_hardening on``).
+   :header-rows: 1
+   :align: center
 
-    * - Phase
-      - :math:`m` [-]
-      - :math:`\dot{\gamma_{0}}` [1/s]
-      - :math:`h_{0}` [MPa]
-      - :math:`g_{0}` [MPa]
-      - :math:`g_{s0}` [MPa]
-      - :math:`n` [-]
-    * - :math:`\alpha`
-      - 0.02
-      - 1.0
-      - 375.0
-      - 160.0
-      - 1000.0
-      - 1.0
+   * - :math:`a` [-]
+     - :math:`c` [-]
+   * - 0.05
+     - 3.5
 
-.. list-table:: Cyclic hardening parameters.
-    :widths: 25 25 25
-    :align: center
-    :header-rows: 1
+The polycrystal is loaded along 33 at a constant strain rate with triaxial control, the loads 11
+and 22 held at zero. The first run loads to 300 N and unloads to 0 N, and writes a restart point
+at the end of every step (``print restart``).
 
-    * - Phase
-      - :math:`a` [-]
-      - :math:`c` [-]
-    * - :math:`\alpha`
-      - 0.05
-      - 3.50
+First Run
+---------
 
-.. figure:: restart/4_all.png
-    :width: 75%
-    :align: center
+- :download:`simulation.cfg <../../tutorials/restart_cycle1/simulation.cfg>`
+- :download:`simulation.msh <../../tests/regression/cases/meshes/tutorial_triax.msh>`
 
-    Sample after the second cycle is completed, (left) colored by accumulated slip shear on the :math:`(1 \bar 1 1)[0 1 1]` system and (right) colored by accumulated slip shear on the :math:`(1 \bar 1 1)[1 0 \bar 1]` system.
+.. literalinclude:: ../../tutorials/restart_cycle1/simulation.cfg
+   :emphasize-lines: 42
+
+.. code-block:: console
+
+  $ mpirun -np 4 fepx
+
+.. literalinclude:: generated/restart_cycle1/terminal.txt
+   :language: none
+
+.. literalinclude:: generated/restart_cycle1/tree.txt
+   :language: none
+
+Second Run
+----------
+
+The second run, in the same directory, continues :file:`simulation.sim`: it reloads to 230 N and
+unloads again. Its configuration file replaces the first; it has ``restart on`` and lists only
+the new steps, which are written as steps 3 and 4. The material, the boundary conditions and the
+input files must be those of the first run.
+
+- :download:`simulation.cfg <../../tutorials/restart_cycle2/simulation.cfg>`
+
+.. literalinclude:: ../../tutorials/restart_cycle2/simulation.cfg
+   :emphasize-lines: 24
+
+.. code-block:: console
+
+  $ mpirun -np 4 fepx
+
+.. literalinclude:: generated/restart_cycle2/terminal.txt
+   :language: none
+
+The simulation directory then holds the results of both runs. Post-process it with Neper
+(``neper -S``) after the second run: Neper's results of the first run (in
+:file:`simulation.sim/results/mesh`) cannot be extended to the new steps; remove them before
+running ``neper -S`` again.
+
+.. literalinclude:: generated/restart_cycle2/tree.txt
+   :language: none
+
+Simulation Results
+------------------
+
+.. figure:: generated/restart_cycle2/curves.png
+   :align: center
+
+   (left) Volume-averaged normal stresses against the normal strains at the ends of the four
+   steps; (right) normal stresses of faces :file:`x1`, :file:`y1` and :file:`z1` (force over
+   current area) at every increment of both runs.
+
+.. figure:: generated/restart_cycle2/slip7.png
+   :align: center
+   :width: 60%
+
+   Accumulated slip on system 7 after the second cycle (displacements magnified 10 times).
+
+.. figure:: generated/restart_cycle2/slip8.png
+   :align: center
+   :width: 60%
+
+   Accumulated slip on system 8 after the second cycle (displacements magnified 10 times).
+
+The commands, after the second run:
+
+.. literalinclude:: generated/restart_cycle2/commands.txt
+   :language: console

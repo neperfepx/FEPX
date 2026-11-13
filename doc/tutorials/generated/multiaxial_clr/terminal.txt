@@ -1,0 +1,121 @@
+========================    F   E   P   X    ===========================
+Info   : A finite element software package for polycrystal plasticity.
+Info   : Version 3.0.0-dev (git 755da754, 11-06-2026)
+Info   : Built with: GCC 15.2.0|Open MPI 5.0.10|HDF5 1.14.6
+Info   : Running on 4 ranks.
+Info   : <https://fepx.info>
+Info   : Copyright (C) 1996-2026, and MIT licensed, by the FEPX authors.
+Info   : ---------------------------------------------------------------
+Info   : Loading simulation...
+Info   :   [i] Parsing file `simulation.cfg'...
+Info   :   [i] Parsed file `simulation.cfg'.
+Info   :   [i] Parsing file `simulation.msh'...
+Info   :   [i] Parsed file `simulation.msh'.
+Info   :   - Material parameters:
+Info   :     > Number of phases: 2
+Info   :     > Phase 1: fcc, crystal_plasticity
+Info   :       . c11:                       2.0460E+05 MPa
+Info   :       . c12:                       1.3770E+05 MPa
+Info   :       . c44:                       1.2620E+05 MPa
+Info   :       . m:                         2.0000E-02
+Info   :       . gammadot_0:                1.0000E+00 1/s
+Info   :       . hardening:                 saturation_isotropic
+Info   :       . tau_0:                     2.0000E+02 MPa
+Info   :       . h_0:                       3.9190E+02 MPa
+Info   :       . tau_s:                     3.3500E+02 MPa
+Info   :       . n:                         1.0000E+00
+Info   :       . saturation_evolution:      off (def.)
+Info   :       . cyclic_hardening:          off (def.)
+Info   :       . precipitate_strengthening: off (def.)
+Info   :     > Phase 2: bcc, crystal_plasticity
+Info   :       . c11:                       2.3690E+05 MPa
+Info   :       . c12:                       1.4060E+05 MPa
+Info   :       . c44:                       1.1600E+05 MPa
+Info   :       . m:                         2.0000E-02
+Info   :       . gammadot_0:                1.0000E+00 1/s
+Info   :       . hardening:                 saturation_isotropic
+Info   :       . tau_0:                     2.0000E+02 MPa
+Info   :       . h_0:                       3.9190E+02 MPa
+Info   :       . tau_s:                     3.3500E+02 MPa
+Info   :       . n:                         1.0000E+00
+Info   :       . saturation_evolution:      off (def.)
+Info   :       . cyclic_hardening:          off (def.)
+Info   :       . precipitate_strengthening: off (def.)
+Info   :   - Loading: boundary_conditions triaxial, 4 steps
+Info   :     > Triaxial load control: elastic estimate E = 2.2646E+05
+Info   :       MPa, nu = 2.7247E-01
+Info   :     > Step 1: load_rate 33 2.0000E+00 N/s, t = 0.0000E+00 ->
+Info   :       5.0000E+01 s, 1 increment to 1.0000E+02
+Info   :       . Component 11: target_load -3.7500E+01 N
+Info   :         (load-controlled)
+Info   :       . Component 22: target_load -6.2500E+01 N
+Info   :         (load-controlled)
+Info   :   - Options other than the defaults:
+Info   :     > max_strain_incr 2.0000E-03
+Info   :   - Output: coo crss forces stress strain (format ascii)
+Info   :   - Mesh parameters:
+Info   :     > Node number: 8737
+Info   :     > Elt  number: 5641 (10-node tetrahedra)
+Info   :     > Elsets: 50; partitions: 4
+Info   :   - Partitioning: 4 ranks
+Info   :     > Elements per rank: 1410 to 1411
+Info   :     > Ghost nodes per rank: 224 to 305 (1047 in total)
+Info   :     > Neighbors per rank: 3 to 3
+Info   :   [o] Writing results to `simulation.sim'...
+Info   : Initializing simulation...
+Info   :   - No elastic step (step 1 has a load or stress rate)
+Info   : Running step 1...
+Info   :   - Step 1: loading
+Info   :   - Increment 1: t = 5.0000E+01 s, dt = 5.0000E+01 s
+Info   :     > Iteration 1 (SA): R = 8.8200E-02 (252 CG iterations)
+Info   :     > Iteration 2 (SA): R = 7.1160E-05 (239 CG iterations)
+Info   :     > Converged in 2 iterations (1.679 s)
+Info   :     > Load iteration 1: face velocities -4.21423E-06
+Info   :       -7.02372E-06 1.12380E-05 mm/s; 11: -2.777450E+01 (to
+Info   :       reach -3.750000E+01) N; 22: -5.408030E+01 (to reach
+Info   :       -6.250000E+01) N; 33: 8.252580E+01 (to reach
+Info   :       1.000000E+02) N;
+Info   :     > Iteration 1 (SA): R = 1.0210E-05 (242 CG iterations)
+Info   :     > Iteration 2 (NR): R = 1.1749E-08 (246 CG iterations)
+Info   :     > Converged in 2 iterations (1.678 s)
+Info   :     > Load iteration 2: face velocities -4.63566E-06
+Info   :       -7.72610E-06 1.23618E-05 mm/s; 11: -3.055949E+01 (to
+Info   :       reach -3.750000E+01) N; 22: -5.949879E+01 (to reach
+Info   :       -6.250000E+01) N; 33: 9.076186E+01 (to reach
+Info   :       1.000000E+02) N;
+Info   :     > Iteration 1 (SA): R = 4.5182E-04 (246 CG iterations)
+Info   :     > Iteration 2 (NR): R = 3.9733E-07 (232 CG iterations)
+Info   :     > Converged in 2 iterations (1.617 s)
+Info   :     > Iteration 1 (SA): R = 5.2097E-04 (247 CG iterations)
+Info   :     > Iteration 2 (NR): R = 4.3126E-07 (244 CG iterations)
+Info   :     > Converged in 2 iterations (1.639 s)
+Info   :     > Iteration 1 (SA): R = 5.7149E-04 (252 CG iterations)
+Info   :     > Iteration 2 (NR): R = 5.2580E-07 (242 CG iterations)
+Info   :     > Converged in 2 iterations (1.913 s)
+Info   :     > Iteration 1 (SA): R = 8.1994E-03 (252 CG iterations)
+Info   :     > Iteration 2 (NR): R = 8.2856E-06 (241 CG iterations)
+Info   :     > Converged in 2 iterations (1.886 s)
+Info   :     > Load iteration 3: face velocities -5.53142E-06
+Info   :       -8.15055E-06 1.36555E-05 mm/s; 11: -3.750119E+01 (to
+Info   :       reach -3.750000E+01) N; 22: -6.250075E+01 (to reach
+Info   :       -6.250000E+01) N; 33: 9.999825E+01 (to reach
+Info   :       1.000000E+02) N;
+Info   :   - Step 1: control 33 at 9.999825E+01 N after 1 increment, t =
+Info   :     5.0000E+01 s
+  [...]
+Info   : Final step terminated. Simulation completed successfully.
+Info   :   [o] Wrote results to `simulation.sim'.
+Info   :   - Increments: 12
+Info   :   - Global iterations: 143 (56 NR)
+Info   :   - CG iterations: 38479
+Info   :   - Warnings issued: 0
+Info   :   - Wall time per phase:
+Info   :     > Input and setup:                      0.115 s
+Info   :     > Initialization:                       0.000 s
+Info   :     > Increments:                         128.893 s
+Info   :       . Element and material work:         94.684 s
+Info   :       . CG:                                33.603 s
+Info   :       . Other:                              0.607 s
+Info   :     > Output:                               0.960 s
+Info   : Elapsed time:                             129.969 s
+========================================================================

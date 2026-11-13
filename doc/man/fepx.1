@@ -1,0 +1,72 @@
+.\" Manual page of fepx (step 9.8, ROADMAP D101). Installed in share/man/man1 by CMake;
+.\" every option of "fepx --help" must be described here (test man_page_options).
+.TH FEPX 1 "2026-10-28" "FEPX" "User Commands"
+.SH NAME
+fepx \- finite element simulation of polycrystal plasticity
+.SH SYNOPSIS
+.B mpirun
+.B \-np
+.I ranks
+.B fepx
+.br
+.B fepx \-\-help
+.br
+.B fepx \-\-version
+.SH DESCRIPTION
+.B fepx
+simulates the elastic\-viscoplastic deformation of polycrystalline aggregates with a
+crystal\-plasticity finite element method, in parallel with MPI.
+It is run, without arguments, in a directory that holds the input files; the results are
+written to the directory
+.I simulation.sim
+in the same directory.
+.SH OPTIONS
+.TP
+.B \-\-help
+Print the banner and a usage summary, then exit.
+.TP
+.B \-\-version
+Print the version (with the git hash and the date of the commit built, when known), then exit.
+.PP
+Any other argument is an error. Both options are handled before MPI is started, so they may be
+given without
+.BR mpirun .
+.SH FILES
+.TP
+.I simulation.cfg
+The configuration: the material, the loading, the boundary conditions, the solver and the
+output (required).
+.TP
+.I simulation.msh
+The mesh, in Neper's msh format, with the crystal orientations of its element sets (required).
+.TP
+.IR simulation.ori ", " simulation.phase ", " simulation.opt
+Orientations, phases and per\-element\-set or per\-element material parameters, read when the
+configuration asks for them.
+.TP
+.I simulation.sim/
+The output directory: the inputs, the result files and, if requested, the restart files.
+.SH EXIT STATUS
+0 on success; non\-zero when the run stops on an error, whose message is written to the
+standard error (and to the standard output of rank 0).
+.SH EXAMPLES
+The tutorial cases are installed in
+.I share/doc/fepx/examples
+of the installation
+.RI ( $CONDA_PREFIX/share/doc/fepx/examples
+for the conda package).
+To run one, copy its directory and run
+.B fepx
+in the copy:
+.PP
+.RS
+.nf
+cp \-r $CONDA_PREFIX/share/doc/fepx/examples/simple_simulation .
+cd simple_simulation
+mpirun \-np 4 fepx
+.fi
+.RE
+.SH SEE ALSO
+.BR mpirun (1),
+.BR neper (1).
+The manual: <https://fepx.info>.

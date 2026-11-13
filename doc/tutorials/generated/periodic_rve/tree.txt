@@ -1,0 +1,63 @@
+simulation.sim
+|-- inputs
+|   |-- simulation.cfg
+|   `-- simulation.msh
+`-- results
+    |-- elts
+    |   |-- crss
+    |   |   |-- crss.step0
+    |   |   `-- crss.step1
+    |   |-- ori
+    |   |   |-- ori.step0
+    |   |   `-- ori.step1
+    |   |-- slip
+    |   |   |-- slip.step0
+    |   |   `-- slip.step1
+    |   |-- sliprate
+    |   |   |-- sliprate.step0
+    |   |   `-- sliprate.step1
+    |   |-- strain
+    |   |   |-- strain.step0
+    |   |   `-- strain.step1
+    |   |-- strain_el
+    |   |   |-- strain_el.step0
+    |   |   `-- strain_el.step1
+    |   |-- strain_el_eq
+    |   |   |-- strain_el_eq.step0
+    |   |   `-- strain_el_eq.step1
+    |   |-- strain_eq
+    |   |   |-- strain_eq.step0
+    |   |   `-- strain_eq.step1
+    |   |-- strain_pl
+    |   |   |-- strain_pl.step0
+    |   |   `-- strain_pl.step1
+    |   |-- strain_pl_eq
+    |   |   |-- strain_pl_eq.step0
+    |   |   `-- strain_pl_eq.step1
+    |   |-- stress
+    |   |   |-- stress.step0
+    |   |   `-- stress.step1
+    |   |-- stress_eq
+    |   |   |-- stress_eq.step0
+    |   |   `-- stress_eq.step1
+    |   |-- work
+    |   |   |-- work.step0
+    |   |   `-- work.step1
+    |   `-- work_pl
+    |       |-- work_pl.step0
+    |       `-- work_pl.step1
+    |-- macro
+    |-- mesh
+    |   |-- strain
+    |   |   |-- strain.step0
+    |   |   `-- strain.step1
+    |   `-- stress
+    |       |-- stress.step0
+    |       `-- stress.step1
+    `-- nodes
+        |-- coo
+        |   |-- coo.step0
+        |   `-- coo.step1
+        `-- disp
+            |-- disp.step0
+            `-- disp.step1

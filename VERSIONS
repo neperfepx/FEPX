@@ -1,3 +1,49 @@
+New in 3.0.0 (2026-11-13):
+- Rewrote FEPX completely in modern Fortran (2018) and MPI, with the same
+  elasto-viscoplastic crystal-plasticity formulation (finite strains,
+  anisotropic elasticity, rate-dependent slip). Inputs of FEPX 2.x must
+  be ported: the configuration file is new and its parser is strict
+  (every error is fatal and gives the file and line).
+- Added Kocks-Mecking dislocation-density hardening, with optional
+  irradiation softening.
+- Reorganized the saturation hardening models: isotropic or anisotropic
+  (with a full interaction matrix), each with optional saturation
+  evolution, cyclic hardening and precipitate strengthening.
+- Added the full anisotropic elastic stiffness of hcp crystals (c33).
+- Added 20-node hexahedral elements (with 10-node tetrahedral elements).
+- Unified the loading: boundary-condition presets, general velocity
+  conditions, multi-point constraints and periodic conditions, with
+  per-step strain, time, load and stress targets and strain, load and
+  stress rates (with dwells).
+- Added HDF5 output with an XDMF file for ParaView, alongside the
+  simulation.sim directory read by Neper.
+- Added a nodal block-Jacobi preconditioner (the default) to the
+  conjugate gradient solver.
+- Added an elastic initialization step (initialization elastic_step, the
+  default). The isotropic viscoplastic start, the default of FEPX 2.x,
+  remains available (initialization isotropic_viscoplastic).
+- Made results independent of the number of MPI processes, and added
+  unit, verification and regression tests (ctest).
+- Fixed many errors of FEPX 2.x (e.g. the last slip system never hardened
+  under isotropic hardening).
+- Added conda packages (an Open MPI and an MPICH build, with the HDF5
+  output), built and tested by make conda.
+- Rewrote the manual, with new tutorials; switched to the MIT license.
+- Added the version history to the documentation (Versions), and aligned
+  the documentation with Neper's (heading levels and case, name,
+  reference papers as citations).
+
+New in 2.1.1-1940-devel (10 Nov 2026):
+- Replaced the manual (doc/) by the FEPX 3 manual, with the files it
+  includes from tests/ and tutorials/, and the license (COPYING) by the
+  MIT license.
+- Added Periodic Boundary Conditions
+- Added functionality to build .deb package.
+- Minor documentation fixes.
+- Added h_0 from_file input from external .opt file.
+- Optional hdf5 file format results natively
+- Fixed bugs with restart simulations failing
+
 New in 2.1.0 (01 Oct 2024):
 - Switch "active" and "passive" for orientation convention and updated mesh
   parser for compatibility with Neper version 4.10.

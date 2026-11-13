@@ -1,0 +1,31 @@
+# The manual's tutorial cases (step 9.11, ROADMAP D95): read by tests/regression/CMakeLists.txt
+# (one regression case regression_fepx_manual_tutorial_<case>, label "tutorial", per line) and
+# by tutorials/tools/make_tutorial_pages.sh (the pages' runs, figures, terminal outputs and trees), so that
+# the pages show the runs the test suite makes.
+#
+# Columns (whitespace separated, "-" for none):
+#   case      the case name (its reference: tests/regression/reference/fepx/manual_tutorial_<case>)
+#   inputs    the directory of tutorials/ holding its simulation.cfg (and simulation.phase)
+#   mesh      the mesh in tests/regression/cases/meshes, copied as simulation.msh
+#   ori       a file copied as simulation.ori: in tests/regression/cases/meshes, or in the inputs
+#             directory when it starts with "inputs:"
+#   requires  the case whose simulation.sim this case continues (a restart)
+#   ranks     the number of MPI ranks
+#   tier      "test": run by CTest and by the script; "manual": run by the script only (too long
+#             for the test suite)
+#
+# case                   inputs              mesh                      ori                              requires         ranks tier
+simple_simulation        simple_simulation   tutorial_simple_part4.msh         -                                -                4     test
+simple_rve               simple_rve          tutorial_simple_part4.msh         -                                -                4     test
+simple_rve_grip          simple_rve_grip     tutorial_simple_part4.msh         -                                -                4     test
+periodic_rve             periodic_rve        tutorial_periodic_part4.msh       -                                -                4     test
+multiaxial_csr           multiaxial_csr      tutorial_triax.msh        -                                -                4     test
+multiaxial_clr           multiaxial_clr      tutorial_triax_dual.msh   -                                -                4     test
+restart_cycle1           restart_cycle1      tutorial_triax.msh        -                                -                4     test
+restart_cycle2           restart_cycle2      tutorial_triax.msh        -                                restart_cycle1   4     test
+overwriting              overwriting         tutorial_overwriting.msh  tutorial_overwriting.ori         -                4     test
+mixed_targets            mixed_targets       tutorial_simple_part4.msh         -                                -                4     test
+hcp_basal                hcp_single_crystal  sx2.msh                   inputs:simulation_basal.ori      -                1     test
+hcp_prismatic            hcp_single_crystal  sx2.msh                   inputs:simulation_prismatic.ori  -                1     test
+hcp_pyramidal            hcp_single_crystal  sx2.msh                   inputs:simulation_pyramidal.ori  -                1     test
+cruciform                cruciform           tutorial_cruciform.msh            -                                -                4     manual

@@ -1,0 +1,14 @@
+# Variants for local builds (rattler-build build -r conda/recipe -c conda-forge),
+# which conda-forge's CI otherwise provides (conda-forge-pinning): not to be
+# submitted to conda-forge, except the mpi key (one package per MPI).
+c_stdlib:
+  - sysroot
+c_stdlib_version:
+  - "2.17"
+c_compiler:
+  - gcc
+fortran_compiler:
+  - gfortran
+mpi:
+  - openmpi
+  - mpich

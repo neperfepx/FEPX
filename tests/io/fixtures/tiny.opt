@@ -1,0 +1,10 @@
+$ElsetCrss
+2 12
+7 200.0
+3 100.0 110.0
+$EndElsetCrss
+$ElementCrssSat
+2 1
+2 335.0
+1 330.0
+$EndElementCrssSat

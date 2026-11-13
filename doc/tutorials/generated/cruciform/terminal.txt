@@ -1,0 +1,69 @@
+========================    F   E   P   X    ===========================
+Info   : A finite element software package for polycrystal plasticity.
+Info   : Version 3.0.0-dev (git 755da754, 11-06-2026)
+Info   : Built with: GCC 15.2.0|Open MPI 5.0.10|HDF5 1.14.6
+Info   : Running on 4 ranks.
+Info   : <https://fepx.info>
+Info   : Copyright (C) 1996-2026, and MIT licensed, by the FEPX authors.
+Info   : ---------------------------------------------------------------
+Info   : Loading simulation...
+Info   :   [i] Parsing file `simulation.cfg'...
+Info   :   [i] Parsed file `simulation.cfg'.
+Info   :   [i] Parsing file `simulation.msh'...
+Info   :   [i] Parsed file `simulation.msh'.
+Info   :   - Material parameters:
+Info   :     > Number of phases: 1
+Info   :     > Phase 1: fcc, crystal_plasticity
+Info   :       . c11:                       2.4500E+05 MPa
+Info   :       . c12:                       1.5500E+05 MPa
+Info   :       . c44:                       6.2500E+04 MPa
+Info   :       . m:                         5.0000E-02
+Info   :       . gammadot_0:                1.0000E+00 1/s
+Info   :       . hardening:                 saturation_isotropic
+Info   :       . tau_0:                     2.1000E+02 MPa
+Info   :       . h_0:                       2.0000E+02 MPa
+Info   :       . tau_s:                     3.3000E+02 MPa
+Info   :       . n:                         1.0000E+00
+Info   :       . saturation_evolution:      off (def.)
+Info   :       . cyclic_hardening:          off (def.)
+Info   :       . precipitate_strengthening: off (def.)
+Info   :   - Loading: boundary_conditions general, 1 step
+Info   :     > Step 1: t = 0.0000E+00 -> 1.0000E+00 s, 100 increments
+Info   :   - Options other than the defaults: (none)
+Info   :   - Output: coo ori stress strain forces (format ascii)
+Info   :   - Mesh parameters:
+Info   :     > Node number: 20315
+Info   :     > Elt  number: 12737 (10-node tetrahedra)
+Info   :     > Elsets: 88; partitions: 4
+Info   :   - Partitioning: 4 ranks
+Info   :     > Elements per rank: 3182 to 3186
+Info   :     > Ghost nodes per rank: 40 to 339 (758 in total)
+Info   :     > Neighbors per rank: 2 to 2
+Info   :   [o] Writing results to `simulation.sim'...
+Info   : Initializing simulation...
+Info   :   - Elastic step of 1.1351E-04 s (step 1)
+Info   :     > Iteration 1 (SA): R = 3.8091E+00 (2730 CG iterations)
+Info   :     > Iteration 2 (SA): R = 4.6417E-05 (2692 CG iterations)
+Info   :     > Converged in 2 iterations (17.540 s)
+Info   : Running step 1...
+Info   :   - Increment 1: t = 1.0000E-02 s, dt = 9.8865E-03 s
+Info   :     > Iteration 1 (SA): R = 3.0105E-03 (2758 CG iterations)
+Info   :     > Iteration 2 (NR): R = 6.0979E-05 (2750 CG iterations)
+Info   :     > Converged in 2 iterations (16.788 s)
+  [...]
+Info   : Final step terminated. Simulation completed successfully.
+Info   :   [o] Wrote results to `simulation.sim'.
+Info   :   - Increments: 100
+Info   :   - Global iterations: 440 (314 NR)
+Info   :   - CG iterations: 1330601
+Info   :   - Warnings issued: 0
+Info   :   - Wall time per phase:
+Info   :     > Input and setup:                      0.261 s
+Info   :     > Initialization:                      17.565 s
+Info   :     > Increments:                        3022.335 s
+Info   :       . Element and material work:        421.621 s
+Info   :       . CG:                              2597.110 s
+Info   :       . Other:                              3.605 s
+Info   :     > Output:                               0.593 s
+Info   : Elapsed time:                            3040.754 s
+========================================================================
