@@ -406,7 +406,8 @@ The Terminal Output
 FEPX writes its progress to the standard output, in the layout of Neper: every line
 starts with ``Info   :``, ``Warning:`` or ``Error  :``, and the items are nested by depth, with the
 markers ``-``, ``>`` and ``.``; ``[i]`` marks a file read, ``[o]`` a file written. No line is wider
-than 72 columns: a longer message continues on the next lines, aligned under its text. Only
+than 72 columns: a longer message continues on the next lines, aligned under its text. As
+Neper's, the output starts and ends with a blank line (not shown below). Only
 process 0 writes (messages of the other processes, such as a warning about a node of their part,
 are tagged ``[Rank <r>]`` and written by process 0). The run of the tutorial
 :ref:`tutorial_simple` on 4 processes writes (the iterations of increments 3 to 10

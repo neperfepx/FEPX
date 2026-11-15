@@ -1,3 +1,8 @@
+New in 3.0.1 (unreleased):
+- Changed the terminal output to start and end with a blank line, as
+  Neper's (fepx --version unchanged).
+- Fixed the doubled rule under the banner of fepx --help.
+
 New in 3.0.0 (2026-11-13):
 - Rewrote FEPX completely in modern Fortran (2018) and MPI, with the same
   elasto-viscoplastic crystal-plasticity formulation (finite strains,

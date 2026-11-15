@@ -1203,7 +1203,7 @@ add_test(NAME test_fepx_help
          COMMAND ${CMAKE_COMMAND}
                  "-DCOMMAND=$<TARGET_FILE:fepx>;--help"
                  -DEXPECTED_STATUS=0
-                 "-DEXPECTED_STDOUT=^=+    F   E   P   X    =+.*Info   : Version .*Usage: mpirun -np <ranks> fepx .*fepx --version"
+                 "-DEXPECTED_STDOUT=^\n=+    F   E   P   X    =+.*Info   : Version .*Usage: mpirun -np <ranks> fepx .*fepx --version"
                  -P ${CMAKE_CURRENT_SOURCE_DIR}/core/check_run.cmake)
 add_test(NAME test_fepx_bad_option
          COMMAND ${CMAKE_COMMAND}

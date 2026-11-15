@@ -55,8 +55,9 @@ def write_excerpt(log_path, out_path):
     (int, index of the "Final step terminated" line).
     """
     # Read the log, without trailing spaces, keeping FEPX's lines only: every line FEPX
-    # writes starts with "Info   :", "Warning:", "Error  :" or is a rule of "=" (D94); a log
-    # that also caught the MPI library's own messages (standard error) is thus cleaned.
+    # writes starts with "Info   :", "Warning:", "Error  :" or is a rule of "=" (D94), but for
+    # the blank lines that open and close the output (as Neper's), left out; a log that also
+    # caught the MPI library's own messages (standard error) is thus cleaned.
     fepx_line = re.compile(r"^(Info   :|Warning:|Error  :|={20,})")
     with open(log_path) as log_file:
         lines = [line.rstrip() for line in log_file if fepx_line.match(line)]

@@ -135,6 +135,9 @@ contains
       end do
     end if
     call write_lines(output_unit, lines)
+    ! (The output ends with a blank line, as Neper's; standard error has the message only.)
+    write (output_unit, '(a)') ''
+    flush (output_unit)
 
     ! End the run through the registered handler (e.g. MPI_Abort), if any.
     if (associated(abort_handler)) call abort_handler(error_exit_status)

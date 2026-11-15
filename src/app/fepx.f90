@@ -3673,7 +3673,6 @@ contains
     ! --help and --version, alone.
     if (num_args == 1 .and. arg == '--help') then
       call write_banner(.false.)
-      call log_text(repeat('=', 72))
       call log_text('Usage: mpirun -np <ranks> fepx    run the simulation in the current')
       call log_text('                                  directory (simulation.cfg,')
       call log_text('                                  simulation.msh, and the optional')
@@ -3681,6 +3680,7 @@ contains
       call log_text('       fepx --help                print this help')
       call log_text('       fepx --version             print the version')
       call log_text('See also: man fepx, the manual <https://fepx.info>.')
+      call log_text('')
       stop
     end if
     if (num_args == 1 .and. arg == '--version') then
@@ -3715,9 +3715,12 @@ contains
   end subroutine command_line_stop
 
   !> Write the banner (step 9.7, Q58, Q59; dev/plan/terminal_output.md §3.1), as Neper's line
-  !> for line: the title rule, the description, the version with the git hash and the commit
-  !> date, the build (compiler, MPI library, HDF5 when built with it, separated by "|"), the
-  !> number of ranks (run only), the URL, the copyright, the closing line.
+  !> for line: a blank line, the title rule, the description, the version with the git hash and
+  !> the commit date, the build (compiler, MPI library, HDF5 when built with it, separated by
+  !> "|"), the number of ranks (run only), the URL, the copyright, the closing line (a run: a
+  !> dashed line, the run's messages following; --help: the closing rule). As Neper's,
+  !> the output also ends with a blank line, written by each exit (the closing summary, --help,
+  !> fatal_error).
   !>
   !> Arguments:
   !>   run  (in)  logical  a run (with the line of the number of ranks), not --help
@@ -3736,6 +3739,8 @@ contains
     i = index(compiler, ' version ')
     if (i > 0) compiler = compiler(1:i) // compiler(i + 9:)
 
+    ! (A blank line first, as Neper's output.)
+    call log_text('')
     call log_text('========================    F   E   P   X    ===========================')
     call log_info('A finite element software package for polycrystal plasticity.')
     call log_info('Version ' // build_version_text())
@@ -3748,7 +3753,11 @@ contains
     if (run) call log_info('Running on ' // log_count_text(int(num_ranks), 'rank') // '.')
     call log_info('<https://fepx.info>')
     call log_info('Copyright (C) 1996-2026, and MIT licensed, by the FEPX authors.')
-    call log_info('---------------------------------------------------------------')
+    if (run) then
+      call log_info('---------------------------------------------------------------')
+    else
+      call log_text(repeat('=', 72))
+    end if
 
   end subroutine write_banner
 
@@ -3853,6 +3862,7 @@ contains
     call time_line(2, 'Output:', time_output)
     call time_line(0, 'Elapsed time:', par_wtime() - time_start)
     call log_text(repeat('=', 72))
+    call log_text('')
 
   end subroutine log_closing_summary
 
