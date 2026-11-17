@@ -17,10 +17,10 @@ The simplest way to install FEPX (Linux and macOS) is from `conda-forge <https:/
   $ conda create -n fepx -c conda-forge fepx
   $ conda activate fepx
 
-See :ref:`installation_conda` for details.
+.. note:: If the command fails, or installs an earlier version, conda-forge has not published the
+  package of the latest release yet.
 
-.. note:: The conda package of a release becomes available some time after the release, and it
-  may not be available yet: see the note of :ref:`installation_conda`.
+See :ref:`installation_conda` for details.
 
 Current Official Release
 ------------------------
