@@ -19,6 +19,10 @@ The simplest way to install FEPX (Linux and macOS) is from `conda-forge <https:/
 
 See :ref:`installation_conda` for details.
 
+.. note:: The conda package of FEPX has been submitted to conda-forge and is awaiting review, so the
+  commands above do not work yet.  Until it is accepted, install FEPX from its source code (see
+  :ref:`installation_source`).
+
 Current Official Release
 ------------------------
 
