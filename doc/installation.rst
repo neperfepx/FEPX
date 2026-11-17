@@ -16,12 +16,6 @@ FEPX is available as a conda package from `conda-forge <https://conda-forge.org>
 macOS, with the HDF5 output, in two builds: with Open MPI and with MPICH. No compilation and no
 administrator rights are needed.
 
-.. note:: A conda package is made from a release, once it is published: the package of a new
-  release becomes available on conda-forge some time after the release (usually a few days), and
-  the latest version (branch ``main``) is not packaged.  The first package of FEPX (version 3.0.0)
-  is still awaiting review by conda-forge, so the commands below do not work yet; until it is
-  accepted, install FEPX from source (see :ref:`installation_source`).
-
 If conda is not available on your system (command ``conda``), install it first, using
 `Miniforge <https://github.com/conda-forge/miniforge>`_:
 
@@ -40,6 +34,9 @@ Then, install FEPX in a new environment (named ``fepx`` here) and activate it:
 
   $ conda create -n fepx -c conda-forge fepx
   $ conda activate fepx
+
+.. note:: If the command fails, or installs an earlier version, conda-forge has not published the
+  package of the latest release yet.
 
 This installs the Open MPI build, with Open MPI; for the MPICH build, use ``"fepx=*=mpich*"``
 instead of ``fepx``. FEPX is then run as described in :ref:`running`, with the ``mpirun`` of the
