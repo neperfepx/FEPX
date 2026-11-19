@@ -30,6 +30,8 @@ Here is a tentative list of the works (journal papers and books) using FEPX. If 
 2024
 ----
 
+- L Renversade and R Quey, *Intra-grain orientation distributions in deformed aluminium: Synchrotron X-ray diffraction experiment and crystal-plasticity finite-element simulation*, **Acta Materialia**, https://doi.org/10.1016/j.actamat.2023.119419. :tag:`xrd` :tag:`proc`
+
 - K Shankar, M Setiawan, KS Shanks, ME Krug, MP Kasemer and DC Pagan, *The influence of substantial intragranular orientation gradients on the micromechanical response of heavily-worked material*, **Materials Characterization**, https://doi.org/10.1016/j.matchar.2024.114432. :tag:`other`
 
 - L van Wees, K Shankar, JN Fuhg, N Bouklas, P Shade, M Obstalecki and M Kasemer, *Establishing the relationship between generalized crystallographic texture and macroscopic yield surfaces using partial input convex neural networks*, **Materialia**, https://doi.org/10.1016/j.mtla.2024.102151. :tag:`meth` :tag:`proc`
