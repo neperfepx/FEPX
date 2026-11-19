@@ -58,7 +58,29 @@ html_sidebars = {page: [] for page in ('index', 'gallery', 'papers', 'applicatio
 
 html_css_files = ['custom.css']
 
+# Field tags of the application papers (applications.rst), written as :tag:`key`
+APPLICATION_TAGS = {
+    'xrd': 'diffraction experiments',
+    'meth': 'methods & formulations',
+    'proc': 'processing & texture',
+    'ti': 'hexagonal metals',
+    'frac': 'fatigue, cyclic loading & damage',
+    'other': 'other',
+}
+
+def tag_role(name, rawtext, text, lineno, inliner, options=None, content=None):
+    from docutils import nodes
+    key = text.strip()
+    if key not in APPLICATION_TAGS:
+        msg = inliner.reporter.error('Unknown application tag "%s" (see APPLICATION_TAGS in conf.py)'
+                                     % key, line=lineno)
+        return [inliner.problematic(rawtext, rawtext, msg)], [msg]
+    html = '<span class="neper-tag" data-tag="%s">%s</span>' % (key, APPLICATION_TAGS[key])
+    return [nodes.raw('', html, format='html')], []
+
 def setup(app):
+    app.add_role('tag', tag_role)
+    app.add_js_file('applications.js')
     app.add_css_file('my_theme.css')
     # Light mode only, whatever a previous visit saved in the browser
     app.add_js_file(None, body="""
