@@ -10,6 +10,7 @@
 !>
 !> Locals:
 !>   name      character(*)              scratch file name (working directory)
+!>   lf        character(1)              line feed, the end of a line in the file
 !>   unit      integer                   unit used to write it
 !>   file      text_file_t               the file being read
 !>   line      character(:), allocatable  a line read back
@@ -28,6 +29,7 @@ program test_text_file
   implicit none
 
   character(len=*), parameter :: name = 'test_text_file.txt'
+  character(len=1), parameter :: lf = achar(10)
   integer :: unit
   type(text_file_t) :: file
   character(len=:), allocatable :: line
@@ -43,15 +45,18 @@ program test_text_file
     long = long // ' 1234'
   end do
 
-  ! Write the test file: long line, CRLF line, trailing blanks, tabs, blank line, numbers.
-  open (newunit=unit, file=name, status='replace', action='write')
-  write (unit, '(a)') long
-  write (unit, '(a)') 'crlf line' // achar(13)
-  write (unit, '(a)') 'trailing   '
-  write (unit, '(a)') achar(9) // 'a' // achar(9) // achar(9) // 'bb   ccc' // achar(9)
-  write (unit, '(a)') ''
-  write (unit, '(a)') ' -12  +7 3 '
-  write (unit, '(a)') '1.5e3 -2.25d0'
+  ! Write the test file: long line, CRLF line, trailing blanks, tabs, blank line, numbers; byte
+  ! for byte (stream access: lines ended by LF, one by CR LF), so that the file is the same on
+  ! every system (a formatted write ends the lines with CR LF on Windows).
+  open (newunit=unit, file=name, status='replace', action='write', access='stream', &
+    & form='unformatted')
+  write (unit) long // lf
+  write (unit) 'crlf line' // achar(13) // lf
+  write (unit) 'trailing   ' // lf
+  write (unit) achar(9) // 'a' // achar(9) // achar(9) // 'bb   ccc' // achar(9) // lf
+  write (unit) lf
+  write (unit) ' -12  +7 3 ' // lf
+  write (unit) '1.5e3 -2.25d0' // lf
   close (unit)
 
   ! Read it back.

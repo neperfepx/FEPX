@@ -8,8 +8,8 @@
 !>          (sim_writer_mod).
 !>
 !> Policy:
-!>   - A directory is created with the C library's mkdir (POSIX; _mkdir on Windows: dir_c_mod,
-!>     dir_c_posix.f90 or dir_c_windows.f90), called through iso_c_binding,
+!>   - A directory is created with the C library's mkdir (POSIX; _mkdir on Windows: os_c_mod,
+!>     os_c_posix.f90 or os_c_windows.f90), called through iso_c_binding,
 !>     not with execute_command_line('mkdir -p ...'): that one forks a shell from the MPI
 !>     process, which fails on clusters whose MPI uses InfiniBand (Open MPI's openib transport:
 !>     "cannot create directory" at the start of multi-node runs).
@@ -22,7 +22,7 @@ module dir_mod
 
   use, intrinsic :: iso_c_binding, only: c_int
   use error_mod, only: fatal_error
-  use dir_c_mod, only: c_make_dir
+  use os_c_mod, only: c_make_dir
 
   implicit none
 

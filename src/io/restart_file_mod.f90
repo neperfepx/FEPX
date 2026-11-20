@@ -33,12 +33,14 @@
 !>                           (generic, as restart_put); character into an allocatable string
 !>   restart_put_state, restart_get_state  every component of a material_state_t
 !>   restart_put_step, restart_get_step    every component of a step_record_t
-!>   restart_rename          rename a file, replacing the target (the C library's rename,
-!>                           through iso_c_binding: an atomic replacement on POSIX systems)
+!>   restart_rename          rename a file, replacing the target (os_c_mod: the C library's
+!>                           rename, an atomic replacement on POSIX systems; MoveFileExA on
+!>                           Windows)
 module restart_file_mod
 
   use, intrinsic :: iso_fortran_env, only: int32, int64, real64
-  use, intrinsic :: iso_c_binding, only: c_char, c_int, c_null_char
+  use, intrinsic :: iso_c_binding, only: c_int
+  use os_c_mod, only: c_replace_file
   use kinds_mod, only: rk, ik
   use error_mod, only: fatal_error, internal_error
   use material_state_mod, only: material_state_t
@@ -79,15 +81,6 @@ module restart_file_mod
     module procedure put_real0, put_real1, put_real2, put_real3, put_real4, put_int0, put_int1, &
       & put_logical0, put_logical1, put_char
   end interface restart_put
-
-  !> The C library's rename (stdio.h): 0 on success.
-  interface
-    function c_rename(old, new) bind(c, name='rename') result(status)
-      import :: c_char, c_int
-      character(kind=c_char), intent(in) :: old(*), new(*)
-      integer(c_int) :: status
-    end function c_rename
-  end interface
 
   !> Read the next record.
   interface restart_get
@@ -710,8 +703,9 @@ contains
 
   ! --- Files ---------------------------------------------------------------------------------
 
-  !> Rename a file, replacing an existing target (POSIX rename: atomic, so that a reader sees
-  !> the old file or the new one, never a part; addendum_restart.md §5).
+  !> Rename a file, replacing an existing target (os_c_mod: POSIX rename, atomic, so that a
+  !> reader sees the old file or the new one, never a part, addendum_restart.md §5; on Windows,
+  !> MoveFileExA).
   !>
   !> Arguments:
   !>   old_name, new_name  (in)  character  file names
@@ -723,7 +717,7 @@ contains
 
     integer(c_int) :: status
 
-    status = c_rename(old_name // c_null_char, new_name // c_null_char)
+    status = c_replace_file(old_name, new_name)
     if (status /= 0_c_int) call fatal_error('restart_rename', 'cannot rename ' // old_name // &
       & ' to ' // new_name)
 
