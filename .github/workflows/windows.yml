@@ -38,8 +38,8 @@ jobs:
         run: |
           mkdir -p run && cd run
           cp ../tests/verification/cases/terminal_output/simulation.cfg .
-          cp ../tests/regression/cases/meshes/poly_part2.msh .
-          ../build/fepx.exe simulation.cfg,poly_part2.msh
+          cp ../tests/regression/cases/meshes/poly_part2.msh simulation.msh
+          ../build/fepx.exe
           ls -R simulation.sim | head -40
       - name: Quick tests
         run: ctest --test-dir build -L quick -j 4 --output-on-failure --timeout 600
