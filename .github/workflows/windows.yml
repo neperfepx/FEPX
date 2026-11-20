@@ -1,0 +1,51 @@
+# Trial of the build without MPI on Windows: MSYS2 (UCRT64) gfortran, CMake and
+# Ninja, FEPX_ENABLE_MPI=OFF, without HDF5; the build, then the quick tests. Runs on a push of the
+# branch add-serial-build-main only, or on manual dispatch.
+
+name: Windows (no MPI)
+
+on:
+  push:
+    branches: [add-serial-build-main]
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            git
+            mingw-w64-ucrt-x86_64-gcc-fortran
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-python-numpy
+      - name: Configure
+        run: |
+          cmake -G Ninja -S src -B build -DCMAKE_BUILD_TYPE=Release \
+                -DFEPX_ENABLE_MPI=OFF -DFEPX_ENABLE_HDF5=OFF
+      - name: Build
+        run: cmake --build build -j 4
+      - name: Run a case
+        continue-on-error: true
+        run: |
+          mkdir -p run && cd run
+          cp ../tests/verification/cases/terminal_output/simulation.cfg .
+          cp ../tests/regression/cases/meshes/poly_part2.msh .
+          ../build/fepx.exe simulation.cfg,poly_part2.msh
+          ls -R simulation.sim | head -40
+      - name: Quick tests
+        run: ctest --test-dir build -L quick -j 4 --output-on-failure --timeout 600
+      - name: Test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-test-logs
+          path: build/Testing/Temporary/
