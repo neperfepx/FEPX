@@ -30,7 +30,8 @@ jobs:
       - name: Configure
         run: |
           cmake -G Ninja -S src -B build -DCMAKE_BUILD_TYPE=Release \
-                -DFEPX_ENABLE_MPI=OFF -DFEPX_ENABLE_HDF5=OFF
+                -DFEPX_ENABLE_MPI=OFF -DFEPX_ENABLE_HDF5=OFF \
+                -DPython3_EXECUTABLE="$(cygpath -m "$(command -v python3)")"
       - name: Build
         run: cmake --build build -j 4
       - name: Run a case
