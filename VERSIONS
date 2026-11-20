@@ -5,6 +5,10 @@ New in 3.0.1 (unreleased):
 - Added a build without MPI (cmake -DFEPX_ENABLE_MPI=OFF), for a
   computer without MPI: fepx then runs on one process, without mpirun,
   with the results of an MPI build on one process.
+- Fixed the creation of the simulation directory in runs on several
+  nodes over InfiniBand (e.g. Open MPI's openib): the directories were
+  created by a shell, whose start from the MPI processes failed
+  ("cannot create directory simulation.sim/inputs").
 
 New in 3.0.0 (2026-11-13):
 - Rewrote FEPX completely in modern Fortran (2018) and MPI, with the same

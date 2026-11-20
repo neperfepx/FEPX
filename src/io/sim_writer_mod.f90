@@ -107,6 +107,7 @@ module sim_writer_mod
   use kinds_mod, only: rk, ik
   use constants_mod, only: sqrt2
   use error_mod, only: fatal_error, internal_error
+  use dir_mod, only: make_dir
   use parallel_mod, only: par_gatherv, par_barrier, num_ranks, my_rank, root_rank
   use mesh_mod, only: mesh_t
   use orientation_mod, only: ori_descriptor_name, ori_convention_name, ori_num_params, &
@@ -291,7 +292,7 @@ contains
     if (my_rank == root_rank) then
       inquire (file=dir // '/.', exist=exists)
       if (exists) call fatal_error('sim_open', 'output directory ' // dir // ' already exists')
-      call make_dir(dir // '/inputs')
+      call make_dir(dir // '/inputs', 'sim_open')
       do i = 1, size(input_files)
         call copy_file(trim(input_files(i)), dir // '/inputs/' // trim(sim%inputs(i)))
       end do
@@ -308,19 +309,19 @@ contains
     if (my_rank /= root_rank .or. .not. sim%ascii) return
 
     ! Text format: the result directories.
-    call make_dir(dir // '/results/nodes')
-    call make_dir(dir // '/results/elts')
+    call make_dir(dir // '/results/nodes', 'sim_open')
+    call make_dir(dir // '/results/elts', 'sim_open')
     do i = 1, size(sim%node_vars)
-      call make_dir(dir // '/results/nodes/' // trim(sim%node_vars(i)))
+      call make_dir(dir // '/results/nodes/' // trim(sim%node_vars(i)), 'sim_open')
     end do
     do i = 1, size(sim%elt_vars)
       if (sim%elt_vars(i) /= 'forces' .and. sim%elt_vars(i) /= 'convergence') &
-        & call make_dir(dir // '/results/elts/' // trim(sim%elt_vars(i)))
+        & call make_dir(dir // '/results/elts/' // trim(sim%elt_vars(i)), 'sim_open')
     end do
 
     ! Force files with v2's header.
     if (any(sim%elt_vars == 'forces')) then
-      call make_dir(dir // '/results/forces')
+      call make_dir(dir // '/results/forces', 'sim_open')
       deallocate (sim%force_units)
       allocate (sim%force_units(size(sim%faset_labels)))
       do i = 1, size(sim%faset_labels)
@@ -506,7 +507,7 @@ contains
     inquire (file=dir // '/.', exist=exists)
     if (.not. exists) call fatal_error('sim_reopen', 'restart on: output directory ' // dir // &
       & ' not found')
-    call make_dir(dir // '/inputs')
+    call make_dir(dir // '/inputs', 'sim_open')
     do i = 1, size(input_files)
       call copy_file(trim(input_files(i)), dir // '/inputs/' // trim(sim%inputs(i)), .true.)
     end do
@@ -547,11 +548,11 @@ contains
 
     ! Text format: the result directories of this run's variables.
     do i = 1, size(sim%node_vars)
-      call make_dir(dir // '/results/nodes/' // trim(sim%node_vars(i)))
+      call make_dir(dir // '/results/nodes/' // trim(sim%node_vars(i)), 'sim_open')
     end do
     do i = 1, size(sim%elt_vars)
       if (sim%elt_vars(i) /= 'forces' .and. sim%elt_vars(i) /= 'convergence') &
-        & call make_dir(dir // '/results/elts/' // trim(sim%elt_vars(i)))
+        & call make_dir(dir // '/results/elts/' // trim(sim%elt_vars(i)), 'sim_open')
     end do
 
     ! The step files after the restart point (an interrupted run writes at most the step after
@@ -577,7 +578,7 @@ contains
 
     ! Force files: truncated to the restart point, or created with v2's header.
     if (any(sim%elt_vars == 'forces')) then
-      call make_dir(dir // '/results/forces')
+      call make_dir(dir // '/results/forces', 'sim_open')
       deallocate (sim%force_units)
       allocate (sim%force_units(size(sim%faset_labels)))
       do i = 1, size(sim%faset_labels)
@@ -662,7 +663,7 @@ contains
     character(len=:), allocatable :: path
 
     path = sim%dir // '/restart'
-    if (my_rank == root_rank) call make_dir(path)
+    if (my_rank == root_rank) call make_dir(path, 'sim_open')
     call par_barrier()
 
   end function sim_restart_dir
@@ -1520,26 +1521,6 @@ contains
     end do
 
   end subroutine place
-
-  !> Create a directory and its parents (mkdir -p; Fortran has no directory statement).
-  !>
-  !> Arguments:
-  !>   path  (in)  character  directory
-  !> Locals:
-  !>   stat, cmdstat  integer  exit status of the command, status of its execution
-  subroutine make_dir(path)
-
-    character(len=*), intent(in) :: path
-
-    integer :: stat, cmdstat
-
-    stat = 0
-    cmdstat = 0
-    call execute_command_line('mkdir -p "' // path // '"', exitstat=stat, cmdstat=cmdstat)
-    if (stat /= 0 .or. cmdstat /= 0) call fatal_error('sim_open', 'cannot create directory ' // &
-      & path)
-
-  end subroutine make_dir
 
   !> Copy a file byte for byte (stream access).
   !>

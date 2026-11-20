@@ -259,6 +259,13 @@ add_custom_target(fepx_build_info
                   BYPRODUCTS ${fepx_build_info_source}
                   COMMENT "Build information (version, git hash and date)")
 
+# The C library's directory creation: POSIX mkdir, or Windows' _mkdir.
+if(WIN32)
+  set(fepx_dir_c_source io/dir_c_windows.f90)
+else()
+  set(fepx_dir_c_source io/dir_c_posix.f90)
+endif()
+
 add_library(fepx_core STATIC
   core/kinds_mod.f90
   ${fepx_build_info_source}
@@ -282,6 +289,8 @@ add_library(fepx_core STATIC
   element/hex20_mod.f90
   element/element_mod.f90
   fe/element_matrix_mod.f90
+  ${fepx_dir_c_source}
+  io/dir_mod.f90
   io/text_file_mod.f90
   io/cfg_table_mod.f90
   io/cfg_rules_mod.f90

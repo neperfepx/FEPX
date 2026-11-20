@@ -8,7 +8,8 @@
 !> (config_mod) uses the validated values. Adding or renaming a keyword is one entry.
 !>
 !> Source : FEPX (ROADMAP step 4.3); keyword names and meanings from v2-fixed
-!>          read_input_cfg.f90 and its manual (the .rst files of doc/) as listed in dev/cfg_keywords.md.
+!>          read_input_cfg.f90 and its manual (the .rst files of doc/) as listed in
+!>          dev/cfg_keywords.md.
 !>          Contains no numerical method.
 !>
 !> Entry fields (cfg_keyword_t):
