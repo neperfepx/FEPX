@@ -14,8 +14,11 @@ directory is not read, but it is copied with the input files into :file:`simulat
   $ mpirun -np <N> fepx
 
 FEPX must always be started through the MPI launcher (``mpirun`` or ``mpiexec``), also on one
-process. On a cluster, use the launcher of the job scheduler. The only exceptions are the two
-options below, which do not start MPI and are given without the launcher:
+process. On a cluster, use the launcher of the job scheduler. A FEPX built without MPI
+(``-DFEPX_ENABLE_MPI=OFF``, see :ref:`installation_options`) is the exception: it runs on one
+process and is started without a launcher, ``fepx``, and its banner says ``no MPI`` in its
+``Built with`` line. The other exceptions are the two options below, which do not start MPI and
+are given without the launcher:
 
 .. code-block:: console
 

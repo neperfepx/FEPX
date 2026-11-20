@@ -11,12 +11,18 @@
 # Tier labels of this directory's tests, at its end (step 9.6, src/cmake/FEPXTesting.cmake).
 fepx_defer_test_tiers()
 
+# The rank count of the cases below run on 2 ranks whose checks do not depend on it (1 without
+# MPI).
+fepx_run_ranks(verification_two_ranks 2)
+
 # fepx_add_verification(<name> RANKS <n> MESH <file> CHECK_SCRIPT <script> CHECK_ARGS <arg>...
 #                        [SOURCE <case>] [CASE_DIR <dir>])   (SOURCE: the inputs of cases/<case>,
 #                        default <name>; CASE_DIR: the inputs of another directory, e.g. a
 #                        regression case)
 function(fepx_add_verification name)
   cmake_parse_arguments(ARG "" "RANKS;MESH;CHECK_SCRIPT;SOURCE;CASE_DIR" "CHECK_ARGS" ${ARGN})
+  # (Without MPI, on 1 rank: the checks do not depend on the number of ranks.)
+  fepx_run_ranks(ARG_RANKS ${ARG_RANKS})
   fepx_mesh_for_ranks(ARG_MESH ${ARG_MESH} ${ARG_RANKS})
   if(NOT ARG_SOURCE)
     set(ARG_SOURCE ${name})
@@ -260,24 +266,26 @@ fepx_add_verification(fepx_fcc_sx001_work RANKS 2
 # FEPX rank independence with per-element values from simulation.opt (step 7.1, D59): the case of
 # regression_fepx_poly_fcc_elt_opt (12 strengths per element, per-element tau_s and h_0) on
 # 1, 2 and 4 ranks (even partitioning); the element stresses must agree to 1e-7 relative.
-add_test(NAME verification_fepx_rank_independence_elt_opt
-         COMMAND ${CMAKE_COMMAND}
-                 -DEXECUTABLE=$<TARGET_FILE:fepx>
-                 -DCASE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/cases/fepx_fcc_elt_opt_ranks
-                 -DMESH=${FEPX_ROOT_DIR}/tests/regression/cases/meshes/poly_part2.msh
-                 -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/work/fepx_rank_independence_elt_opt
-                 -DMPIEXEC=${MPIEXEC_EXECUTABLE}
-                 -DMPIEXEC_NUMPROC=${MPIEXEC_NUMPROC_FLAG}
-                 "-DMPIEXEC_EXTRA=${FEPX_MPIEXEC_EXTRA_FLAGS_TEXT}"
-                 "-DRANKS=1|2|4"
-                 -DPYTHON=${Python3_EXECUTABLE}
-                 -DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_rank_independence.py
-                 -DRTOL=1e-7
-                 -P ${CMAKE_CURRENT_SOURCE_DIR}/rank_independence.cmake)
-set_tests_properties(verification_fepx_rank_independence_elt_opt PROPERTIES
-                     PROCESSORS 4
-                     TIMEOUT ${fepx_timeout_600}
-                     LABELS "verification;fepx")
+if(FEPX_ENABLE_MPI)  # (on several ranks: with MPI only)
+  add_test(NAME verification_fepx_rank_independence_elt_opt
+           COMMAND ${CMAKE_COMMAND}
+                   -DEXECUTABLE=$<TARGET_FILE:fepx>
+                   -DCASE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/cases/fepx_fcc_elt_opt_ranks
+                   -DMESH=${FEPX_ROOT_DIR}/tests/regression/cases/meshes/poly_part2.msh
+                   -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/work/fepx_rank_independence_elt_opt
+                   -DMPIEXEC=${MPIEXEC_EXECUTABLE}
+                   -DMPIEXEC_NUMPROC=${MPIEXEC_NUMPROC_FLAG}
+                   "-DMPIEXEC_EXTRA=${FEPX_MPIEXEC_EXTRA_FLAGS_TEXT}"
+                   "-DRANKS=1|2|4"
+                   -DPYTHON=${Python3_EXECUTABLE}
+                   -DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_rank_independence.py
+                   -DRTOL=1e-7
+                   -P ${CMAKE_CURRENT_SOURCE_DIR}/rank_independence.cmake)
+  set_tests_properties(verification_fepx_rank_independence_elt_opt PROPERTIES
+                       PROCESSORS 4
+                       TIMEOUT ${fepx_timeout_600}
+                       LABELS "verification;fepx")
+endif()
 
 # Periodic conditions (step 8.3b, addendum_periodic_mpc.md §5): isotropic elastic bodies on Neper
 # periodic meshes, the 2 x 1 x 1 box (non-planar "raspberry" boundaries, non-cubic: V3) and the
@@ -355,48 +363,52 @@ fepx_add_verification(fepx_periodic_vel_condition RANKS 2 MESH ${mesh_periodic_b
 # partitioning: the relations cross the partitions); the element stresses must agree to 1e-7.
 # Each run's limit scales with the build (a Debug 1-rank run took about 400 s on the mesh before
 # step 9.19; on the regularized mesh, 363 tets, the three runs took about 55 s in Debug; 239 tets since 9.20).
-add_test(NAME verification_fepx_rank_independence_periodic
-         COMMAND ${CMAKE_COMMAND}
-                 -DEXECUTABLE=$<TARGET_FILE:fepx>
-                 -DCASE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/cases/fepx_periodic_ranks
-                 -DMESH=${FEPX_ROOT_DIR}/tests/regression/cases/meshes/poly_periodic_part2.msh
-                 -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/work/fepx_rank_independence_periodic
-                 -DMPIEXEC=${MPIEXEC_EXECUTABLE}
-                 -DMPIEXEC_NUMPROC=${MPIEXEC_NUMPROC_FLAG}
-                 "-DMPIEXEC_EXTRA=${FEPX_MPIEXEC_EXTRA_FLAGS_TEXT}"
-                 "-DRANKS=1|2|4"
-                 -DPYTHON=${Python3_EXECUTABLE}
-                 -DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_rank_independence.py
-                 -DRTOL=1e-7
-                 -DRUN_TIMEOUT=${fepx_timeout_300}
-                 -P ${CMAKE_CURRENT_SOURCE_DIR}/rank_independence.cmake)
-set_tests_properties(verification_fepx_rank_independence_periodic PROPERTIES
-                     PROCESSORS 4
-                     TIMEOUT ${fepx_timeout_600}
-                     LABELS "verification;fepx")
+if(FEPX_ENABLE_MPI)  # (on several ranks: with MPI only)
+  add_test(NAME verification_fepx_rank_independence_periodic
+           COMMAND ${CMAKE_COMMAND}
+                   -DEXECUTABLE=$<TARGET_FILE:fepx>
+                   -DCASE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/cases/fepx_periodic_ranks
+                   -DMESH=${FEPX_ROOT_DIR}/tests/regression/cases/meshes/poly_periodic_part2.msh
+                   -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/work/fepx_rank_independence_periodic
+                   -DMPIEXEC=${MPIEXEC_EXECUTABLE}
+                   -DMPIEXEC_NUMPROC=${MPIEXEC_NUMPROC_FLAG}
+                   "-DMPIEXEC_EXTRA=${FEPX_MPIEXEC_EXTRA_FLAGS_TEXT}"
+                   "-DRANKS=1|2|4"
+                   -DPYTHON=${Python3_EXECUTABLE}
+                   -DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_rank_independence.py
+                   -DRTOL=1e-7
+                   -DRUN_TIMEOUT=${fepx_timeout_300}
+                   -P ${CMAKE_CURRENT_SOURCE_DIR}/rank_independence.cmake)
+  set_tests_properties(verification_fepx_rank_independence_periodic PROPERTIES
+                       PROCESSORS 4
+                       TIMEOUT ${fepx_timeout_600}
+                       LABELS "verification;fepx")
+endif()
 
 # FEPX rank independence with multi-point constraints (step 8.3a, V5): the case of
 # regression_fepx_mpc_plane_faces (set_mpc1 on x0 and x1, crystal plasticity) on 1, 2 and 4
 # ranks (even partitioning: the MPC groups cross the partitions); the element stresses must
 # agree to 1e-7 relative.
-add_test(NAME verification_fepx_rank_independence_mpc
-         COMMAND ${CMAKE_COMMAND}
-                 -DEXECUTABLE=$<TARGET_FILE:fepx>
-                 -DCASE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/cases/fepx_mpc_ranks
-                 -DMESH=${FEPX_ROOT_DIR}/tests/regression/cases/meshes/poly_part2.msh
-                 -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/work/fepx_rank_independence_mpc
-                 -DMPIEXEC=${MPIEXEC_EXECUTABLE}
-                 -DMPIEXEC_NUMPROC=${MPIEXEC_NUMPROC_FLAG}
-                 "-DMPIEXEC_EXTRA=${FEPX_MPIEXEC_EXTRA_FLAGS_TEXT}"
-                 "-DRANKS=1|2|4"
-                 -DPYTHON=${Python3_EXECUTABLE}
-                 -DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_rank_independence.py
-                 -DRTOL=1e-7
-                 -P ${CMAKE_CURRENT_SOURCE_DIR}/rank_independence.cmake)
-set_tests_properties(verification_fepx_rank_independence_mpc PROPERTIES
-                     PROCESSORS 4
-                     TIMEOUT ${fepx_timeout_600}
-                     LABELS "verification;fepx")
+if(FEPX_ENABLE_MPI)  # (on several ranks: with MPI only)
+  add_test(NAME verification_fepx_rank_independence_mpc
+           COMMAND ${CMAKE_COMMAND}
+                   -DEXECUTABLE=$<TARGET_FILE:fepx>
+                   -DCASE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/cases/fepx_mpc_ranks
+                   -DMESH=${FEPX_ROOT_DIR}/tests/regression/cases/meshes/poly_part2.msh
+                   -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/work/fepx_rank_independence_mpc
+                   -DMPIEXEC=${MPIEXEC_EXECUTABLE}
+                   -DMPIEXEC_NUMPROC=${MPIEXEC_NUMPROC_FLAG}
+                   "-DMPIEXEC_EXTRA=${FEPX_MPIEXEC_EXTRA_FLAGS_TEXT}"
+                   "-DRANKS=1|2|4"
+                   -DPYTHON=${Python3_EXECUTABLE}
+                   -DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_rank_independence.py
+                   -DRTOL=1e-7
+                   -P ${CMAKE_CURRENT_SOURCE_DIR}/rank_independence.cmake)
+  set_tests_properties(verification_fepx_rank_independence_mpc PROPERTIES
+                       PROCESSORS 4
+                       TIMEOUT ${fepx_timeout_600}
+                       LABELS "verification;fepx")
+endif()
 
 # Restart (step 8.4, dev/theory/addendum_restart.md §8): each case's whole history (full.cfg)
 # and the same history interrupted and continued from restart files (part1.cfg, part2.cfg, ...,
@@ -411,6 +423,8 @@ set_tests_properties(verification_fepx_rank_independence_mpc PROPERTIES
 # conditions with MPCs and the isotropic viscoplastic start (restart_mpc).
 function(fepx_add_restart_chain name)
   cmake_parse_arguments(ARG "" "RANKS;MESH" "" ${ARGN})
+  # (Without MPI, on 1 rank: the full run and its parts on the same number of ranks.)
+  fepx_run_ranks(ARG_RANKS ${ARG_RANKS})
   fepx_mesh_for_ranks(ARG_MESH ${ARG_MESH} ${ARG_RANKS})
   add_test(NAME verification_fepx_${name}
            COMMAND ${CMAKE_COMMAND}
@@ -472,72 +486,78 @@ endif()
 # simulation.opt (step 7.2, D60): the case of regression_fepx_km_poly_fcc_rho_opt at
 # default tolerances on 1, 2 and 4 ranks (even partitioning); the element stresses must agree to
 # 1e-7 relative.
-add_test(NAME verification_fepx_rank_independence_km
-         COMMAND ${CMAKE_COMMAND}
-                 -DEXECUTABLE=$<TARGET_FILE:fepx>
-                 -DCASE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/cases/fepx_fcc_km_ranks
-                 -DMESH=${FEPX_ROOT_DIR}/tests/regression/cases/meshes/poly_part2.msh
-                 -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/work/fepx_rank_independence_km
-                 -DMPIEXEC=${MPIEXEC_EXECUTABLE}
-                 -DMPIEXEC_NUMPROC=${MPIEXEC_NUMPROC_FLAG}
-                 "-DMPIEXEC_EXTRA=${FEPX_MPIEXEC_EXTRA_FLAGS_TEXT}"
-                 "-DRANKS=1|2|4"
-                 -DPYTHON=${Python3_EXECUTABLE}
-                 -DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_rank_independence.py
-                 -DRTOL=1e-7
-                 -P ${CMAKE_CURRENT_SOURCE_DIR}/rank_independence.cmake)
-set_tests_properties(verification_fepx_rank_independence_km PROPERTIES
-                     PROCESSORS 4
-                     TIMEOUT ${fepx_timeout_600}
-                     LABELS "verification;fepx")
+if(FEPX_ENABLE_MPI)  # (on several ranks: with MPI only)
+  add_test(NAME verification_fepx_rank_independence_km
+           COMMAND ${CMAKE_COMMAND}
+                   -DEXECUTABLE=$<TARGET_FILE:fepx>
+                   -DCASE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/cases/fepx_fcc_km_ranks
+                   -DMESH=${FEPX_ROOT_DIR}/tests/regression/cases/meshes/poly_part2.msh
+                   -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/work/fepx_rank_independence_km
+                   -DMPIEXEC=${MPIEXEC_EXECUTABLE}
+                   -DMPIEXEC_NUMPROC=${MPIEXEC_NUMPROC_FLAG}
+                   "-DMPIEXEC_EXTRA=${FEPX_MPIEXEC_EXTRA_FLAGS_TEXT}"
+                   "-DRANKS=1|2|4"
+                   -DPYTHON=${Python3_EXECUTABLE}
+                   -DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_rank_independence.py
+                   -DRTOL=1e-7
+                   -P ${CMAKE_CURRENT_SOURCE_DIR}/rank_independence.cmake)
+  set_tests_properties(verification_fepx_rank_independence_km PROPERTIES
+                       PROCESSORS 4
+                       TIMEOUT ${fepx_timeout_600}
+                       LABELS "verification;fepx")
+endif()
 
 # FEPX rank independence with triaxial load control (step 8.2b, V5): the case of
 # regression_fepx_triaxial_mixed_poly_fcc on 1, 2 and 4 ranks (even partitioning); the
 # element stresses must agree to 1e-6 relative (the boundary-velocity iteration stops anywhere
 # within stress_tol 0.01 MPa of ~400 MPa: 2.5e-5 at most; measured 6.8e-13). Each run may take
 # 300 s (Debug: 1200 s; the 1-rank Debug run exceeds the script's default 240 s).
-add_test(NAME verification_fepx_rank_independence_triaxial
-         COMMAND ${CMAKE_COMMAND}
-                 -DEXECUTABLE=$<TARGET_FILE:fepx>
-                 -DCASE_DIR=${FEPX_ROOT_DIR}/tests/regression/cases/triaxial_mixed_poly_fcc
-                 -DMESH=${FEPX_ROOT_DIR}/tests/regression/cases/meshes/poly_part2.msh
-                 -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/work/fepx_rank_independence_triaxial
-                 -DMPIEXEC=${MPIEXEC_EXECUTABLE}
-                 -DMPIEXEC_NUMPROC=${MPIEXEC_NUMPROC_FLAG}
-                 "-DMPIEXEC_EXTRA=${FEPX_MPIEXEC_EXTRA_FLAGS_TEXT}"
-                 "-DRANKS=1|2|4"
-                 -DPYTHON=${Python3_EXECUTABLE}
-                 -DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_rank_independence.py
-                 -DRTOL=1e-6
-                 -DRUN_TIMEOUT=${fepx_timeout_300}
-                 -P ${CMAKE_CURRENT_SOURCE_DIR}/rank_independence.cmake)
-set_tests_properties(verification_fepx_rank_independence_triaxial PROPERTIES
-                     PROCESSORS 4
-                     TIMEOUT ${fepx_timeout_600}
-                     LABELS "verification;fepx")
+if(FEPX_ENABLE_MPI)  # (on several ranks: with MPI only)
+  add_test(NAME verification_fepx_rank_independence_triaxial
+           COMMAND ${CMAKE_COMMAND}
+                   -DEXECUTABLE=$<TARGET_FILE:fepx>
+                   -DCASE_DIR=${FEPX_ROOT_DIR}/tests/regression/cases/triaxial_mixed_poly_fcc
+                   -DMESH=${FEPX_ROOT_DIR}/tests/regression/cases/meshes/poly_part2.msh
+                   -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/work/fepx_rank_independence_triaxial
+                   -DMPIEXEC=${MPIEXEC_EXECUTABLE}
+                   -DMPIEXEC_NUMPROC=${MPIEXEC_NUMPROC_FLAG}
+                   "-DMPIEXEC_EXTRA=${FEPX_MPIEXEC_EXTRA_FLAGS_TEXT}"
+                   "-DRANKS=1|2|4"
+                   -DPYTHON=${Python3_EXECUTABLE}
+                   -DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_rank_independence.py
+                   -DRTOL=1e-6
+                   -DRUN_TIMEOUT=${fepx_timeout_300}
+                   -P ${CMAKE_CURRENT_SOURCE_DIR}/rank_independence.cmake)
+  set_tests_properties(verification_fepx_rank_independence_triaxial PROPERTIES
+                       PROCESSORS 4
+                       TIMEOUT ${fepx_timeout_600}
+                       LABELS "verification;fepx")
+endif()
 
 # ... and with iteration (B) (step 8.2c, V5): the case of regression_fepx_triaxial_mixed_clr_
 # sx_fcc on 1, 2 and 4 ranks (even partitioning); the element stresses must agree to 1e-6 relative
 # (each iteration stops anywhere within stress_tol 0.05 MPa of ~300 MPa: 1.7e-4 at most).
-add_test(NAME verification_fepx_rank_independence_triaxial_clr
-         COMMAND ${CMAKE_COMMAND}
-                 -DEXECUTABLE=$<TARGET_FILE:fepx>
-                 -DCASE_DIR=${FEPX_ROOT_DIR}/tests/regression/cases/triaxial_mixed_clr_sx_fcc
-                 -DMESH=${FEPX_ROOT_DIR}/tests/regression/cases/meshes/sx2.msh
-                 -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/work/fepx_rank_independence_triaxial_clr
-                 -DMPIEXEC=${MPIEXEC_EXECUTABLE}
-                 -DMPIEXEC_NUMPROC=${MPIEXEC_NUMPROC_FLAG}
-                 "-DMPIEXEC_EXTRA=${FEPX_MPIEXEC_EXTRA_FLAGS_TEXT}"
-                 "-DRANKS=1|2|4"
-                 -DPYTHON=${Python3_EXECUTABLE}
-                 -DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_rank_independence.py
-                 -DRTOL=1e-6
-                 -DRUN_TIMEOUT=${fepx_timeout_300}
-                 -P ${CMAKE_CURRENT_SOURCE_DIR}/rank_independence.cmake)
-set_tests_properties(verification_fepx_rank_independence_triaxial_clr PROPERTIES
-                     PROCESSORS 4
-                     TIMEOUT ${fepx_timeout_600}
-                     LABELS "verification;fepx")
+if(FEPX_ENABLE_MPI)  # (on several ranks: with MPI only)
+  add_test(NAME verification_fepx_rank_independence_triaxial_clr
+           COMMAND ${CMAKE_COMMAND}
+                   -DEXECUTABLE=$<TARGET_FILE:fepx>
+                   -DCASE_DIR=${FEPX_ROOT_DIR}/tests/regression/cases/triaxial_mixed_clr_sx_fcc
+                   -DMESH=${FEPX_ROOT_DIR}/tests/regression/cases/meshes/sx2.msh
+                   -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/work/fepx_rank_independence_triaxial_clr
+                   -DMPIEXEC=${MPIEXEC_EXECUTABLE}
+                   -DMPIEXEC_NUMPROC=${MPIEXEC_NUMPROC_FLAG}
+                   "-DMPIEXEC_EXTRA=${FEPX_MPIEXEC_EXTRA_FLAGS_TEXT}"
+                   "-DRANKS=1|2|4"
+                   -DPYTHON=${Python3_EXECUTABLE}
+                   -DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_rank_independence.py
+                   -DRTOL=1e-6
+                   -DRUN_TIMEOUT=${fepx_timeout_300}
+                   -P ${CMAKE_CURRENT_SOURCE_DIR}/rank_independence.cmake)
+  set_tests_properties(verification_fepx_rank_independence_triaxial_clr PROPERTIES
+                       PROCESSORS 4
+                       TIMEOUT ${fepx_timeout_600}
+                       LABELS "verification;fepx")
+endif()
 
 # The terminal output (step 9.7, ROADMAP D94, dev/plan/terminal_output.md §3.8): the whole
 # standard output of a short run on 2 ranks (fcc crystal plasticity, two steps of two
@@ -545,18 +565,21 @@ set_tests_properties(verification_fepx_rank_independence_triaxial_clr PROPERTIES
 # the variable fields (version, build, wall times, the global-iteration lines and counts;
 # check_terminal_output.py). Reference regenerated with FEPX_REGRESSION_UPDATE=1, only under
 # CLAUDE.md §2.5.
-fepx_mpiexec_command(terminal_output_command 2 $<TARGET_FILE:fepx>)
-add_test(NAME verification_fepx_terminal_output
-         COMMAND ${CMAKE_COMMAND}
-                 "-DCOMMAND=${terminal_output_command}"
-                 -DCASE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/cases/terminal_output
-                 -DMESH=${FEPX_ROOT_DIR}/tests/regression/cases/meshes/poly_part2.msh
-                 -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/work/fepx_terminal_output
-                 -DPYTHON=${Python3_EXECUTABLE}
-                 -DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_terminal_output.py
-                 -DREFERENCE=${CMAKE_CURRENT_SOURCE_DIR}/cases/terminal_output/reference_stdout.txt
-                 -P ${CMAKE_CURRENT_SOURCE_DIR}/terminal_output.cmake)
-set_tests_properties(verification_fepx_terminal_output PROPERTIES
-                     PROCESSORS 2
-                     TIMEOUT ${fepx_timeout_300}
-                     LABELS "verification;fepx")
+# (Its reference is the output on 2 ranks: with MPI only.)
+if(FEPX_ENABLE_MPI)
+  fepx_mpiexec_command(terminal_output_command 2 $<TARGET_FILE:fepx>)
+  add_test(NAME verification_fepx_terminal_output
+           COMMAND ${CMAKE_COMMAND}
+                   "-DCOMMAND=${terminal_output_command}"
+                   -DCASE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/cases/terminal_output
+                   -DMESH=${FEPX_ROOT_DIR}/tests/regression/cases/meshes/poly_part2.msh
+                   -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/work/fepx_terminal_output
+                   -DPYTHON=${Python3_EXECUTABLE}
+                   -DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_terminal_output.py
+                   -DREFERENCE=${CMAKE_CURRENT_SOURCE_DIR}/cases/terminal_output/reference_stdout.txt
+                   -P ${CMAKE_CURRENT_SOURCE_DIR}/terminal_output.cmake)
+  set_tests_properties(verification_fepx_terminal_output PROPERTIES
+                       PROCESSORS 2
+                       TIMEOUT ${fepx_timeout_300}
+                       LABELS "verification;fepx")
+endif()

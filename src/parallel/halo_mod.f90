@@ -22,9 +22,10 @@
 !>     its owned values, neighbor by neighbor in increasing rank order (fixed order: the result
 !>     is reproducible from run to run for a given partitioning). Ghost values are unchanged
 !>     (a following halo_forward makes them equal to the owners' sums).
-!>   - Messages: MPI_Irecv for every neighbor, then MPI_Isend, then MPI_Waitall (as v2's
-!>     part_gather_start / _stop); one tag; one exchange at a time. Neighbors with an empty
-!>     list in the exchange's direction get no message.
+!>   - Messages: parallel_mod::par_neighbor_exchange (MPI_Irecv for every neighbor, then
+!>     MPI_Isend, then MPI_Waitall, as v2's part_gather_start / _stop); one tag; one exchange
+!>     at a time. Neighbors with an empty list in the exchange's direction get no message.
+!>     This module does not use MPI itself (ROADMAP D148).
 !>   - dist_dot / dist_norm: sum over the owned entries only (each node counted once), then
 !>     par_sum; the same value on every rank.
 !>
@@ -35,11 +36,9 @@
 !>   dist_norm         Euclidean norm of a distributed vector (owned entries)
 module halo_mod
 
-  use mpi_f08, only: MPI_Irecv, MPI_Isend, MPI_Waitall, MPI_Request, MPI_COMM_WORLD, &
-    & MPI_STATUSES_IGNORE
   use kinds_mod, only: rk, ik
   use error_mod, only: internal_error
-  use parallel_mod, only: par_sum, par_check_mpi, mpi_type_rk
+  use parallel_mod, only: par_sum, par_neighbor_exchange
   use mesh_mod, only: mesh_t
 
   implicit none
@@ -175,13 +174,7 @@ contains
   !>   in_nodes    (in)     integer(ik)(:)  incoming node lists (local numbers)
   !>   add         (in)     logical         add (.true.) or overwrite (.false.) incoming values
   !> Locals:
-  !>   send_buf, recv_buf  real(rk)(:)     packed values (ASYNCHRONOUS: buffers of
-  !>                                       non-blocking calls; contiguous sections are passed)
-  !>   requests            type(MPI_Request)(:)  receive requests, then send requests
-  !>   num_req             integer         requests posted
-  !>   k                   integer(ik)     neighbor index
-  !>   first, last         integer(ik)     list range of a neighbor
-  !>   ierror              integer         MPI error code
+  !>   send_buf, recv_buf  real(rk)(:)     packed values (num_comp per list entry)
   subroutine exchange_lists(x, num_comp, neighbor, out_offset, out_nodes, in_offset, in_nodes, &
     & add)
 
@@ -194,47 +187,16 @@ contains
     integer(ik), intent(in) :: in_nodes(:)
     logical, intent(in) :: add
 
-    real(rk), allocatable, asynchronous :: send_buf(:)
-    real(rk), allocatable, asynchronous :: recv_buf(:)
-    type(MPI_Request), allocatable :: requests(:)
-    integer :: num_req
-    integer(ik) :: k
-    integer(ik) :: first
-    integer(ik) :: last
-    integer :: ierror
+    real(rk), allocatable :: send_buf(:)
+    real(rk), allocatable :: recv_buf(:)
 
     allocate (recv_buf(num_comp*size(in_nodes)), send_buf(num_comp*size(out_nodes)))
-    allocate (requests(2*size(neighbor)))
-    num_req = 0
 
-    ! Post the receives (one per neighbor with a non-empty incoming list).
-    do k = 1_ik, int(size(neighbor), ik)
-      first = in_offset(k)
-      last = in_offset(k + 1_ik) - 1_ik
-      if (last < first) cycle
-      num_req = num_req + 1
-      call MPI_Irecv(recv_buf(num_comp*(first - 1_ik) + 1_ik:num_comp*last), &
-        & int(num_comp*(last - first + 1_ik)), mpi_type_rk, int(neighbor(k)), halo_tag, &
-        & MPI_COMM_WORLD, requests(num_req), ierror)
-      call par_check_mpi(ierror, 'halo exchange', 'MPI_Irecv')
-    end do
-
-    ! Pack and send the outgoing values.
+    ! Pack the outgoing values, exchange them with the neighbors, then unpack (overwrite or
+    ! add, in neighbor order).
     call pack_values(x, num_comp, out_nodes, send_buf)
-    do k = 1_ik, int(size(neighbor), ik)
-      first = out_offset(k)
-      last = out_offset(k + 1_ik) - 1_ik
-      if (last < first) cycle
-      num_req = num_req + 1
-      call MPI_Isend(send_buf(num_comp*(first - 1_ik) + 1_ik:num_comp*last), &
-        & int(num_comp*(last - first + 1_ik)), mpi_type_rk, int(neighbor(k)), halo_tag, &
-        & MPI_COMM_WORLD, requests(num_req), ierror)
-      call par_check_mpi(ierror, 'halo exchange', 'MPI_Isend')
-    end do
-
-    ! Wait for all messages, then unpack (overwrite or add, in neighbor order).
-    call MPI_Waitall(num_req, requests(1:num_req), MPI_STATUSES_IGNORE, ierror)
-    call par_check_mpi(ierror, 'halo exchange', 'MPI_Waitall')
+    call par_neighbor_exchange(neighbor, num_comp, send_buf, out_offset, recv_buf, in_offset, &
+      & halo_tag, 'halo exchange')
     call unpack_values(recv_buf, num_comp, in_nodes, add, x)
 
   end subroutine exchange_lists

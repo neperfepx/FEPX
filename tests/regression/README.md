@@ -111,6 +111,11 @@ with `fepx_own_tol`: the two preconditioners take different CG iterations (296 a
 the first SA solve), so the results agree to the solver tolerances only. Measured 2026-10-27
 (Release, Open MPI): at most 8e-14 of field scale (8e-5 of the tolerance).
 
+A build without MPI (`FEPX_ENABLE_MPI=OFF`, ROADMAP D148) runs every case on 1 rank against the
+same references (`fepx_run_ranks`, `src/cmake/FEPXTesting.cmake`), with the same tolerances: as
+for the `_np1` cases above, a run on 1 rank agrees with a reference of more ranks to the solver
+tolerances.
+
 Per-variable overrides (`--var-tol VAR=RTOL,FTOL[,ATOL]`) and per-case options (`COMPARE_ARGS` in
 `CMakeLists.txt`) are allowed only with a documented reason here.
 

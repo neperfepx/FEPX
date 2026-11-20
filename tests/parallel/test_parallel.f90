@@ -18,6 +18,9 @@
 !>   - par_bcast of each type: the root's value arrives on every rank, unchanged bit for bit;
 !>   - par_gatherv of each type: parts of different sizes (rank 0's empty) arrive on the root
 !>     concatenated in rank order, bit for bit; other ranks receive nothing;
+!>   - par_neighbor_exchange (D148) with every other rank as a neighbor: parts of 0, 1 or 2
+!>     entries of 2 values each (the sizes differ by direction), each value naming its sender,
+!>     receiver and position, arrive bit for bit (on 1 rank: no neighbor, nothing exchanged);
 !>   - par_wtime is non-decreasing across a barrier;
 !>   - log_mod writes on root_rank only, and on every rank with all_ranks (each rank logs to its
 !>     own scratch file, read back).
@@ -55,6 +58,10 @@
 !>   expect_int    integer(ik)(:)     expected gathered integers (root)
 !>   i, k          integer(ik)        loop indices
 !>   expected      character(8)       FEPX_EXPECTED_RANKS
+!>   nb            integer(ik)(:)     neighbor ranks of the exchange (every other rank)
+!>   send_off, recv_off  integer(ik)(:)  offsets of the neighbors' parts (in entries)
+!>   send_x, recv_x, expect_x  real(rk)(:)  values sent, received, expected
+!>   e, q          integer(ik)        entry and rank indices
 !>   env_len, env_stat  integer       its length and retrieval status
 program test_parallel
 
@@ -62,7 +69,7 @@ program test_parallel
   use kinds_mod, only: rk, ik
   use parallel_mod, only: par_init, par_finalize, par_barrier, par_wtime, par_sum, par_max, &
     & par_min, par_all, par_any, par_bcast, par_gatherv, num_ranks, my_rank, root_rank, &
-    & par_log_flush
+    & par_log_flush, par_neighbor_exchange
   use log_mod, only: log_info, log_warning, log_set_unit
   use assert_mod, only: assert_equal, assert_close, assert_true, test_summary
 
@@ -91,6 +98,9 @@ program test_parallel
   integer(ik), allocatable :: gath_int(:), expect_int(:)
   integer(ik) :: i, k
   character(len=8) :: expected
+  integer(ik), allocatable :: nb(:), send_off(:), recv_off(:)
+  real(rk), allocatable :: send_x(:), recv_x(:), expect_x(:)
+  integer(ik) :: e, q
   integer :: env_len, env_stat
   real(rk) :: time_before
   real(rk) :: time_after
@@ -213,6 +223,50 @@ program test_parallel
     & 'par_gatherv real values', abs_tol=0.0_rk, rel_tol=0.0_rk)
   if (size(gath_int) == size(expect_int)) call assert_true(all(gath_int == expect_int), &
     & 'par_gatherv integer values')
+
+  ! --- Neighbor exchange: every other rank, 2 values per entry -------------------------------
+
+  ! The neighbors, in increasing rank order.
+  allocate (nb(n - 1_ik), send_off(n), recv_off(n))
+  k = 0_ik
+  do q = 0_ik, n - 1_ik
+    if (q == r) cycle
+    k = k + 1_ik
+    nb(k) = q
+  end do
+
+  ! Parts: mod(sender + 2 receiver, 3) entries (0, 1 or 2; not the same both ways).
+  send_off(1) = 1_ik
+  recv_off(1) = 1_ik
+  do k = 1_ik, n - 1_ik
+    send_off(k + 1_ik) = send_off(k) + mod(r + 2_ik*nb(k), 3_ik)
+    recv_off(k + 1_ik) = recv_off(k) + mod(nb(k) + 2_ik*r, 3_ik)
+  end do
+  allocate (send_x(2_ik*(send_off(n) - 1_ik)), recv_x(2_ik*(recv_off(n) - 1_ik)))
+  allocate (expect_x(size(recv_x)))
+
+  ! Value c of entry e of a part: 1000 sender + 100 receiver + 10 (e in the part) + c + 1/3.
+  do k = 1_ik, n - 1_ik
+    do e = send_off(k), send_off(k + 1_ik) - 1_ik
+      do i = 1_ik, 2_ik
+        send_x(2_ik*(e - 1_ik) + i) = real(1000_ik*r + 100_ik*nb(k) + 10_ik*(e - send_off(k)) + &
+          & i, rk) + 1.0_rk/3.0_rk
+      end do
+    end do
+    do e = recv_off(k), recv_off(k + 1_ik) - 1_ik
+      do i = 1_ik, 2_ik
+        expect_x(2_ik*(e - 1_ik) + i) = real(1000_ik*nb(k) + 100_ik*r + &
+          & 10_ik*(e - recv_off(k)) + i, rk) + 1.0_rk/3.0_rk
+      end do
+    end do
+  end do
+
+  ! Exchange, then the values received (bit for bit).
+  recv_x = -1.0_rk
+  call par_neighbor_exchange(nb, 2_ik, send_x, send_off, recv_x, recv_off, 77, 'test_parallel')
+  if (size(recv_x) > 0) call assert_close(recv_x, expect_x, 'par_neighbor_exchange values', &
+    & abs_tol=0.0_rk, rel_tol=0.0_rk)
+  call assert_equal(size(nb), int(n) - 1, 'par_neighbor_exchange neighbors')
 
   ! --- Wall clock ----------------------------------------------------------------------------
 

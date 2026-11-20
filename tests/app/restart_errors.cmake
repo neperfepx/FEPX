@@ -6,7 +6,8 @@
 # CMake script mode (`cmake -P`): part 1 of a restart case is run once with print restart; each
 # case then continues its output directory with a modified part 2 and must end with the given
 # exit status and message:
-#   ranks          part 2 on 1 rank (the restart files were written on 2)
+#   ranks          part 2 on 1 rank (the restart files were written on NUM_RANKS; not run when
+#                  NUM_RANKS is 1, as in a build without MPI)
 #   material       tau_0 changed (a strict fingerprint line)
 #   output_format  output_format ascii hdf5 (part 1: the default, ascii; a change of the output
 #                  formats is an error, step 9.1; without HDF5 the configuration's error)
@@ -18,7 +19,12 @@
 #
 # Variables (passed with -D): EXECUTABLE (fepx), CASE_DIR (part1.cfg, part2.cfg), MESH,
 # WORK_DIR (removed and recreated), MPIEXEC, MPIEXEC_NUMPROC, MPIEXEC_EXTRA (optional), HDF5
-# (ON or OFF: whether fepx has the HDF5 output).
+# (ON or OFF: whether fepx has the HDF5 output), NUM_RANKS (optional: the ranks of the runs other
+# than the case ranks, 2 by default; MESH partitioned for them).
+
+if(NOT DEFINED NUM_RANKS)
+  set(NUM_RANKS 2)
+endif()
 
 foreach(var EXECUTABLE CASE_DIR MESH WORK_DIR MPIEXEC MPIEXEC_NUMPROC)
   if(NOT DEFINED ${var})
@@ -35,7 +41,7 @@ file(REMOVE_RECURSE ${WORK_DIR})
 file(MAKE_DIRECTORY ${WORK_DIR}/base)
 configure_file(${MESH} ${WORK_DIR}/base/simulation.msh COPYONLY)
 configure_file(${CASE_DIR}/part1.cfg ${WORK_DIR}/base/simulation.cfg COPYONLY)
-execute_process(COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC} 2 ${extra_args} ${EXECUTABLE}
+execute_process(COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC} ${NUM_RANKS} ${extra_args} ${EXECUTABLE}
                 WORKING_DIRECTORY ${WORK_DIR}/base TIMEOUT 300 RESULT_VARIABLE status
                 OUTPUT_VARIABLE output ERROR_VARIABLE output)
 if(NOT status EQUAL 0)
@@ -44,7 +50,11 @@ endif()
 file(READ ${CASE_DIR}/part2.cfg part2)
 
 set(num_failed 0)
-foreach(case ranks material output_format output_format_same no_files no_restart_on warning)
+set(cases ranks material output_format output_format_same no_files no_restart_on warning)
+if(NUM_RANKS EQUAL 1)
+  list(REMOVE_ITEM cases ranks)
+endif()
+foreach(case IN LISTS cases)
   # The case's directory: the mesh, part 1's output (except no_files), the modified part 2.
   set(dir ${WORK_DIR}/${case})
   file(MAKE_DIRECTORY ${dir})
@@ -53,12 +63,12 @@ foreach(case ranks material output_format output_format_same no_files no_restart
     file(COPY ${WORK_DIR}/base/simulation.sim DESTINATION ${dir})
   endif()
   set(cfg "${part2}")
-  set(ranks 2)
+  set(ranks ${NUM_RANKS})
   set(expect_ok FALSE)
   set(absent "")
   if(case STREQUAL "ranks")
     set(ranks 1)
-    set(pattern "written on 2 rank[(]s[)]. a restart needs the same number of ranks")
+    set(pattern "written on ${NUM_RANKS} rank[(]s[)]. a restart needs the same number of ranks")
   elseif(case STREQUAL "material")
     string(REPLACE "tau_0 210.0" "tau_0 200.0" cfg "${cfg}")
     set(pattern "\"tau_0 phase 1: 210.0\" of the restart point's configuration is not in simulation.cfg")

@@ -34,7 +34,8 @@
 !>     received values to its owned entries, neighbor by neighbor in increasing rank order and in
 !>     list order (fixed order: the result is reproducible for a given partitioning).
 !>   - One message tag (constraint_tag, distinct from halo_mod's). Neighbors with an empty list
-!>     in the exchange's direction get no message.
+!>     in the exchange's direction get no message. The messages are sent by
+!>     parallel_mod::par_neighbor_exchange: this module does not use MPI itself (ROADMAP D148).
 !>
 !> Public entities:
 !>   constraint_exchange_t      the slots and lists of one rank (components at the type)
@@ -43,12 +44,10 @@
 !>   constraint_reverse_add     slot buffers added to the owners' values
 module constraint_exchange_mod
 
-  use mpi_f08, only: MPI_Irecv, MPI_Isend, MPI_Waitall, MPI_Request, MPI_COMM_WORLD, &
-    & MPI_STATUSES_IGNORE
   use kinds_mod, only: rk, ik
   use error_mod, only: internal_error
   use parallel_mod, only: num_ranks, my_rank, par_sum, par_alltoall, par_alltoallv, &
-    & par_check_mpi, mpi_type_rk
+    & par_neighbor_exchange
   use mesh_mod, only: mesh_t, node_loc_from_glob
 
   implicit none
@@ -201,62 +200,23 @@ contains
   !>   x    (in)   real(rk)(:)  dof vector (3 num_nodes_loc); its owned entries are sent
   !>   buf  (out)  real(rk)(:)  (num_slots) the values of the slots
   !> Locals:
-  !>   send_buf  real(rk)(:)  packed outgoing values (ASYNCHRONOUS: buffer of non-blocking calls)
-  !>   recv_buf  real(rk)(:)  incoming values (ASYNCHRONOUS)
-  !>   requests  type(MPI_Request)(:)  receive requests, then send requests
-  !>   num_req   integer      requests posted
-  !>   k         integer(ik)  neighbor index
-  !>   first, last  integer(ik)  list range of a neighbor
-  !>   ierror    integer      MPI error code
+  !>   send_buf  real(rk)(:)  packed outgoing values (the send lists, in neighbor order)
   subroutine constraint_forward(cx, x, buf)
 
     type(constraint_exchange_t), intent(in) :: cx
     real(rk), intent(in) :: x(:)
     real(rk), intent(out) :: buf(:)
 
-    real(rk), allocatable, asynchronous :: send_buf(:)
-    real(rk), allocatable, asynchronous :: recv_buf(:)
-    type(MPI_Request), allocatable :: requests(:)
-    integer :: num_req
-    integer(ik) :: k
-    integer(ik) :: first
-    integer(ik) :: last
-    integer :: ierror
+    real(rk), allocatable :: send_buf(:)
 
     if (size(buf) /= cx%num_slots) call internal_error('constraint_forward', &
       & 'buffer size differs from the number of slots')
     if (cx%num_neighbors == 0_ik) return
-    allocate (recv_buf(cx%num_slots), send_buf(size(cx%send_dofs)))
-    allocate (requests(2*cx%num_neighbors))
-    num_req = 0
 
-    ! Post the receives (the slots served by each neighbor).
-    do k = 1_ik, cx%num_neighbors
-      first = cx%recv_offset(k)
-      last = cx%recv_offset(k + 1_ik) - 1_ik
-      if (last < first) cycle
-      num_req = num_req + 1
-      call MPI_Irecv(recv_buf(first:last), int(last - first + 1_ik), mpi_type_rk, &
-        & int(cx%neighbor(k)), constraint_tag, MPI_COMM_WORLD, requests(num_req), ierror)
-      call par_check_mpi(ierror, 'constraint exchange', 'MPI_Irecv')
-    end do
-
-    ! Pack and send the requested owned values.
+    ! Pack the requested owned values; each neighbor's values arrive in its slots.
     send_buf = x(cx%send_dofs)
-    do k = 1_ik, cx%num_neighbors
-      first = cx%send_offset(k)
-      last = cx%send_offset(k + 1_ik) - 1_ik
-      if (last < first) cycle
-      num_req = num_req + 1
-      call MPI_Isend(send_buf(first:last), int(last - first + 1_ik), mpi_type_rk, &
-        & int(cx%neighbor(k)), constraint_tag, MPI_COMM_WORLD, requests(num_req), ierror)
-      call par_check_mpi(ierror, 'constraint exchange', 'MPI_Isend')
-    end do
-
-    ! Wait for all messages; the slot values.
-    call MPI_Waitall(num_req, requests(1:num_req), MPI_STATUSES_IGNORE, ierror)
-    call par_check_mpi(ierror, 'constraint exchange', 'MPI_Waitall')
-    buf = recv_buf
+    call par_neighbor_exchange(cx%neighbor, 1_ik, send_buf, cx%send_offset, buf, &
+      & cx%recv_offset, constraint_tag, 'constraint exchange')
 
   end subroutine constraint_forward
 
@@ -268,63 +228,30 @@ contains
   !>   x    (inout)  real(rk)(:)  dof vector (3 num_nodes_loc); the contributions of the other
   !>                              ranks are added to its owned entries
   !> Locals:
-  !>   send_buf  real(rk)(:)  outgoing contributions (ASYNCHRONOUS)
-  !>   recv_buf  real(rk)(:)  incoming contributions, in send-list order (ASYNCHRONOUS)
-  !>   requests  type(MPI_Request)(:)  receive requests, then send requests
-  !>   num_req   integer      requests posted
-  !>   k         integer(ik)  neighbor index
+  !>   send_buf  real(rk)(:)  outgoing contributions (a copy of buf)
+  !>   recv_buf  real(rk)(:)  incoming contributions, in send-list order
   !>   i         integer(ik)  entry index
-  !>   first, last  integer(ik)  list range of a neighbor
-  !>   ierror    integer      MPI error code
   subroutine constraint_reverse_add(cx, buf, x)
 
     type(constraint_exchange_t), intent(in) :: cx
     real(rk), intent(in) :: buf(:)
     real(rk), intent(inout) :: x(:)
 
-    real(rk), allocatable, asynchronous :: send_buf(:)
-    real(rk), allocatable, asynchronous :: recv_buf(:)
-    type(MPI_Request), allocatable :: requests(:)
-    integer :: num_req
-    integer(ik) :: k
+    real(rk), allocatable :: send_buf(:)
+    real(rk), allocatable :: recv_buf(:)
     integer(ik) :: i
-    integer(ik) :: first
-    integer(ik) :: last
-    integer :: ierror
 
     if (size(buf) /= cx%num_slots) call internal_error('constraint_reverse_add', &
       & 'buffer size differs from the number of slots')
     if (cx%num_neighbors == 0_ik) return
-    allocate (recv_buf(size(cx%send_dofs)), send_buf(cx%num_slots))
-    allocate (requests(2*cx%num_neighbors))
-    num_req = 0
+    allocate (recv_buf(size(cx%send_dofs)))
 
-    ! Post the receives (the contributions to this rank's send lists).
-    do k = 1_ik, cx%num_neighbors
-      first = cx%send_offset(k)
-      last = cx%send_offset(k + 1_ik) - 1_ik
-      if (last < first) cycle
-      num_req = num_req + 1
-      call MPI_Irecv(recv_buf(first:last), int(last - first + 1_ik), mpi_type_rk, &
-        & int(cx%neighbor(k)), constraint_tag, MPI_COMM_WORLD, requests(num_req), ierror)
-      call par_check_mpi(ierror, 'constraint exchange', 'MPI_Irecv')
-    end do
-
-    ! Send the contributions of each owner's slots.
+    ! Send the contributions of each owner's slots; receive those to this rank's send lists.
     send_buf = buf
-    do k = 1_ik, cx%num_neighbors
-      first = cx%recv_offset(k)
-      last = cx%recv_offset(k + 1_ik) - 1_ik
-      if (last < first) cycle
-      num_req = num_req + 1
-      call MPI_Isend(send_buf(first:last), int(last - first + 1_ik), mpi_type_rk, &
-        & int(cx%neighbor(k)), constraint_tag, MPI_COMM_WORLD, requests(num_req), ierror)
-      call par_check_mpi(ierror, 'constraint exchange', 'MPI_Isend')
-    end do
+    call par_neighbor_exchange(cx%neighbor, 1_ik, send_buf, cx%recv_offset, recv_buf, &
+      & cx%send_offset, constraint_tag, 'constraint exchange')
 
-    ! Wait for all messages, then add in neighbor order and list order.
-    call MPI_Waitall(num_req, requests(1:num_req), MPI_STATUSES_IGNORE, ierror)
-    call par_check_mpi(ierror, 'constraint exchange', 'MPI_Waitall')
+    ! Add in neighbor order and list order.
     do i = 1_ik, int(size(cx%send_dofs), ik)
       x(cx%send_dofs(i)) = x(cx%send_dofs(i)) + recv_buf(i)
     end do

@@ -45,22 +45,26 @@
 !>   par_alltoall   every rank sends one integer(ik) to every rank (step 2.3)
 !>   par_alltoallv  every rank sends a variable number of integer(ik) to every rank (step 2.3)
 !>   par_log_flush  rank 0 writes the log lines every rank buffered (log_mod all_ranks; step 9.7)
+!>   par_neighbor_exchange  real(rk) values sent to and received from a list of neighbor ranks
+!>                  (non-blocking point-to-point messages; for halo_mod and
+!>                  constraint_exchange_mod)
 !>   num_ranks      integer(ik)  number of ranks (0 before par_init)
 !>   my_rank        integer(ik)  rank of this process, 0-based
 !>   root_rank      integer(ik)  rank that reads input, logs and writes output (0)
-!>   mpi_type_rk    type(MPI_Datatype)  MPI datatype matching real(rk) (read-only; for the other
-!>                  modules of src/parallel/, e.g. halo_mod)
-!>   par_check_mpi  fatal error if an MPI call failed (for the other modules of src/parallel/)
+!>
+!> A build without MPI (FEPX_ENABLE_MPI=OFF, ROADMAP D148) compiles parallel_serial.f90 instead
+!> of this file: the same module, with the same public entities, for one rank.
 !>
 !> Module variables:
-!>   mpi_type_rk  type(MPI_Datatype)  MPI datatype matching real(rk) (public, protected)
+!>   mpi_type_rk  type(MPI_Datatype)  MPI datatype matching real(rk)
 !>   mpi_type_ik  type(MPI_Datatype)  MPI datatype matching integer(ik)
 !>   is_started   logical             .true. between par_init and par_finalize
 module parallel_mod
 
   use mpi_f08, only: MPI_Init, MPI_Finalize, MPI_Initialized, MPI_Comm_size, MPI_Comm_rank, &
     & MPI_Abort, MPI_Barrier, MPI_Wtime, MPI_Allreduce, MPI_Bcast, MPI_Scatter, MPI_Scatterv, &
-    & MPI_Alltoall, MPI_Alltoallv, MPI_Gather, MPI_Gatherv, &
+    & MPI_Alltoall, MPI_Alltoallv, MPI_Gather, MPI_Gatherv, MPI_Irecv, MPI_Isend, MPI_Waitall, &
+    & MPI_Request, MPI_STATUSES_IGNORE, &
     & MPI_Type_match_size, MPI_INTEGER, &
     & MPI_Error_string, MPI_Datatype, MPI_Op, MPI_COMM_WORLD, MPI_SUCCESS, MPI_SUM, MPI_MAX, &
     & MPI_MIN, MPI_LAND, MPI_LOR, MPI_LOGICAL, MPI_CHARACTER, MPI_TYPECLASS_REAL, &
@@ -76,9 +80,8 @@ module parallel_mod
 
   public :: par_init, par_finalize, par_barrier, par_wtime, par_library_version
   public :: par_sum, par_max, par_min, par_all, par_any, par_bcast, par_scatterv, par_gatherv
-  public :: par_alltoall, par_alltoallv, par_log_flush
+  public :: par_alltoall, par_alltoallv, par_log_flush, par_neighbor_exchange
   public :: num_ranks, my_rank, root_rank
-  public :: mpi_type_rk, par_check_mpi
 
   !> Rank that reads input, logs and writes output.
   integer(ik), parameter :: root_rank = 0_ik
@@ -89,7 +92,7 @@ module parallel_mod
   integer(ik), protected, save :: num_ranks = 0_ik
   integer(ik), protected, save :: my_rank = 0_ik
 
-  type(MPI_Datatype), protected, save :: mpi_type_rk
+  type(MPI_Datatype), save :: mpi_type_rk
   type(MPI_Datatype), save :: mpi_type_ik
   logical, save :: is_started = .false.
 
@@ -929,6 +932,90 @@ contains
 
   end subroutine par_log_flush
 
+  !> Send real values to, and receive real values from, a list of neighbor ranks (the halo
+  !> exchanges of halo_mod and the constraint transfers of constraint_exchange_mod; moved here
+  !> from both so that no other module uses MPI, ROADMAP D148). The messages are those of v2's
+  !> part_gather_start / _stop: MPI_Irecv for every neighbor, then MPI_Isend, then MPI_Waitall;
+  !> a neighbor with an empty part in one direction gets no message in that direction. Every
+  !> neighbor must call it with this rank in its list, the same tag, and matching parts.
+  !>
+  !> The parts are given by offsets in units of entries of block values each: the part of
+  !> neighbor k is entries offset(k) .. offset(k + 1) - 1, i.e. values
+  !> block (offset(k) - 1) + 1 .. block (offset(k + 1) - 1) of the buffer.
+  !>
+  !> Arguments:
+  !>   neighbor     (in)     integer(ik)(:)  neighbor ranks (0-based)
+  !>   block        (in)     integer(ik)     values per entry (e.g. 3 for the nodes of a dof
+  !>                                         vector, 1 for single dofs)
+  !>   send_buf     (in)     real(rk)(:)     the values to send, the parts of the neighbors in
+  !>                                         neighbor order (contiguous: buffer of non-blocking
+  !>                                         sends)
+  !>   send_offset  (in)     integer(ik)(:)  (size(neighbor) + 1) the parts of send_buf
+  !>   recv_buf     (inout)  real(rk)(:)     the values received, likewise (its parts are
+  !>                                         overwritten; contiguous)
+  !>   recv_offset  (in)     integer(ik)(:)  (size(neighbor) + 1) the parts of recv_buf
+  !>   tag          (in)     integer         message tag
+  !>   routine      (in)     character       the calling exchange, for the error messages
+  !> Locals:
+  !>   requests     type(MPI_Request)(:)  receive requests, then send requests
+  !>   num_req      integer               requests posted
+  !>   k            integer(ik)           neighbor index
+  !>   first, last  integer(ik)           value range of a neighbor's part
+  !>   ierror       integer               MPI error code
+  subroutine par_neighbor_exchange(neighbor, block, send_buf, send_offset, recv_buf, &
+    & recv_offset, tag, routine)
+
+    integer(ik), intent(in) :: neighbor(:)
+    integer(ik), intent(in) :: block
+    real(rk), intent(in), asynchronous, contiguous :: send_buf(:)
+    integer(ik), intent(in) :: send_offset(:)
+    real(rk), intent(inout), asynchronous, contiguous :: recv_buf(:)
+    integer(ik), intent(in) :: recv_offset(:)
+    integer, intent(in) :: tag
+    character(len=*), intent(in) :: routine
+
+    type(MPI_Request), allocatable :: requests(:)
+    integer :: num_req
+    integer(ik) :: k
+    integer(ik) :: first
+    integer(ik) :: last
+    integer :: ierror
+
+    ! MPI must have been started; one part per neighbor in each direction.
+    call require_started(routine)
+    if (size(send_offset) /= size(neighbor) + 1 .or. size(recv_offset) /= size(neighbor) + 1) &
+      & call internal_error(routine, 'expected one offset per neighbor, plus one')
+    allocate (requests(2*size(neighbor)))
+    num_req = 0
+
+    ! Post the receives (one per neighbor with a non-empty part).
+    do k = 1_ik, int(size(neighbor), ik)
+      first = block*(recv_offset(k) - 1_ik) + 1_ik
+      last = block*(recv_offset(k + 1_ik) - 1_ik)
+      if (last < first) cycle
+      num_req = num_req + 1
+      call MPI_Irecv(recv_buf(first:last), int(last - first + 1_ik), mpi_type_rk, &
+        & int(neighbor(k)), tag, MPI_COMM_WORLD, requests(num_req), ierror)
+      call check_mpi(ierror, routine, 'MPI_Irecv')
+    end do
+
+    ! Post the sends (one per neighbor with a non-empty part).
+    do k = 1_ik, int(size(neighbor), ik)
+      first = block*(send_offset(k) - 1_ik) + 1_ik
+      last = block*(send_offset(k + 1_ik) - 1_ik)
+      if (last < first) cycle
+      num_req = num_req + 1
+      call MPI_Isend(send_buf(first:last), int(last - first + 1_ik), mpi_type_rk, &
+        & int(neighbor(k)), tag, MPI_COMM_WORLD, requests(num_req), ierror)
+      call check_mpi(ierror, routine, 'MPI_Isend')
+    end do
+
+    ! Wait for all messages.
+    call MPI_Waitall(num_req, requests(1:num_req), MPI_STATUSES_IGNORE, ierror)
+    call check_mpi(ierror, routine, 'MPI_Waitall')
+
+  end subroutine par_neighbor_exchange
+
   !> Abort handler registered with error_mod by par_init: ends every rank of the run with the
   !> given exit status (v2-fixed par_quit, error path, C6/C10). Does not return.
   !> It writes nothing itself (step 9.7, D94: the launchers report MPI_Abort; the former line
@@ -1053,23 +1140,6 @@ contains
     call internal_error(routine, 'array sizes differ: ' // trim(text))
 
   end subroutine check_sizes
-
-  !> Fatal error if an MPI call failed (public form of check_mpi, for the other modules of
-  !> src/parallel/ that call MPI directly).
-  !>
-  !> Arguments:
-  !>   ierror   (in)  integer    error code returned by the MPI call
-  !>   routine  (in)  character  name of the calling routine
-  !>   action   (in)  character  the MPI call
-  subroutine par_check_mpi(ierror, routine, action)
-
-    integer, intent(in) :: ierror
-    character(len=*), intent(in) :: routine
-    character(len=*), intent(in) :: action
-
-    call check_mpi(ierror, routine, action)
-
-  end subroutine par_check_mpi
 
   !> Fatal error if an MPI call failed, with MPI's description of the error code.
   !>

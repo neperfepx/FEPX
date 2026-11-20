@@ -44,6 +44,9 @@ function(fepx_add_regression name)
   cmake_parse_arguments(ARG "FIXTURE;TUTORIAL"
                         "RANKS;MESH;REFERENCE;SAME_AS;SOURCE;CASE_DIR;ORI_FILE;PHASE_FILE;REQUIRES"
                         "COMPARE_ARGS" ${ARGN})
+  # (Without MPI, D148, on 1 rank, against the same reference: the results agree to the solver
+  # tolerances, README.md.)
+  fepx_run_ranks(ARG_RANKS ${ARG_RANKS})
   fepx_mesh_for_ranks(ARG_MESH ${ARG_MESH} ${ARG_RANKS})
   set(prereq_arg "")
   if(ARG_REQUIRES)

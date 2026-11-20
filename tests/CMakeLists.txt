@@ -57,6 +57,11 @@ cmake_language(DEFER CALL fepx_check_quick_tests)
 # Assertion module, linked into every test executable.
 add_library(fepx_testing STATIC framework/assert_mod.f90)
 
+# The test launcher of a build without MPI, in place of mpiexec (FEPXTesting.cmake).
+if(NOT FEPX_ENABLE_MPI)
+  add_executable(fepx_serial_launch framework/serial_launch.f90)
+endif()
+
 # Mesh distribution in blocks on any number of ranks, for test programs (D108).
 add_library(fepx_test_mesh STATIC framework/mesh_blocks_mod.f90)
 target_link_libraries(fepx_test_mesh PUBLIC fepx_parallel)
@@ -704,7 +709,13 @@ set(parallel_error_cases
     "not_started||1|par_sum: internal error [(]please report it[)]: MPI is not started \\(call par_init first\\)"
     "after_finalize|1|nonzero|test_routine: error after finalize"
     "halo_size|1 2|abort|halo_forward: internal error [(]please report it[)]: vector size 5, expected 3 x 2"
-    "dist_dot_size|1|abort|dist_dot: internal error [(]please report it[)]: num_owned exceeds the vector size")
+    "dist_dot_size|1|abort|dist_dot: internal error [(]please report it[)]: num_owned exceeds the vector size"
+    "exchange_offsets|1 2|abort|test_exchange: internal error [(]please report it[)]: expected one offset per neighbor, plus one")
+# (Without MPI: an exchange with a neighbor.)
+if(NOT FEPX_ENABLE_MPI)
+  list(APPEND parallel_error_cases
+       "exchange_neighbor|1|abort|test_exchange: internal error [(]please report it[)]: a build without MPI has no neighbor rank")
+endif()
 foreach(error_case IN LISTS parallel_error_cases)
   string(REPLACE "|" ";" error_case "${error_case}")
   list(GET error_case 0 case_name)
@@ -715,6 +726,14 @@ foreach(error_case IN LISTS parallel_error_cases)
     set(case_runs "serial")
   else()
     string(REPLACE " " ";" case_runs "${case_ranks}")
+    fepx_ranks(case_runs ${case_runs})
+  endif()
+  # (Without MPI, the messages of parallel_serial.f90, which do not name MPI.)
+  if(NOT FEPX_ENABLE_MPI)
+    string(REPLACE "MPI is already initialized" "the parallel environment is already started"
+           case_message "${case_message}")
+    string(REPLACE "MPI is not started" "the parallel environment is not started"
+           case_message "${case_message}")
   endif()
   foreach(case_run IN LISTS case_runs)
     if(case_run STREQUAL "serial")
@@ -855,7 +874,8 @@ foreach(error_case IN LISTS sim_error_cases)
   string(REPLACE "|" ";" error_case "${error_case}")
   list(GET error_case 0 case_name)
   list(GET error_case 1 case_message)
-  foreach(num_ranks 1 2)
+  fepx_ranks(rank_counts 1 2)
+  foreach(num_ranks IN LISTS rank_counts)
     fepx_mpiexec_command(command ${num_ranks} $<TARGET_FILE:test_sim_writer_errors>)
     list(APPEND command ${case_name} ${CMAKE_CURRENT_SOURCE_DIR}/io/fixtures)
     add_test(NAME test_sim_writer_error_${case_name}_np${num_ranks}
@@ -935,7 +955,8 @@ foreach(error_case IN LISTS fe_error_cases)
   string(REPLACE "|" ";" error_case "${error_case}")
   list(GET error_case 0 case_name)
   list(GET error_case 1 case_message)
-  foreach(num_ranks 1 2)
+  fepx_ranks(rank_counts 1 2)
+  foreach(num_ranks IN LISTS rank_counts)
     fepx_mpiexec_command(command ${num_ranks} $<TARGET_FILE:test_fe_errors>)
     list(APPEND command ${case_name} ${CMAKE_CURRENT_SOURCE_DIR}/io/fixtures)
     add_test(NAME test_fe_error_${case_name}_np${num_ranks}
@@ -957,9 +978,12 @@ endforeach()
 # output directory, without restart on, with other output formats (each an error with its
 # message), with output_format ascii given (the default: no change), and with a changed
 # solver option (a warning; tests/app/restart_errors.cmake).
+# (Without MPI, on 1 rank, without the case on another number of ranks.)
+fepx_run_ranks(restart_errors_ranks 2)
 add_test(NAME test_fepx_restart_errors
          COMMAND ${CMAKE_COMMAND}
                  -DEXECUTABLE=$<TARGET_FILE:fepx>
+                 -DNUM_RANKS=${restart_errors_ranks}
                  -DCASE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/verification/cases/restart_monotonic
                  -DMESH=${CMAKE_CURRENT_SOURCE_DIR}/regression/cases/meshes/sx2_part2.msh
                  -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/fepx_restart_errors
@@ -998,7 +1022,8 @@ foreach(error_case IN LISTS app_error_cases)
   string(REPLACE "|" ";" error_case "${error_case}")
   list(GET error_case 0 case_name)
   list(GET error_case 1 case_message)
-  foreach(num_ranks 1 2)
+  fepx_ranks(rank_counts 1 2)
+  foreach(num_ranks IN LISTS rank_counts)
     set(case_dir ${CMAKE_CURRENT_BINARY_DIR}/app_errors/${case_name}_np${num_ranks})
     file(MAKE_DIRECTORY ${case_dir})
     configure_file(app/cases/${case_name}.cfg ${case_dir}/simulation.cfg COPYONLY)
@@ -1041,7 +1066,8 @@ foreach(error_case IN LISTS periodic_error_cases)
   if(case_name STREQUAL "periodic_free_rotation")
     set(prefix "Periodic conditions: Fbar-dot 12 and 21 are both free.*Fbar-dot 13 and 31.*Fbar-dot 23 and 32.*")
   endif()
-  foreach(num_ranks 1 2)
+  fepx_ranks(rank_counts 1 2)
+  foreach(num_ranks IN LISTS rank_counts)
     set(case_dir ${CMAKE_CURRENT_BINARY_DIR}/app_errors/${case_name}_np${num_ranks})
     file(MAKE_DIRECTORY ${case_dir})
     configure_file(app/cases/${case_name}.cfg ${case_dir}/simulation.cfg COPYONLY)
@@ -1067,7 +1093,8 @@ endforeach()
 # fepx executable run of a crystal-plasticity phase (step 6.2, D49): the initialization elastic
 # step (0.01 * 3 tau_0 / max row sum of [C] / rate = 0.03 * 100 / 323400 / 1e-3 s) and a first
 # increment shortened by it; the run completes.
-foreach(num_ranks 1 2)
+fepx_ranks(rank_counts 1 2)
+foreach(num_ranks IN LISTS rank_counts)
   set(case_dir ${CMAKE_CURRENT_BINARY_DIR}/app_runs/crystal_plasticity_np${num_ranks})
   file(MAKE_DIRECTORY ${case_dir})
   configure_file(app/cases/crystal_plasticity_run.cfg ${case_dir}/simulation.cfg COPYONLY)
@@ -1092,7 +1119,8 @@ endforeach()
 # (crystal plasticity, precipitate_strengthening on) and phase 2 (elastic, via simulation.phase);
 # both warnings are logged (precipitates ignored for strengths from the file; values given for an
 # elastic phase ignored) and the run completes.
-foreach(num_ranks 1 2)
+fepx_ranks(rank_counts 1 2)
+foreach(num_ranks IN LISTS rank_counts)
   set(case_dir ${CMAKE_CURRENT_BINARY_DIR}/app_runs/opt_warnings_np${num_ranks})
   file(MAKE_DIRECTORY ${case_dir})
   configure_file(app/cases/opt_warnings_run.cfg ${case_dir}/simulation.cfg COPYONLY)
@@ -1119,7 +1147,8 @@ endforeach()
 # (step 7.2, D60): phase 1 Kocks-Mecking (only $ElsetRho0 is read), phase 2 saturation_isotropic
 # (Rho0 not used); the file gives $ElsetCrss and $ElsetRho0 for both; both warnings are logged,
 # with Hill's mu_0 of phase 1, and the run completes.
-foreach(num_ranks 1 2)
+fepx_ranks(rank_counts 1 2)
+foreach(num_ranks IN LISTS rank_counts)
   set(case_dir ${CMAKE_CURRENT_BINARY_DIR}/app_runs/km_opt_warnings_np${num_ranks})
   file(MAKE_DIRECTORY ${case_dir})
   configure_file(app/cases/km_opt_warnings_run.cfg ${case_dir}/simulation.cfg COPYONLY)
@@ -1146,7 +1175,8 @@ endforeach()
 # point solves of increments 2-4 fail at full length; each is solved as halves, subdivided where
 # rejected (increment 2: 5 sub-increments in 9 attempts down to dt/16, 3: 9 in 17, 4: 4 in 7, the
 # same on 1 and 2 ranks); the convergence file has the attempt columns and the run completes.
-foreach(num_ranks 1 2)
+fepx_ranks(rank_counts 1 2)
+foreach(num_ranks IN LISTS rank_counts)
   set(case_dir ${CMAKE_CURRENT_BINARY_DIR}/app_runs/subincr_np${num_ranks})
   file(MAKE_DIRECTORY ${case_dir})
   configure_file(app/cases/subincr_run.cfg ${case_dir}/simulation.cfg COPYONLY)
@@ -1169,7 +1199,8 @@ endforeach()
 
 # fepx executable run of two steps (step 5.2): 4 increments, then 4 with a shortened last one
 # (dtime 0.03 s in a 0.1 s step); the last increment ends at t = 0.3 s and the run completes.
-foreach(num_ranks 1 2)
+fepx_ranks(rank_counts 1 2)
+foreach(num_ranks IN LISTS rank_counts)
   set(case_dir ${CMAKE_CURRENT_BINARY_DIR}/app_runs/multi_step_np${num_ranks})
   file(MAKE_DIRECTORY ${case_dir})
   configure_file(app/cases/multi_step_run.cfg ${case_dir}/simulation.cfg COPYONLY)
@@ -1239,6 +1270,10 @@ foreach(partition_case
   list(GET partition_case 2 case_ranks)
   list(GET partition_case 3 case_status)
   list(GET partition_case 4 case_message)
+  # (Without MPI, the case on 1 rank only.)
+  if(NOT FEPX_ENABLE_MPI AND NOT case_ranks EQUAL 1)
+    continue()
+  endif()
   set(case_dir ${CMAKE_CURRENT_BINARY_DIR}/app_runs/partition_${case_name})
   file(MAKE_DIRECTORY ${case_dir})
   configure_file(app/cases/crystal_plasticity_run.cfg ${case_dir}/simulation.cfg COPYONLY)
@@ -1261,30 +1296,34 @@ endforeach()
 # An input error that every rank detects (an unknown keyword), on 2 ranks (step 9.7, Q62): the
 # message once on standard output (rank 0's; another rank's would be tagged "[Rank k]"), and on
 # standard error.
-set(case_dir ${CMAKE_CURRENT_BINARY_DIR}/app_errors/error_once_np2)
-file(MAKE_DIRECTORY ${case_dir})
-file(READ app/cases/crystal_plasticity_run.cfg error_once_cfg)
-file(WRITE ${case_dir}/simulation.cfg "${error_once_cfg}bogus_keyword 1\n")
-fepx_mesh_for_ranks(case_mesh regression/cases/meshes/sx2.msh 2)
-configure_file(${case_mesh} ${case_dir}/simulation.msh COPYONLY)
-fepx_mpiexec_command(command 2 $<TARGET_FILE:fepx>)
-add_test(NAME test_fepx_error_once_np2
-         COMMAND ${CMAKE_COMMAND}
-                 "-DCOMMAND=${command}"
-                 -DEXPECTED_STATUS=nonzero
-                 "-DEXPECTED_STDOUT_ONCE=Error  : cfg: simulation.cfg:[0-9]+: unknown keyword"
-                 "-DEXPECTED_STDERR=Error  : cfg: simulation.cfg:[0-9]+: unknown keyword"
-                 -DWORKING_DIR=${case_dir}
-                 -P ${CMAKE_CURRENT_SOURCE_DIR}/core/check_run.cmake)
-set_tests_properties(test_fepx_error_once_np2 PROPERTIES
-                     TIMEOUT ${fepx_timeout_60}
-                     PROCESSORS 2
-                     LABELS mpi)
+# (With MPI only: on 2 ranks.)
+if(FEPX_ENABLE_MPI)
+  set(case_dir ${CMAKE_CURRENT_BINARY_DIR}/app_errors/error_once_np2)
+  file(MAKE_DIRECTORY ${case_dir})
+  file(READ app/cases/crystal_plasticity_run.cfg error_once_cfg)
+  file(WRITE ${case_dir}/simulation.cfg "${error_once_cfg}bogus_keyword 1\n")
+  fepx_mesh_for_ranks(case_mesh regression/cases/meshes/sx2.msh 2)
+  configure_file(${case_mesh} ${case_dir}/simulation.msh COPYONLY)
+  fepx_mpiexec_command(command 2 $<TARGET_FILE:fepx>)
+  add_test(NAME test_fepx_error_once_np2
+           COMMAND ${CMAKE_COMMAND}
+                   "-DCOMMAND=${command}"
+                   -DEXPECTED_STATUS=nonzero
+                   "-DEXPECTED_STDOUT_ONCE=Error  : cfg: simulation.cfg:[0-9]+: unknown keyword"
+                   "-DEXPECTED_STDERR=Error  : cfg: simulation.cfg:[0-9]+: unknown keyword"
+                   -DWORKING_DIR=${case_dir}
+                   -P ${CMAKE_CURRENT_SOURCE_DIR}/core/check_run.cmake)
+  set_tests_properties(test_fepx_error_once_np2 PROPERTIES
+                       TIMEOUT ${fepx_timeout_60}
+                       PROCESSORS 2
+                       LABELS mpi)
+endif()
 
 # fepx executable run with general conditions and a compressive strain target (step 5.1): the
 # step lasts |de| L / max |v| = 1e-4 * 1 / 1e-3 = 0.1 s at strain rate -1e-3/s (set_bc velocities
 # reversed); one increment, completed.
-foreach(num_ranks 1 2)
+fepx_ranks(rank_counts 1 2)
+foreach(num_ranks IN LISTS rank_counts)
   set(case_dir ${CMAKE_CURRENT_BINARY_DIR}/app_runs/general_strain_target_np${num_ranks})
   file(MAKE_DIRECTORY ${case_dir})
   configure_file(app/cases/general_strain_target_run.cfg ${case_dir}/simulation.cfg COPYONLY)
@@ -1311,7 +1350,8 @@ endforeach()
 #   necking           the v2-fixed C54 case started as v2 (isotropic_viscoplastic): the load peaks at
 #                     increment 20 and falls at 21 (33 and 34 on the sx2 mesh of Neper 713); the run stops there with the
 #                     error and writes step 1 from that increment (V6).
-foreach(num_ranks 1 2)
+fepx_ranks(rank_counts 1 2)
+foreach(num_ranks IN LISTS rank_counts)
   set(case_dir ${CMAKE_CURRENT_BINARY_DIR}/app_runs/load_unload_np${num_ranks})
   file(MAKE_DIRECTORY ${case_dir})
   configure_file(app/cases/load_unload_run.cfg ${case_dir}/simulation.cfg COPYONLY)
@@ -1358,7 +1398,8 @@ endforeach()
 #                         reject attempts, which are subdivided; the run completes;
 #   bc_iter_max           the isotropic elastic cube of verification_fepx_iso_triaxial_csr with
 #                         max_bc_iter 1: the first increment needs a correction, the run stops.
-foreach(num_ranks 1 2)
+fepx_ranks(rank_counts 1 2)
+foreach(num_ranks IN LISTS rank_counts)
   fepx_mpiexec_command(command ${num_ranks} $<TARGET_FILE:fepx>)
   set(case_dir ${CMAKE_CURRENT_BINARY_DIR}/app_runs/subincr_triaxial_np${num_ranks})
   file(MAKE_DIRECTORY ${case_dir})
@@ -1399,7 +1440,8 @@ endforeach()
 # fepx executable run of iteration (B) beyond max_bc_iter (step 8.2c, addendum §3.4, §5 V6): the
 # creep case of verification_fepx_fcc_sx_creep_dwell with max_bc_iter 1; the first increment's
 # scaling loop needs more iterations, the run stops with the error.
-foreach(num_ranks 1 2)
+fepx_ranks(rank_counts 1 2)
+foreach(num_ranks IN LISTS rank_counts)
   fepx_mpiexec_command(command ${num_ranks} $<TARGET_FILE:fepx>)
   set(case_dir ${CMAKE_CURRENT_BINARY_DIR}/app_runs/bc_rate_iter_max_np${num_ranks})
   file(MAKE_DIRECTORY ${case_dir})
@@ -1427,7 +1469,8 @@ endforeach()
 #                        bending response), the unloading in 1;
 #   landing_max_bc_iter  the same with max_bc_iter 3: the run stops with the error after writing
 #                        the last accepted increment as step 1.
-foreach(num_ranks 1 2)
+fepx_ranks(rank_counts 1 2)
+foreach(num_ranks IN LISTS rank_counts)
   fepx_mpiexec_command(command ${num_ranks} $<TARGET_FILE:fepx>)
   set(case_dir ${CMAKE_CURRENT_BINARY_DIR}/app_runs/landing_np${num_ranks})
   file(MAKE_DIRECTORY ${case_dir})

@@ -67,7 +67,9 @@ Requirements
 FEPX is written in Fortran 2018 and runs on Unix-like systems. It needs:
 
 - a Fortran 2018 compiler: GNU gfortran (tested) or Intel ifx (generally supported, though not tested);
-- an MPI implementation providing the ``mpi_f08`` Fortran module (Open MPI or MPICH);
+- an MPI implementation providing the ``mpi_f08`` Fortran module (Open MPI or MPICH), unless
+  FEPX is built without MPI, to run on one process only (``-DFEPX_ENABLE_MPI=OFF``, see
+  :ref:`installation_options`);
 - CMake 3.20 or newer;
 - optionally, for the HDF5 output (``output_format hdf5``, see :ref:`simulation_results`): the
   serial HDF5 library with its Fortran interface, and for its tests the HDF5 tools; a
@@ -135,6 +137,8 @@ To install for all users instead, under :file:`/usr/local` (or the prefix given 
 :file:`build`). The build directory can also be used without installing: run
 :file:`build/fepx`.
 
+.. _installation_options:
+
 CMake Options
 ~~~~~~~~~~~~~
 
@@ -163,6 +167,17 @@ Options are given to the first command, ``cmake -S src -B build``, as ``-D<optio
 
   The configuration's last line says which: ``HDF5 output: ON`` or ``OFF``. A serial HDF5 is
   used (only one process writes the file), so any MPI works with it.
+
+- ``-DFEPX_ENABLE_MPI=<value>``: whether FEPX is built with MPI:
+
+  - ``ON`` (the default): FEPX runs on any number of processes, started by the MPI launcher;
+  - ``OFF``: FEPX is built without MPI, which it then does not need, and runs on one process,
+    started without a launcher (see :ref:`running`). Its results are those of a build with MPI
+    on one process. This is meant for a computer without MPI (e.g. a laptop, or another
+    operating system), for small simulations: a simulation then uses one processor core. The
+    test suite leaves out its tests on several processes.
+
+  The configuration's last line says which: ``MPI: <the MPI library>`` or ``MPI: none``.
 
 - ``-DMPI_Fortran_COMPILER=<MPI Fortran wrapper>``: the MPI to build with, when several are
   installed (default: the one CMake finds first, usually ``mpif90``). For example, MPICH on

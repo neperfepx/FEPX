@@ -17,6 +17,18 @@
 #   fepx_mpiexec_command(<out_var> <num_ranks> <executable>)
 #       The launcher command (a CMake list) that runs <executable> on <num_ranks> ranks, as used
 #       by fepx_add_mpi_test; for tests that wrap the run in a script (e.g. check_run.cmake).
+#       In a build without MPI: <executable> itself, and <num_ranks> must be 1 (a configuration
+#       error otherwise: the test is to be defined only with fepx_ranks' rank counts).
+#
+#   fepx_ranks(<out_var> <num_ranks>...)
+#       The rank counts of a test that the build runs: all of them with MPI, only 1 without
+#       (FEPX_ENABLE_MPI=OFF, ROADMAP D148). Tests on several ranks loop over this list, or are
+#       defined only when FEPX_ENABLE_MPI is ON.
+#
+#   fepx_run_ranks(<out_var> <num_ranks>)
+#       The rank count of a run whose checks do not depend on it (a verification case, a
+#       regression case, variants compared with each other): <num_ranks> with MPI, 1 without
+#       (D148: results independent of the number of ranks to solver tolerance, CLAUDE.md §6).
 #
 #   fepx_read_quick_tests(<file>)
 #       Reads the names of the quick tests other than the unit tests (tests/quick_tests.txt: one
@@ -43,6 +55,19 @@
 #
 # Every test gets a label: "unit" or "mpi" (select with `ctest -L mpi`, exclude with `-LE mpi`),
 # and the tier labels "quick", "full" (fepx_apply_test_tiers; select with `ctest -L quick`).
+#
+# A build without MPI (FEPX_ENABLE_MPI=OFF, D148) runs the tests on one rank: MPIEXEC_EXECUTABLE
+# is the test launcher fepx_serial_launch (tests/framework/serial_launch.f90), which the test
+# scripts call as `${MPIEXEC} ${MPIEXEC_NUMPROC} 1 <program> ...` and which fails for more than
+# one rank, and MPIEXEC_NUMPROC_FLAG is -n; the tests on several ranks are not defined
+# (fepx_ranks, fepx_mpiexec_command).
+if(NOT FEPX_ENABLE_MPI)
+  set(MPIEXEC_EXECUTABLE "$<TARGET_FILE:fepx_serial_launch>")
+  set(MPIEXEC_NUMPROC_FLAG -n)
+  set(MPIEXEC_PREFLAGS "")
+  set(MPIEXEC_POSTFLAGS "")
+  set(MPI_Fortran_LIBRARY_VERSION_STRING "")
+endif()
 
 # Open MPI launcher flags (none are needed for other implementations):
 #   --oversubscribe: Open MPI refuses to start more ranks than available cores unless asked to;
@@ -78,6 +103,15 @@ function(fepx_add_unit_test name)
 endfunction()
 
 function(fepx_mpiexec_command out_var num_ranks executable)
+  # Without MPI: the executable itself, on one rank only.
+  if(NOT FEPX_ENABLE_MPI)
+    if(NOT num_ranks EQUAL 1)
+      message(SEND_ERROR "A test asks for ${num_ranks} ranks in a build without MPI: define it "
+                         "for the rank counts of fepx_ranks (cmake/FEPXTesting.cmake) only.")
+    endif()
+    set(${out_var} "${executable}" PARENT_SCOPE)
+    return()
+  endif()
   set(command ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${num_ranks}
               ${FEPX_MPIEXEC_EXTRA_FLAGS} ${MPIEXEC_PREFLAGS} ${executable} ${MPIEXEC_POSTFLAGS})
   set(${out_var} "${command}" PARENT_SCOPE)
@@ -100,11 +134,31 @@ function(fepx_mesh_for_ranks out mesh num_ranks)
   endif()
 endfunction()
 
+function(fepx_ranks out_var)
+  if(FEPX_ENABLE_MPI)
+    set(${out_var} ${ARGN} PARENT_SCOPE)
+  elseif(1 IN_LIST ARGN)
+    set(${out_var} 1 PARENT_SCOPE)
+  else()
+    set(${out_var} "" PARENT_SCOPE)
+  endif()
+endfunction()
+
+function(fepx_run_ranks out_var num_ranks)
+  if(FEPX_ENABLE_MPI)
+    set(${out_var} ${num_ranks} PARENT_SCOPE)
+  else()
+    set(${out_var} 1 PARENT_SCOPE)
+  endif()
+endfunction()
+
 function(fepx_add_mpi_test name)
   cmake_parse_arguments(ARG "" "" "SOURCES;RANKS;ARGS" ${ARGN})
   add_executable(${name} ${ARG_SOURCES})
   target_link_libraries(${name} PRIVATE fepx_testing fepx_parallel)
-  foreach(num_ranks IN LISTS ARG_RANKS)
+  # (Without MPI, the 1-rank test only.)
+  fepx_ranks(ranks ${ARG_RANKS})
+  foreach(num_ranks IN LISTS ranks)
     fepx_mpiexec_command(command ${num_ranks} $<TARGET_FILE:${name}>)
     add_test(NAME ${name}_np${num_ranks} COMMAND ${command} ${ARG_ARGS})
     # FEPX_EXPECTED_RANKS lets test_parallel check that the launcher started one job of
@@ -121,13 +175,20 @@ function(fepx_read_quick_tests file)
   file(STRINGS ${file} lines)
   set(names "")
   # (A line "hdf5: <name>" names a test of the HDF5 output, defined only with FEPX_ENABLE_HDF5,
-  # step 9.1; it is skipped in a build without it. A line "dev: <name>" names a test of a tool
+  # step 9.1; it is skipped in a build without it. A line "mpi: <name>" names a test on several
+  # ranks, defined only with FEPX_ENABLE_MPI (D148). A line "dev: <name>" names a test of a tool
   # of dev/, defined only where dev/ exists: it is skipped on main and in the source tarballs.)
   foreach(line IN LISTS lines)
     string(REGEX REPLACE "#.*$" "" line "${line}")
     string(STRIP "${line}" line)
     if(line MATCHES "^hdf5:[ ]*(.+)$")
       if(NOT FEPX_HAVE_HDF5)
+        continue()
+      endif()
+      set(line ${CMAKE_MATCH_1})
+    endif()
+    if(line MATCHES "^mpi:[ ]*(.+)$")
+      if(NOT FEPX_ENABLE_MPI)
         continue()
       endif()
       set(line ${CMAKE_MATCH_1})

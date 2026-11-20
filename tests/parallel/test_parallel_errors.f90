@@ -20,6 +20,8 @@
 !>   after_finalize fatal_error after par_finalize: no handler, ends with `error stop`
 !>   halo_size      halo_forward with a vector of the wrong size (halo_mod, step 2.4)
 !>   dist_dot_size  dist_dot with more owned entries than the vector has
+!>   exchange_offsets  par_neighbor_exchange with offsets that do not match the neighbors (D148)
+!>   exchange_neighbor par_neighbor_exchange with a neighbor, in a build without MPI (D148)
 !>
 !> Locals:
 !>   case_name   character(32)   name of the case
@@ -31,9 +33,10 @@
 !>   dot         real(rk)        dot product (unused: the case ends the run)
 program test_parallel_errors
 
-  use kinds_mod, only: rk
+  use kinds_mod, only: rk, ik
   use error_mod, only: fatal_error
-  use parallel_mod, only: par_init, par_finalize, par_barrier, par_sum, num_ranks, my_rank
+  use parallel_mod, only: par_init, par_finalize, par_barrier, par_sum, num_ranks, my_rank, &
+    & par_neighbor_exchange
   use mesh_mod, only: mesh_t
   use halo_mod, only: halo_forward, dist_dot
 
@@ -103,6 +106,20 @@ program test_parallel_errors
     x5 = 1.0_rk
     dot = dist_dot(x5, x5, 6)
     write (*, '(es12.4)') dot
+
+  case ('exchange_offsets')
+    ! No neighbor, but two offsets each way (one expected).
+    call par_init()
+    x5 = 0.0_rk
+    call par_neighbor_exchange([integer(ik) ::], 1_ik, [0.0_rk], [1_ik, 1_ik], x5, [1_ik, 1_ik], 1, &
+      & 'test_exchange')
+
+  case ('exchange_neighbor')
+    ! Rank 0 as a neighbor (in a build without MPI, which has none).
+    call par_init()
+    x5 = 0.0_rk
+    call par_neighbor_exchange([0_ik], 1_ik, [0.0_rk], [1_ik, 1_ik], x5, [1_ik, 1_ik], 1, &
+      & 'test_exchange')
 
   case default
     call fatal_error('test_parallel_errors', 'unknown case ' // trim(case_name))

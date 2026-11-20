@@ -18,6 +18,9 @@
 #                  AUTO (the default, step 9.8, D101: built when found), ON (required) or OFF;
 #                  needs the serial HDF5 library with its Fortran interface (e.g. Debian/Ubuntu
 #                  libhdf5-dev), and h5ls, h5dump, h5diff (hdf5-tools) for the tests
+#   FEPX_ENABLE_MPI  MPI (default ON); OFF builds FEPX without MPI, for one rank (ROADMAP D148:
+#                  e.g. on Windows, or a laptop without MPI): parallel/parallel_serial.f90 replaces
+#                  parallel/parallel_mod.f90, and the tests on several ranks are left out
 
 cmake_minimum_required(VERSION 3.20)
 
@@ -91,6 +94,7 @@ endif()
 
 option(FEPX_WERROR "Treat compiler warnings as errors" OFF)
 option(BUILD_TESTING "Build the FEPX test suite" ON)
+option(FEPX_ENABLE_MPI "Build with MPI (OFF: one rank, without MPI)" ON)
 set(FEPX_ENABLE_HDF5 AUTO CACHE STRING "Build the optional HDF5 output (output_format hdf5): AUTO, ON or OFF")
 set_property(CACHE FEPX_ENABLE_HDF5 PROPERTY STRINGS AUTO ON OFF)
 string(TOUPPER "${FEPX_ENABLE_HDF5}" fepx_hdf5_request)
@@ -102,12 +106,19 @@ endif()
 # (`use mpi_f08`), which are the only MPI interface FEPX uses (ROADMAP D5).
 # MPI_DETERMINE_LIBRARY_VERSION makes FindMPI report the implementation (Open MPI, MPICH, ...)
 # in MPI_Fortran_LIBRARY_VERSION_STRING; the test helpers use it to choose launcher flags.
-set(MPI_DETERMINE_LIBRARY_VERSION TRUE)
-find_package(MPI REQUIRED COMPONENTS Fortran)
-if(NOT MPI_Fortran_HAVE_F08_MODULE)
-  message(FATAL_ERROR
-    "The MPI installation found (${MPI_Fortran_LIBRARY_VERSION_STRING}) does not provide "
-    "the mpi_f08 Fortran module, which FEPX requires.")
+# Without MPI (FEPX_ENABLE_MPI=OFF, D148), FEPX runs on one rank and no MPI is looked for.
+if(FEPX_ENABLE_MPI)
+  set(MPI_DETERMINE_LIBRARY_VERSION TRUE)
+  find_package(MPI REQUIRED COMPONENTS Fortran)
+  if(NOT MPI_Fortran_HAVE_F08_MODULE)
+    message(FATAL_ERROR
+      "The MPI installation found (${MPI_Fortran_LIBRARY_VERSION_STRING}) does not provide "
+      "the mpi_f08 Fortran module, which FEPX requires (or configure with -DFEPX_ENABLE_MPI=OFF "
+      "for a build without MPI, on one rank).")
+  endif()
+  set(fepx_mpi_text "${MPI_Fortran_LIBRARY_VERSION_STRING}")
+else()
+  set(fepx_mpi_text "none (FEPX_ENABLE_MPI=OFF, one rank)")
 endif()
 
 # HDF5 (optional, step 9.1, ROADMAP D10, D93; AUTO since step 9.8, D101): the serial library,
@@ -217,8 +228,10 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH ${FEPX_INSTALL_RPATH})
 #          communication graph (2.3) (the last two in fepx_parallel)
 #   app/   the fepx executable (step 4.4)
 #   parallel/  MPI environment and collectives (2.1), halo exchange and distributed vector
-#              operations (2.4), the transfer of the constraint columns (8.3a, D74): the only
-#              code that uses MPI (conventions §6)
+#              operations (2.4), the transfer of the constraint columns (8.3a, D74); only
+#              parallel_mod.f90 uses MPI (conventions §6, D148), and a build without MPI
+#              (FEPX_ENABLE_MPI=OFF) compiles parallel_serial.f90 instead, the same module for
+#              one rank
 #
 # The MPI-free modules are compiled into the static library fepx_core, which every test
 # executable links; src/parallel/ is the library fepx_parallel (fepx_core + MPI), linked by the
@@ -294,8 +307,17 @@ else()
                               COMPILE_OPTIONS "$<$<Fortran_COMPILER_ID:GNU>:-Wno-unused-dummy-argument>")
 endif()
 
+# The parallel environment: MPI, or one rank without MPI (D148).
+if(FEPX_ENABLE_MPI)
+  set(fepx_parallel_source parallel/parallel_mod.f90)
+else()
+  set(fepx_parallel_source parallel/parallel_serial.f90)
+  set_source_files_properties(parallel/parallel_serial.f90 PROPERTIES
+                              COMPILE_OPTIONS "$<$<Fortran_COMPILER_ID:GNU>:-Wno-unused-dummy-argument>")
+endif()
+
 add_library(fepx_parallel STATIC
-  parallel/parallel_mod.f90
+  ${fepx_parallel_source}
   parallel/halo_mod.f90
   mesh/mesh_local_mod.f90
   mesh/mesh_distribute_mod.f90
@@ -310,7 +332,10 @@ add_library(fepx_parallel STATIC
   fe/isotropic_start_mod.f90
   io/sim_writer_mod.f90
 )
-target_link_libraries(fepx_parallel PUBLIC fepx_core MPI::MPI_Fortran)
+target_link_libraries(fepx_parallel PUBLIC fepx_core)
+if(FEPX_ENABLE_MPI)
+  target_link_libraries(fepx_parallel PUBLIC MPI::MPI_Fortran)
+endif()
 
 # The FEPX executable (step 4.4: one elastic increment).
 add_executable(fepx app/fepx.f90)
@@ -374,5 +399,5 @@ endif()
 
 message(STATUS "FEPX ${PROJECT_VERSION}: build type ${CMAKE_BUILD_TYPE}, "
                "compiler ${CMAKE_Fortran_COMPILER_ID} ${CMAKE_Fortran_COMPILER_VERSION}, "
-               "MPI: ${MPI_Fortran_LIBRARY_VERSION_STRING}, "
+               "MPI: ${fepx_mpi_text}, "
                "HDF5 output: ${FEPX_HAVE_HDF5}")
