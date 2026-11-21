@@ -25,7 +25,7 @@ jobs:
       - uses: fortran-lang/setup-fortran@v1
         with:
           compiler: intel
-          version: '2025.1'
+          version: '2025.3'
       - uses: mpi4py/setup-mpi@v1
         with:
           mpi: intelmpi
