@@ -98,7 +98,7 @@ module time_integration_mod
   !>   lower      logical          the current Jacobian is lower triangular
   !>   diagonal   logical          the current Jacobian is diagonal (per-component line search)
   !>   done       logical          the solve has ended (call backward_euler_finish)
-  type, public :: backward_euler_t
+  type :: backward_euler_t
     integer :: n = 0
     real(rk), allocatable :: x_prev(:)
     real(rk), allocatable :: x(:)
