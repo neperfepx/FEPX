@@ -5,8 +5,6 @@
 name: Windows (no MPI)
 
 on:
-  push:
-    branches: [add-serial-build-main]
   workflow_dispatch:
 
 jobs:

@@ -49,20 +49,33 @@ elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
 
   # Standard conformance and warnings (all configurations).
   # (SHELL: keeps each option and its argument together; CMake would otherwise de-duplicate
-  #  repeated words such as "all".)
-  add_compile_options(
-    "SHELL:-stand f18"
-    "SHELL:-warn all"
-  )
-  # No optimization for Debug builds; run-time checks for Debug and Checked builds (argument
-  # temporaries are allowed: they are not errors).
-  add_compile_options(
-    "$<$<CONFIG:Debug>:-O0;-g>"
-    "$<$<CONFIG:Debug,Checked>:-traceback;-fpe0;-init=snan,arrays>"
-    "$<$<CONFIG:Debug,Checked>:SHELL:-check all,noarg_temp_created>"
-  )
-  if(FEPX_WERROR)
-    add_compile_options("SHELL:-warn errors")
+  #  repeated words such as "all".) On Windows, ifx takes the same options in its Windows
+  # syntax (/option:value; Intel's documentation of each option).
+  if(WIN32)
+    add_compile_options(/stand:f18 /warn:all)
+    add_compile_options(
+      "$<$<CONFIG:Debug>:/Od;/Zi>"
+      "$<$<CONFIG:Debug,Checked>:/traceback;/fpe:0;/Qinit:snan,arrays>"
+      "$<$<CONFIG:Debug,Checked>:/check:all,noarg_temp_created>"
+    )
+    if(FEPX_WERROR)
+      add_compile_options(/warn:errors)
+    endif()
+  else()
+    add_compile_options(
+      "SHELL:-stand f18"
+      "SHELL:-warn all"
+    )
+    # No optimization for Debug builds; run-time checks for Debug and Checked builds (argument
+    # temporaries are allowed: they are not errors).
+    add_compile_options(
+      "$<$<CONFIG:Debug>:-O0;-g>"
+      "$<$<CONFIG:Debug,Checked>:-traceback;-fpe0;-init=snan,arrays>"
+      "$<$<CONFIG:Debug,Checked>:SHELL:-check all,noarg_temp_created>"
+    )
+    if(FEPX_WERROR)
+      add_compile_options("SHELL:-warn errors")
+    endif()
   endif()
 
 else()

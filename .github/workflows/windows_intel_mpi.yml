@@ -1,0 +1,63 @@
+# Trial of FEPX with MPI on Windows: Intel oneAPI (ifx and Intel MPI, which provides the mpi_f08
+# module), CMake and Ninja, without HDF5; the build, a run on 2 ranks, then the quick tests.
+# Runs on a push of the branch try-windows-mpi only, or on manual dispatch.
+
+name: Windows (Intel oneAPI, MPI)
+
+on:
+  push:
+    branches: [try-windows-mpi]
+  workflow_dispatch:
+
+jobs:
+  windows-intel-mpi:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: NumPy and Ninja
+        run: python -m pip install numpy ninja
+      - uses: fortran-lang/setup-fortran@v1
+        with:
+          compiler: intel
+          version: '2025.1'
+      - uses: mpi4py/setup-mpi@v1
+        with:
+          mpi: intelmpi
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Environment
+        continue-on-error: true
+        run: |
+          where ifx
+          ifx /QV
+          where mpiexec
+          set I_MPI
+          dir /s /b "%I_MPI_ROOT%\*mpi_f08*"
+      - name: Configure
+        run: >-
+          cmake -G Ninja -S src -B build -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_Fortran_COMPILER=ifx -DFEPX_ENABLE_HDF5=OFF -DMPI_HOME="%I_MPI_ROOT%"
+          -DPython3_EXECUTABLE="%pythonLocation%\python.exe"
+      - name: Build
+        run: cmake --build build -j 4
+      - name: Run a case on 2 ranks
+        continue-on-error: true
+        run: |
+          mkdir run
+          cd run
+          copy ..\tests\verification\cases\terminal_output\simulation.cfg .
+          copy ..\tests\regression\cases\meshes\poly_part2.msh simulation.msh
+          mpiexec -n 2 ..\build\fepx.exe
+      - name: Quick tests
+        run: ctest --test-dir build -L quick -j 2 --output-on-failure --timeout 600
+      - name: Test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-intel-mpi-test-logs
+          path: build/Testing/Temporary/
