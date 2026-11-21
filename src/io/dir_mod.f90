@@ -17,18 +17,19 @@
 !>     an error; failing to get the directory (e.g. no write permission) is a fatal error.
 !>
 !> Public entities:
-!>   make_dir  create a directory and its parents
+!>   make_dir    create a directory and its parents
+!>   dir_exists  whether a path is an existing directory (os_c_mod)
 module dir_mod
 
   use, intrinsic :: iso_c_binding, only: c_int
   use error_mod, only: fatal_error
-  use os_c_mod, only: c_make_dir
+  use os_c_mod, only: c_make_dir, c_is_dir
 
   implicit none
 
   private
 
-  public :: make_dir
+  public :: make_dir, dir_exists
 
 contains
 
@@ -58,10 +59,25 @@ contains
     end do
     ierr = c_make_dir(trim(path))
 
-    ! the directory must exist now (a directory's '.' entry exists)
-    inquire(file=trim(path) // '/.', exist=exists)
+    ! the directory must exist now
+    exists = dir_exists(path)
     if (.not. exists) call fatal_error(caller, 'cannot create directory ' // path)
 
   end subroutine make_dir
+
+  !> Whether a path is an existing directory (os_c_mod: INQUIRE on its '.' entry on POSIX
+  !> systems, GetFileAttributesA on Windows).
+  !>
+  !> Arguments:
+  !>   path    (in)  character  the path
+  !>   exists  (out, result) logical  .true. if it is an existing directory
+  function dir_exists(path) result(exists)
+
+    character(len=*), intent(in) :: path
+    logical :: exists
+
+    exists = c_is_dir(path)
+
+  end function dir_exists
 
 end module dir_mod

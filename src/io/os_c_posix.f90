@@ -10,6 +10,7 @@
 !> Public entities:
 !>   c_make_dir      create one directory (its parent must exist)
 !>   c_replace_file  rename a file, replacing an existing target
+!>   c_is_dir        whether a path is an existing directory
 module os_c_mod
 
   use, intrinsic :: iso_c_binding, only: c_int, c_char, c_null_char
@@ -18,7 +19,7 @@ module os_c_mod
 
   private
 
-  public :: c_make_dir, c_replace_file
+  public :: c_make_dir, c_replace_file, c_is_dir
 
   !> Interface to the C library's mkdir (POSIX: int mkdir(const char *path, mode_t mode)).
   !>
@@ -79,5 +80,20 @@ contains
     status = c_rename(old_name // c_null_char, new_name // c_null_char)
 
   end function c_replace_file
+
+  !> Whether a path is an existing directory (a directory's '.' entry exists; the Fortran
+  !> runtimes of POSIX systems answer INQUIRE on it).
+  !>
+  !> Arguments:
+  !>   path    (in)  character  the path
+  !>   is_dir  (out, result) logical  .true. if it is an existing directory
+  function c_is_dir(path) result(is_dir)
+
+    character(len=*), intent(in) :: path
+    logical :: is_dir
+
+    inquire (file=trim(path) // '/.', exist=is_dir)
+
+  end function c_is_dir
 
 end module os_c_mod

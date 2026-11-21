@@ -107,7 +107,7 @@ module sim_writer_mod
   use kinds_mod, only: rk, ik
   use constants_mod, only: sqrt2
   use error_mod, only: fatal_error, internal_error
-  use dir_mod, only: make_dir
+  use dir_mod, only: make_dir, dir_exists
   use parallel_mod, only: par_gatherv, par_barrier, num_ranks, my_rank, root_rank
   use mesh_mod, only: mesh_t
   use orientation_mod, only: ori_descriptor_name, ori_convention_name, ori_num_params, &
@@ -290,7 +290,7 @@ contains
     ! Directories (an existing output directory is an error: results are never mixed); the
     ! copies of the inputs (root).
     if (my_rank == root_rank) then
-      inquire (file=dir // '/.', exist=exists)
+      exists = dir_exists(dir)
       if (exists) call fatal_error('sim_open', 'output directory ' // dir // ' already exists')
       call make_dir(dir // '/inputs', 'sim_open')
       do i = 1, size(input_files)
@@ -504,7 +504,7 @@ contains
 
     ! The directory must exist; this run's inputs (they replace the copies of the previous
     ! run's).
-    inquire (file=dir // '/.', exist=exists)
+    exists = dir_exists(dir)
     if (.not. exists) call fatal_error('sim_reopen', 'restart on: output directory ' // dir // &
       & ' not found')
     call make_dir(dir // '/inputs', 'sim_open')
