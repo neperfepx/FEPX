@@ -5,6 +5,8 @@
 name: Windows (no MPI)
 
 on:
+  push:
+    branches: [try-windows-mpi]
   workflow_dispatch:
 
 jobs:

@@ -338,6 +338,10 @@ set_tests_properties(test_element_error_unknown_type PROPERTIES LABELS unit)
 
 fepx_add_unit_test(test_text_file SOURCES io/test_text_file.f90)
 
+# The file-system calls (os_c_mod: os_c_posix.f90 or os_c_windows.f90) and dir_mod: directories
+# created and tested, a listing, a file replaced (PR #382).
+fepx_add_unit_test(test_os_c SOURCES io/test_os_c.f90)
+
 # Mesh parser on the fixtures (io/fixtures/README.md) and on two Neper regression meshes.
 add_executable(test_mesh_file io/test_mesh_file.f90)
 target_link_libraries(test_mesh_file PRIVATE fepx_testing fepx_core)

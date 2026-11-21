@@ -16,15 +16,18 @@
 !>   c_replace_file  rename a file, replacing an existing target
 !>   c_is_dir        whether a path is an existing directory (kernel32's GetFileAttributesA:
 !>                   the Fortran runtimes do not all answer INQUIRE on a directory there)
+!>   c_list_dir      the entries of a directory, sorted (kernel32's FindFirstFileA, FindNextFileA
+!>                   and FindClose; no shell: the C library's popen runs cmd.exe, without ls)
 module os_c_mod
 
-  use, intrinsic :: iso_c_binding, only: c_int, c_char, c_null_char, c_long
+  use, intrinsic :: iso_c_binding, only: c_int, c_char, c_null_char, c_long, c_ptr, &
+    & c_intptr_t
 
   implicit none
 
   private
 
-  public :: c_make_dir, c_replace_file, c_is_dir
+  public :: c_make_dir, c_replace_file, c_is_dir, c_list_dir
 
   !> Interface to the C runtime's _mkdir (Windows: int _mkdir(const char *path)).
   !>
@@ -55,6 +58,37 @@ module os_c_mod
       character(kind=c_char), intent(in) :: name(*)
       integer(c_long) :: c_get_file_attributes
     end function c_get_file_attributes
+  end interface
+
+  !> The size of WIN32_FIND_DATAA (minwinbase.h: the attributes, three times, the size, two
+  !> reserved words, then cFileName, 260 characters at byte offset 44, and cAlternateFileName,
+  !> 14 characters; 320 bytes with its alignment), and the offset and length of cFileName.
+  integer, parameter :: find_data_size = 320
+  integer, parameter :: find_data_name_offset = 44
+  integer, parameter :: find_data_name_length = 260
+
+  !> Interfaces to kernel32's FindFirstFileA (HANDLE FindFirstFileA(LPCSTR pattern,
+  !> LPWIN32_FIND_DATAA data); INVALID_HANDLE_VALUE, -1, when nothing matches), FindNextFileA
+  !> (BOOL FindNextFileA(HANDLE, LPWIN32_FIND_DATAA); zero after the last entry) and FindClose
+  !> (BOOL FindClose(HANDLE)). The structure is passed as its bytes.
+  interface
+    function c_find_first_file(pattern, data) bind(C, name='FindFirstFileA')
+      import :: c_char, c_ptr
+      character(kind=c_char), intent(in) :: pattern(*)
+      character(kind=c_char), intent(inout) :: data(*)
+      type(c_ptr) :: c_find_first_file
+    end function c_find_first_file
+    function c_find_next_file(handle, data) bind(C, name='FindNextFileA')
+      import :: c_char, c_ptr, c_int
+      type(c_ptr), value :: handle
+      character(kind=c_char), intent(inout) :: data(*)
+      integer(c_int) :: c_find_next_file
+    end function c_find_next_file
+    function c_find_close(handle) bind(C, name='FindClose')
+      import :: c_ptr, c_int
+      type(c_ptr), value :: handle
+      integer(c_int) :: c_find_close
+    end function c_find_close
   end interface
 
   !> MOVEFILE_REPLACE_EXISTING (winbase.h): MoveFileExA replaces an existing target.
@@ -131,5 +165,72 @@ contains
     is_dir = attrs /= invalid_file_attributes .and. iand(attrs, file_attribute_directory) /= 0
 
   end function c_is_dir
+
+  !> The entries of an existing directory, without "." and "..", sorted by byte value (as ls in
+  !> the C locale; Windows returns them in the order of its file system).
+  !>
+  !> Arguments:
+  !>   path   (in)  character            the directory
+  !>   names  (out) character(1024)(:), allocatable  its entries
+  !>   ok     (out) logical              the directory was listed
+  !> Locals:
+  !>   data    character(c_char)(find_data_size)  one WIN32_FIND_DATAA
+  !>   handle  type(c_ptr)                        the search
+  !>   status  integer(c_int)                     FindNextFileA's and FindClose's results
+  !>   entry   character(1024)                    one entry
+  !>   swap    character(1024)                    an entry being sorted
+  !>   n, i, j integer                            name length; indices of the sort
+  subroutine c_list_dir(path, names, ok)
+
+    character(len=*), intent(in) :: path
+    character(len=1024), allocatable, intent(out) :: names(:)
+    logical, intent(out) :: ok
+
+    character(kind=c_char) :: data(find_data_size)
+    type(c_ptr) :: handle
+    integer(c_int) :: status
+    character(len=1024) :: entry, swap
+    integer :: n, i, j
+
+    allocate (names(0))
+    ok = .false.
+
+    ! Every entry of the directory ("." and ".." included, for an existing directory).
+    data = c_null_char
+    handle = c_find_first_file(trim(path) // '/*' // c_null_char, data)
+    if (transfer(handle, 0_c_intptr_t) == -1_c_intptr_t) return
+    do
+      ! The name, up to its null character.
+      n = 0
+      do while (n < find_data_name_length)
+        if (data(find_data_name_offset + n + 1) == c_null_char) exit
+        n = n + 1
+      end do
+      if (n > 0) then
+        entry = transfer(data(find_data_name_offset + 1:find_data_name_offset + n), &
+          & repeat(' ', n))
+        if (entry /= '.' .and. entry /= '..') names = [character(len=1024) :: names, entry]
+      end if
+      ! The next one.
+      data = c_null_char
+      status = c_find_next_file(handle, data)
+      if (status == 0_c_int) exit
+    end do
+    status = c_find_close(handle)
+    ok = .true.
+
+    ! Sorted by byte value (insertion sort; a directory has few entries).
+    do i = 2, size(names)
+      swap = names(i)
+      j = i - 1
+      do while (j >= 1)
+        if (.not. llt(swap, names(j))) exit
+        names(j + 1) = names(j)
+        j = j - 1
+      end do
+      names(j + 1) = swap
+    end do
+
+  end subroutine c_list_dir
 
 end module os_c_mod

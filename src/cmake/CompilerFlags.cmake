@@ -50,9 +50,11 @@ elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
   # Standard conformance and warnings (all configurations).
   # (SHELL: keeps each option and its argument together; CMake would otherwise de-duplicate
   #  repeated words such as "all".) On Windows, ifx takes the same options in its Windows
-  # syntax (/option:value; Intel's documentation of each option).
+  # syntax (/option:value; Intel's documentation of each option). heap-arrays: ifx puts the
+  # temporary and automatic arrays on the heap, as gfortran does, rather than on the stack,
+  # which they can overflow on a large mesh (seen on Windows, whose stack is 1 MB by default).
   if(WIN32)
-    add_compile_options(/stand:f18 /warn:all)
+    add_compile_options(/stand:f18 /warn:all /heap-arrays)
     add_compile_options(
       "$<$<CONFIG:Debug>:/Od;/Zi>"
       "$<$<CONFIG:Debug,Checked>:/traceback;/fpe:0;/Qinit:snan,arrays>"
@@ -65,6 +67,7 @@ elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
     add_compile_options(
       "SHELL:-stand f18"
       "SHELL:-warn all"
+      -heap-arrays
     )
     # No optimization for Debug builds; run-time checks for Debug and Checked builds (argument
     # temporaries are allowed: they are not errors).
@@ -84,4 +87,15 @@ else()
     "Fortran compiler ${CMAKE_Fortran_COMPILER_ID} is not one of the supported compilers "
     "(GNU gfortran, IntelLLVM ifx). No FEPX-specific flags are set.")
 
+endif()
+
+# Windows gives a program a stack of 1 MB by default (Linux: 8 MB), which a deep call or a large
+# local array can overflow; the programs are linked with a stack of 64 MB, reserved address space
+# that is committed only as the stack grows (MinGW's ld --stack, Microsoft's link /STACK).
+if(WIN32)
+  if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+    add_link_options("LINKER:--stack,67108864")
+  elseif(CMAKE_Fortran_SIMULATE_ID STREQUAL "MSVC")
+    add_link_options("LINKER:/STACK:67108864")
+  endif()
 endif()
